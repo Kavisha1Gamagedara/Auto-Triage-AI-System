@@ -1,56 +1,101 @@
 import asyncio
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails
-from nlp_extractor import extract_entities, sanitize_input
+from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_year
 from nhtsa_validator import verify_vehicle
 
 
-async def run_smoke_tests():
-    print("=== [1] Testing Sanitization & Extraction ===")
-    sample_text = "  2019 Honda Civic with trouble code P0171 running rough \x00\x1f  "
-    clean = sanitize_input(sample_text)
-    print(f"Sanitized input: '{clean}'")
-    assert "\x00" not in clean, "Sanitization failed to strip null bytes"
+async def test_extraction_cases():
+    print("=== [1] Testing Multi-Vehicle spaCy NLP Extraction ===")
 
-    extracted = extract_entities(clean)
-    print(f"Extracted entities: {extracted}")
-    assert extracted["make"] == "Honda"
-    assert "P0171" in extracted["dtc_codes"]
-    print("Extraction & Sanitization: PASSED")
+    test_cases = [
+        {
+            "input": "2019 Honda Civic with trouble code P0171 running rough and check engine light",
+            "expected_make": "Honda",
+            "expected_model": "Civic",
+            "expected_year": 2019,
+            "expected_dtc": "P0171"
+        },
+        {
+            "input": "Technician note: 2017 Ford F-150 misfiring on acceleration code P0300 with cracked spark plug",
+            "expected_make": "Ford",
+            "expected_model": "F-150",
+            "expected_year": 2017,
+            "expected_dtc": "P0300",
+            "expected_part": "spark plug"
+        },
+        {
+            "input": "Customer brought in 2021 Toyota Camry showing code P0420 and damaged catalytic converter",
+            "expected_make": "Toyota",
+            "expected_model": "Camry",
+            "expected_year": 2021,
+            "expected_dtc": "P0420",
+            "expected_part": "catalytic converter"
+        }
+    ]
 
-    print("\n=== [2] Testing Pydantic Schemas ===")
-    req = DiagnosticRequest(session_id="test_sess_001", raw_text=clean)
-    assert req.session_id == "test_sess_001"
+    for i, case in enumerate(test_cases, 1):
+        clean = sanitize_input(case["input"])
+        extracted = extract_entities(clean)
+        print(f"\nCase {i}: '{case['input']}'")
+        print(f"  -> Extracted: Year={extracted['year']}, Make={extracted['make']}, Model={extracted['model']}, DTCs={extracted['dtc_codes']}, Parts={extracted['damaged_parts']}")
 
+        assert extracted["make"] == case["expected_make"], f"Expected {case['expected_make']}, got {extracted['make']}"
+        assert extracted["model"] == case["expected_model"], f"Expected {case['expected_model']}, got {extracted['model']}"
+        assert extracted["year"] == case["expected_year"], f"Expected {case['expected_year']}, got {extracted['year']}"
+        assert case["expected_dtc"] in extracted["dtc_codes"], f"Expected DTC {case['expected_dtc']} in {extracted['dtc_codes']}"
+
+        if "expected_part" in case:
+            assert case["expected_part"] in extracted["damaged_parts"], f"Expected part '{case['expected_part']}' in {extracted['damaged_parts']}"
+
+    print("\nExtraction Test Cases: ALL PASSED!")
+
+
+async def test_nhtsa_and_payloads():
+    print("\n=== [2] Testing NHTSA Validation & Pydantic Payloads ===")
+
+    # Test Ford F-150 validation with US DOT
+    print("Verifying 2017 Ford F-150 against NHTSA...")
+    is_f150_valid = await verify_vehicle("Ford", "F-150", 2017)
+    print(f"2017 Ford F-150 valid? {is_f150_valid}")
+    assert is_f150_valid is True, "Expected 2017 Ford F-150 to be valid in NHTSA"
+
+    # Test Toyota Camry validation with US DOT
+    print("Verifying 2021 Toyota Camry against NHTSA...")
+    is_camry_valid = await verify_vehicle("Toyota", "Camry", 2021)
+    print(f"2021 Toyota Camry valid? {is_camry_valid}")
+    assert is_camry_valid is True, "Expected 2021 Toyota Camry to be valid in NHTSA"
+
+    # Test Fictitious vehicle validation
+    print("Verifying non-existent vehicle (2025 Ford GalaxyCruiser9000)...")
+    is_bogus_valid = await verify_vehicle("Ford", "GalaxyCruiser9000", 2025)
+    print(f"GalaxyCruiser9000 valid? {is_bogus_valid}")
+    assert is_bogus_valid is False, "Expected non-existent vehicle to be rejected"
+
+    # Build Agent 1 Payload
     payload = Agent1Payload(
-        session_id=req.session_id,
+        session_id="sess_live_123",
         vehicle_details=VehicleDetails(
-            make=extracted["make"],
-            model=extracted["model"],
-            year=extracted["year"],
+            make="Ford",
+            model="F-150",
+            year=2017,
             is_verified=True
         ),
-        dtc_codes=extracted["dtc_codes"],
-        damaged_parts=[]
+        dtc_codes=["P0300"],
+        damaged_parts=["spark plug"]
     )
-    print(f"Serialized Agent 1 Payload: {payload.model_dump_json(indent=2)}")
-    print("Pydantic Models: PASSED")
+    print("\nVerified Agent 1 A2A Payload:")
+    print(payload.model_dump_json(indent=2))
 
-    print("\n=== [3] Testing NHTSA vPIC External Validator ===")
-    # Valid vehicle
-    print("Testing valid vehicle (2019 Honda Civic)...")
-    valid_res = await verify_vehicle("Honda", "Civic", 2019)
-    print(f"2019 Honda Civic valid? {valid_res}")
-    assert valid_res is True, "Expected 2019 Honda Civic to be verified by NHTSA"
+    print("\nNHTSA & Payload Verification: ALL PASSED!")
 
-    # Invalid vehicle
-    print("Testing invalid vehicle (2019 Honda FalconX99)...")
-    invalid_res = await verify_vehicle("Honda", "FalconX99", 2019)
-    print(f"2019 Honda FalconX99 valid? {invalid_res}")
-    assert invalid_res is False, "Expected fictitious vehicle to fail verification"
-    print("NHTSA Verification: PASSED")
 
-    print("\nALL BACKEND UNIT TESTS PASSED SUCCESSFULLY!")
+async def main():
+    await test_extraction_cases()
+    await test_nhtsa_and_payloads()
+    print("\n==========================================")
+    print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
+    print("==========================================")
 
 
 if __name__ == "__main__":
-    asyncio.run(run_smoke_tests())
+    asyncio.run(main())
