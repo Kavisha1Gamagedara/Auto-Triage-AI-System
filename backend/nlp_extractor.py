@@ -1,16 +1,20 @@
 import re
 import logging
 from typing import Dict, List, Any, Optional, Tuple
-import spacy
 
 logger = logging.getLogger("nlp_extractor")
 
-# Load spaCy English pipeline
 try:
-    nlp = spacy.load("en_core_web_sm")
-except Exception as e:
-    logger.warning(f"Could not load en_core_web_sm model directly: {e}. Falling back to blank English.")
-    nlp = spacy.blank("en")
+    import spacy
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except Exception as e:
+        logger.warning(f"Could not load en_core_web_sm model: {e}. Using blank English.")
+        nlp = spacy.blank("en")
+except ImportError as e:
+    logger.warning(f"spaCy is not installed in the current environment ({e}). Using pure regex/rule-based fallback.")
+    spacy = None
+    nlp = None
 
 # Automotive manufacturer aliases and standard names
 AUTOMOTIVE_MAKES = {
@@ -100,8 +104,30 @@ POPULAR_MODELS = {
     "mazda6": "Mazda6"
 }
 
-# Recognized automotive physical components
+# Recognized automotive physical components (Mechanical, Body, Collision, Electrical, Suspension)
 AUTOMOTIVE_COMPONENTS = [
+    # Body & Collision
+    "bumper",
+    "front bumper",
+    "rear bumper",
+    "fender",
+    "hood",
+    "headlight",
+    "headlights",
+    "taillight",
+    "taillights",
+    "grille",
+    "door",
+    "side mirror",
+    "mirror",
+    "windshield",
+    "window",
+    "trunk",
+    "tailgate",
+    "quarter panel",
+    "rocker panel",
+    "spoiler",
+    # Powertrain & Engine
     "spark plug",
     "spark plugs",
     "oxygen sensor",
@@ -110,11 +136,9 @@ AUTOMOTIVE_COMPONENTS = [
     "alternator",
     "battery",
     "radiator",
-    "brake pad",
-    "brake pads",
-    "brake rotor",
-    "brake rotors",
+    "radiator hose",
     "timing belt",
+    "timing chain",
     "serpentine belt",
     "mass air flow sensor",
     "mass airflow sensor",
@@ -128,10 +152,43 @@ AUTOMOTIVE_COMPONENTS = [
     "thermostat",
     "ignition coil",
     "ignition coils",
+    "clutch",
+    "turbo",
+    "turbocharger",
+    "intercooler",
+    "exhaust manifold",
+    "intake manifold",
+    "muffler",
+    "exhaust pipe",
+    # Brakes, Suspension & Steering
+    "brake pad",
+    "brake pads",
+    "brake rotor",
+    "brake rotors",
+    "brake caliper",
     "strut",
+    "struts",
     "shock absorber",
-    "clutch"
+    "shock absorbers",
+    "control arm",
+    "ball joint",
+    "tie rod",
+    "sway bar",
+    "wheel bearing",
+    "wheel",
+    "tire",
+    "tires",
+    "axle",
+    "cv axle",
+    "drive shaft",
+    "power steering pump"
 ]
+
+DAMAGE_ADJECTIVES = {
+    "crashed", "damaged", "broken", "cracked", "smashed", "dented", "bent",
+    "shattered", "scratched", "punctured", "torn", "failing", "leaking",
+    "blown", "bad", "worn", "faulty", "loose", "burned", "defective", "missing"
+}
 
 
 def sanitize_input(raw_text: str) -> str:
@@ -162,13 +219,20 @@ def extract_dtc_codes(text: str) -> List[str]:
     return list(dict.fromkeys([code.upper() for code in matches]))
 
 
-def extract_make_and_model(doc: spacy.tokens.Doc) -> Tuple[Optional[str], Optional[str]]:
+def extract_make_and_model(doc: Any) -> Tuple[Optional[str], Optional[str]]:
     """
     Identifies vehicle make and model using lexical dictionary matching,
-    token proximity, and spaCy linguistic analysis.
+    token proximity, and linguistic analysis.
     """
-    text_lower = doc.text.lower()
-    tokens = [t.text.lower() for t in doc]
+    if doc is None:
+        return None, None
+
+    if hasattr(doc, "text"):
+        text_lower = doc.text.lower()
+        tokens = [t.text.lower() for t in doc]
+    else:
+        text_lower = str(doc).lower()
+        tokens = re.findall(r"\b[\w-]+\b", text_lower)
 
     detected_make = None
     make_idx = -1
@@ -209,15 +273,18 @@ def extract_make_and_model(doc: spacy.tokens.Doc) -> Tuple[Optional[str], Option
     return detected_make, detected_model
 
 
-def extract_damaged_parts(doc: spacy.tokens.Doc) -> List[str]:
+def extract_damaged_parts(doc: Any) -> List[str]:
     """
-    Identifies automotive components cited as damaged or faulty using noun chunk matching
-    and component lexicon cross-referencing.
+    Identifies automotive components cited as damaged, faulty, or collided
+    using lexicon cross-referencing and spaCy linguistic dependency matching.
     """
-    text_lower = doc.text.lower()
+    if doc is None:
+        return []
+
+    text_lower = doc.text.lower() if hasattr(doc, "text") else str(doc).lower()
     detected = []
 
-    # 1. Direct lexicon scan
+    # 1. Direct lexicon scan for recognized automotive parts
     for component in AUTOMOTIVE_COMPONENTS:
         pattern = rf"\b{re.escape(component)}\b"
         if re.search(pattern, text_lower):
@@ -226,16 +293,38 @@ def extract_damaged_parts(doc: spacy.tokens.Doc) -> List[str]:
             if comp_norm not in detected:
                 detected.append(comp_norm)
 
-    # 2. Noun chunk parsing for components associated with fault adjectives
-    fault_indicators = {"broken", "cracked", "damaged", "failing", "leaking", "blown", "bad", "worn"}
-    for chunk in doc.noun_chunks:
-        chunk_text = chunk.text.lower()
-        if any(indicator in chunk_text for indicator in fault_indicators):
-            for word in chunk:
-                if word.text.lower() in AUTOMOTIVE_COMPONENTS and word.text.lower() not in detected:
-                    detected.append(word.text.lower())
+    # 2. Linguistic dependency & noun-chunk parsing (when spaCy is available)
+    if hasattr(doc, "noun_chunks"):
+        # Check token dependencies for adjectives modifying nouns (e.g., "crashed bumper", "dented door")
+        for token in doc:
+            if token.pos_ in ("NOUN", "PROPN"):
+                token_lower = token.text.lower()
+                # Check children/adjectives modifying this noun
+                modifiers = [child.text.lower() for child in token.children if child.dep_ in ("amod", "compound", "acomp")]
+                if any(mod in DAMAGE_ADJECTIVES for mod in modifiers):
+                    comp_norm = token_lower.rstrip("s") if token_lower.endswith("s") and not token_lower.endswith("ss") else token_lower
+                    if comp_norm not in detected and len(comp_norm) > 2:
+                        detected.append(comp_norm)
 
-    return detected
+        # Check noun chunks containing damage indicators
+        NON_PART_WORDS = {"car", "truck", "suv", "vehicle", "problem", "issue", "acceleration", "acceleration code", "note", "code"}
+        for chunk in doc.noun_chunks:
+            chunk_text = chunk.text.lower()
+            if any(indicator in chunk_text for indicator in DAMAGE_ADJECTIVES):
+                for word in chunk:
+                    w_lower = word.text.lower()
+                    if (w_lower in AUTOMOTIVE_COMPONENTS or word.pos_ in ("NOUN", "PROPN")) and w_lower not in DAMAGE_ADJECTIVES and w_lower not in NON_PART_WORDS and len(w_lower) > 2:
+                        norm = w_lower.rstrip("s") if w_lower.endswith("s") and not w_lower.endswith("ss") else w_lower
+                        if norm not in detected:
+                            detected.append(norm)
+
+    # Clean up substrings (e.g., if 'spark plug' is in detected, drop 'plug' or 'spark')
+    cleaned_parts = []
+    for part in detected:
+        if not any(part != other and part in other for other in detected):
+            cleaned_parts.append(part)
+
+    return cleaned_parts
 
 
 def extract_entities(raw_text: str) -> Dict[str, Any]:
@@ -243,12 +332,12 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     Comprehensive entity extraction pipeline for Agent 1:
     - Input sanitization
     - Year extraction (1980 - 2026)
-    - Make & Model extraction (spaCy + automotive lexicon)
+    - Make & Model extraction (spaCy / lexicon fallback)
     - OBD-II DTC Trouble Codes (regex pattern)
-    - Physical Damaged Components (spaCy noun chunks + lexicon)
+    - Physical Damaged Components (noun chunks / lexicon)
     """
     clean_text = sanitize_input(raw_text)
-    doc = nlp(clean_text)
+    doc = nlp(clean_text) if nlp is not None else clean_text
 
     year = extract_year(clean_text)
     make, model = extract_make_and_model(doc)
