@@ -8,7 +8,11 @@ load_dotenv()
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+def get_client() -> Groq:
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set. Please add GROQ_API_KEY to your .env file or environment variables.")
+    return Groq(api_key=api_key)
 
 RESULT_SCHEMA = json.dumps(DiagnosticResult.model_json_schema(), indent=2)
 
@@ -22,6 +26,7 @@ The JSON object must match this JSON schema exactly, using these exact field nam
 """
 
 def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
+    client = get_client()
     # Construct the context for the LLM
     diagnostic_context = (
         f"Vehicle: {payload.vehicle.get('year')} {payload.vehicle.get('make')} {payload.vehicle.get('model')}\n"
