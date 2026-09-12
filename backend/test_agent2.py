@@ -25,4 +25,6 @@ try:
     print(json.dumps(response.json(), indent=2))
     
 except requests.exceptions.ConnectionError:
-    print("\n❌ Error: Connection refused. Is your FastAPI server running on port 8000?")
+    print("\n[ERROR] Connection refused. Is your FastAPI server running on port 8000?")
+except requests.exceptions.HTTPError:
+    print(f"\n[HTTP {response.status_code} Error from Agent 2]:\n{response.text}")
