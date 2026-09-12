@@ -1,13 +1,22 @@
+import os
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from models import DiagnosticRequest, Agent1Payload, VehicleDetails
+from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
 from nhtsa_validator import verify_vehicle
 from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_damaged_parts, nlp
 
+# Safely import Agent 2 diagnostic reasoning engine
+try:
+    import groq
+    from agent2_logic import deduce_root_cause
+except Exception as e:
+    groq = None
+    deduce_root_cause = None
+
 app = FastAPI(
-    title="Auto-Triage AI - Agent 1",
-    description="Gateway Ingestion, Normalization, and Vehicle Validation Agent for Auto-Triage AI",
+    title="Auto-Triage AI System",
+    description="Multi-Agent Diagnostic Platform: Agent 1 (Ingestion & Vehicle Validation) and Agent 2 (Diagnostic Reasoning)",
     version="1.0.0",
 )
 
@@ -24,10 +33,16 @@ app.add_middleware(
 @app.get("/", tags=["General"])
 async def root():
     return {
-        "service": "Auto-Triage AI - Agent 1",
-        "role": "Ingestion & Vehicle Validation Gateway",
-        "modes": ["Smart NLP Intake", "Manual Spec Entry"],
-        "docs": "/docs",
+        "service": "Auto-Triage AI System",
+        "agents": {
+            "agent_1": "Ingestion & Vehicle Validation Gateway",
+            "agent_2": "Diagnostic Reasoning Service"
+        },
+        "endpoints": {
+            "ingest": "/api/v1/ingest",
+            "diagnose": "/api/v1/diagnose",
+            "docs": "/docs"
+        },
         "status": "online"
     }
 
@@ -36,7 +51,8 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "agent": "Agent 1 (Ingestion & Validation)"
+        "agent_1": "online",
+        "agent_2": "online" if deduce_root_cause is not None else "degraded (dependencies missing)"
     }
 
 
@@ -44,7 +60,7 @@ async def health_check():
     "/api/v1/ingest",
     response_model=Agent1Payload,
     status_code=status.HTTP_200_OK,
-    tags=["Triage Pipeline"]
+    tags=["Agent 1 - Ingestion & Validation"]
 )
 async def ingest_diagnostic(request: DiagnosticRequest):
     """
@@ -53,7 +69,8 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     - Mode A (Manual Spec Entry): Technician supplies explicit Make, Model, Year, DTCs.
     - Mode B (Smart NLP Intake): AI parses natural language complaint for all entities.
     
-    Both modes validate against the official US DOT NHTSA vPIC database.
+    Both modes validate against the official US DOT NHTSA vPIC database and format
+    an Agent-to-Agent (A2A) payload ready for Agent 2.
     """
     # Check if direct vehicle specs were provided (Manual Spec Entry Mode)
     if request.make and request.model and request.year:
@@ -106,5 +123,32 @@ async def ingest_diagnostic(request: DiagnosticRequest):
             is_verified=True
         ),
         dtc_codes=dtc_codes,
-        damaged_parts=damaged_parts
+        damaged_parts=damaged_parts,
+        user_note=request.raw_text or ""
     )
+
+
+@app.post(
+    "/api/v1/diagnose",
+    response_model=DiagnosticResult,
+    status_code=status.HTTP_200_OK,
+    tags=["Agent 2 - Diagnostic Reasoning"]
+)
+async def run_diagnostics(payload: Agent1Payload):
+    """
+    Agent 2 Cognitive Diagnostic Reasoning endpoint.
+    Processes verified vehicle specs, DTC codes, and mechanic notes through
+    the LLM reasoning engine to deduce the root-cause failed component.
+    """
+    if deduce_root_cause is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Agent 2 reasoning engine is unavailable or missing required dependencies."
+        )
+    try:
+        result = deduce_root_cause(payload)
+        return result
+    except Exception as e:
+        if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Groq API error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Diagnostic reasoning error: {e}")

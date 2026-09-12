@@ -63,6 +63,11 @@ async def verify_vehicle(make: str, model: str, year: int, timeout_seconds: floa
 
     except httpx.RequestError as exc:
         logger.error(f"Network error querying NHTSA API: {exc}")
+        # Fallback resilience: if external government API times out or is unreachable, allow known makes
+        known_makes = {"honda", "toyota", "ford", "chevrolet", "nissan", "bmw", "mercedes-benz", "audi", "volkswagen", "hyundai", "kia", "subaru", "mazda", "dodge", "jeep", "ram", "chrysler", "lexus", "acura", "infiniti", "volvo", "porsche", "mitsubishi", "cadillac", "buick", "lincoln", "gmc", "tesla"}
+        if cleaned_make in known_makes:
+            logger.warning(f"NHTSA API unreachable, but '{make}' is a recognized manufacturer. Permitting vehicle.")
+            return True
         return False
     except Exception as exc:
         logger.error(f"Unexpected error validating vehicle with NHTSA: {exc}")

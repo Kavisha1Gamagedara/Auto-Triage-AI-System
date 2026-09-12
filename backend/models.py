@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -50,13 +50,68 @@ class VehicleDetails(BaseModel):
     year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
     is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC")
 
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 class Agent1Payload(BaseModel):
-    """Agent-to-Agent (A2A) payload sent from Agent 1 to downstream cognitive agents."""
+    """
+    Agent-to-Agent (A2A) payload sent from Agent 1 to downstream cognitive agents (Agent 2, 3, 4).
+    Seamlessly interoperates with both structured VehicleDetails and dictionary vehicle formats.
+    """
     session_id: str = Field(..., description="Session identifier")
-    vehicle_details: VehicleDetails = Field(..., description="Extracted and verified vehicle specifications")
+    vehicle_details: Optional[VehicleDetails] = Field(default=None, description="Extracted and verified vehicle specifications")
+    vehicle: Optional[Dict[str, Any]] = Field(default=None, description="Vehicle specifications (Agent 2 compatible)")
     dtc_codes: List[str] = Field(default_factory=list, description="Extracted Diagnostic Trouble Codes (OBD-II)")
     damaged_parts: List[str] = Field(default_factory=list, description="Identified damaged physical parts")
+    user_note: Optional[str] = Field(default="", description="Customer complaint or mechanic notes")
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_vehicle_fields(cls, data: Any):
+        if isinstance(data, dict):
+            # If vehicle is provided as dict but vehicle_details isn't
+            if "vehicle" in data and data["vehicle"] and ("vehicle_details" not in data or not data["vehicle_details"]):
+                v = data["vehicle"]
+                if isinstance(v, dict):
+                    data["vehicle_details"] = {
+                        "make": str(v.get("make", "")),
+                        "model": str(v.get("model", "")),
+                        "year": int(v.get("year", 2000)),
+                        "is_verified": bool(v.get("is_verified", False))
+                    }
+            # If vehicle_details is provided but vehicle isn't
+            elif "vehicle_details" in data and data["vehicle_details"] and ("vehicle" not in data or not data["vehicle"]):
+                vd = data["vehicle_details"]
+                if hasattr(vd, "model_dump"):
+                    vd = vd.model_dump()
+                if isinstance(vd, dict):
+                    data["vehicle"] = {
+                        "make": vd.get("make"),
+                        "model": vd.get("model"),
+                        "year": vd.get("year")
+                    }
+        return data
+
+    @model_validator(mode="after")
+    def ensure_vehicle_consistency(self):
+        if self.vehicle_details and not self.vehicle:
+            self.vehicle = {
+                "make": self.vehicle_details.make,
+                "model": self.vehicle_details.model,
+                "year": self.vehicle_details.year
+            }
+        elif self.vehicle and not self.vehicle_details:
+            self.vehicle_details = VehicleDetails(
+                make=str(self.vehicle.get("make", "")),
+                model=str(self.vehicle.get("model", "")),
+                year=int(self.vehicle.get("year", 2000)),
+                is_verified=bool(self.vehicle.get("is_verified", False))
+            )
+        return self
 
     model_config = {
         "json_schema_extra": {
@@ -68,8 +123,22 @@ class Agent1Payload(BaseModel):
                     "year": 2019,
                     "is_verified": True
                 },
+                "vehicle": {
+                    "make": "Honda",
+                    "model": "Civic",
+                    "year": 2019
+                },
                 "dtc_codes": ["P0171"],
-                "damaged_parts": ["bumper"]
+                "damaged_parts": ["bumper"],
+                "user_note": "Engine lacks power and hesitates during acceleration"
             }
         }
     }
+
+
+class DiagnosticResult(BaseModel):
+    """The strictly formatted payload output from Agent 2 to Agents 3 & 4."""
+    root_cause_component: str = Field(description="Exact physical part needing replacement (e.g., 'Mass Air Flow Sensor')")
+    failure_mode: str = Field(description="Mechanical reasoning for why the part failed")
+    severity: str = Field(description="Risk level: Low, Medium, or Critical")
+    safety_warning: str = Field(description="Specific safety hazards for the mechanic")
