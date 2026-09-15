@@ -1,0 +1,8 @@
+[Source: 2018 Toyota Corolla Service Manual, Section EM-24, Page 118]
+Mass Air Flow (MAF) Sensor Replacement Procedure:
+1. Turn ignition switch OFF and disconnect negative battery cable.
+2. Disconnect the MAF sensor electrical connector.
+3. Remove the 2 retaining screws holding the sensor to the air intake box.
+4. Carefully pull the MAF sensor out. Ensure the old O-ring is removed.
+5. Install new sensor with a new O-ring. 
+6. Torque the 2 retaining screws to 8.5 N.m (75 in.lbf).
