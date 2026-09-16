@@ -3,5 +3,11 @@ uvicorn>=0.28.0
 httpx>=0.27.0
 pydantic>=2.6.0
 spacy>=3.7.0
+chromadb
+langchain
+langchain-community
+langchain-text-splitters
+sentence-transformers
+openai
 groq>=0.9.0
 python-dotenv>=1.0.0
