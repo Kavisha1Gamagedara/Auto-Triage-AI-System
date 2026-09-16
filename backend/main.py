@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from agent3_rag import get_repair_procedure
+from models import RepairRequest
 
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
 from nhtsa_validator import verify_vehicle
@@ -152,3 +154,20 @@ async def run_diagnostics(payload: Agent1Payload):
         if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Groq API error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Diagnostic reasoning error: {e}")
+
+
+@app.post("/api/v1/repair")
+async def generate_repair_plan(request: RepairRequest):
+    try:
+        # Combine the vehicle info into a clean string
+        full_vehicle_name = f"{request.vehicle_year} {request.vehicle_make} {request.vehicle_model}"
+        
+        # Call Agent 3 by explicitly passing BOTH required arguments
+        repair_data = await get_repair_procedure(
+            target_component=request.issue_summary, 
+            vehicle_model=full_vehicle_name
+        )
+        
+        return {"status": "success", "repair_plan": repair_data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

@@ -75,6 +75,7 @@ export default function App() {
   const [rawText, setRawText] = useState(PRESETS[0].text);
   const [loading, setLoading] = useState(false);
   const [triageResult, setTriageResult] = useState(null);
+  const [repairPlan, setRepairPlan] = useState(null);
   const [error, setError] = useState(null);
   const [serverStatus, setServerStatus] = useState('checking'); // 'online' | 'offline' | 'checking'
   const [copied, setCopied] = useState(false);
@@ -198,6 +199,37 @@ export default function App() {
       }
 
       setTriageResult(data);
+      // --- 1. CALL AGENT 2 (Invisible Backend Execution) ---
+      const diagResponse = await fetch(`${API_BASE_URL}/api/v1/diagnose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data) // Pass Agent 1's payload to Agent 2
+      });
+      
+      const diagData = await diagResponse.json();
+      
+      if (!diagResponse.ok) {
+        throw new Error('Agent 2 Diagnostic Reasoning failed.');
+      }
+
+      // --- 2. CALL AGENT 3 (Using Agent 2's Conclusion) ---
+      const repairRes = await fetch(`${API_BASE_URL}/api/v1/repair`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          vehicle_make: data.vehicle_details.make,
+          vehicle_model: data.vehicle_details.model,
+          vehicle_year: data.vehicle_details.year,
+          issue_summary: diagData.root_cause_component // The true root cause from Agent 2!
+        })
+      });
+      
+      const repairData = await repairRes.json();
+      if (repairRes.ok && repairData.status === "success") {
+        setRepairPlan(repairData.repair_plan);
+      }
+      // ---------------------------------------------------
     } catch (err) {
       setError(err.message || 'Network error communicating with FastAPI backend.');
       setTriageResult(null);
@@ -628,6 +660,31 @@ export default function App() {
                       <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No component damage flagged in text.</span>
                     )}
                   </div>
+
+                  {/* SIMPLE AGENT 3 MANUAL BOX */}
+                  {repairPlan && (
+                    <div className="telemetry-vehicle-box" style={{ marginTop: '16px', borderLeft: '4px solid #a855f7' }}>
+                      <div style={{ color: '#c084fc', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
+                        Agent 3 // OEM Repair Manual
+                      </div>
+                      
+                      <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-white)' }}>
+                        {repairPlan.steps.map((step, idx) => (
+                          <li key={idx} style={{ marginBottom: '6px' }}>{step}</li>
+                        ))}
+                      </ol>
+
+                      {repairPlan.torque_specs && (
+                        <div style={{ marginTop: 12, fontSize: '0.85rem', color: '#e9d5ff' }}>
+                          <strong>Torque Specs:</strong> {repairPlan.torque_specs}
+                        </div>
+                      )}
+                      
+                      <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid #3b1669', fontSize: '0.75rem', color: '#a855f7' }}>
+                        Source Citation: {repairPlan.citation}
+                      </div>
+                    </div>
+                  )}
 
                   {/* A2A Outgoing Contract */}
                   <div className="a2a-box">

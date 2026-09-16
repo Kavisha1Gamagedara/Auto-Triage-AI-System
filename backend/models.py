@@ -142,3 +142,12 @@ class DiagnosticResult(BaseModel):
     failure_mode: str = Field(description="Mechanical reasoning for why the part failed")
     severity: str = Field(description="Risk level: Low, Medium, or Critical")
     safety_warning: str = Field(description="Specific safety hazards for the mechanic")
+
+
+class RepairRequest(BaseModel):
+    """Payload sent to Agent 3 to generate repair steps."""
+    session_id: str = Field(..., description="Session identifier for tracking")
+    vehicle_make: str = Field(..., description="Vehicle manufacturer make")
+    vehicle_model: str = Field(..., description="Vehicle model name")
+    vehicle_year: int = Field(..., description="Vehicle manufacturing year")
+    issue_summary: str = Field(..., description="The root cause or failure mode identified by Agent 2")
