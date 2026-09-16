@@ -9,3 +9,5 @@ langchain-community
 langchain-text-splitters
 sentence-transformers
 openai
+groq>=0.9.0
+python-dotenv>=1.0.0
