@@ -1,0 +1,36 @@
+primary_part,requires,recommends,source
+Mass Air Flow Sensor,Air Filter,,curated
+Throttle Body,Exhaust Gasket,Air Filter,curated
+Ignition Coil,,Spark Plug,curated
+Spark Plug,,Ignition Coil,curated
+Water Pump,Water Pump Gasket;Engine Coolant 4L,Thermostat;Drive Belt,curated
+Thermostat,Engine Coolant 4L,Radiator Hose,curated
+Radiator,Engine Coolant 4L;Radiator Hose,Thermostat,curated
+Timing Belt,,Water Pump;Drive Belt,curated
+Drive Belt,,Stabiliser Link,curated
+Alternator,,Drive Belt;Battery,curated
+Starter Motor,,Battery,curated
+Brake Pads,Brake Hardware Clips,Brake Fluid DOT4;Brake Disc,curated
+Brake Disc,Brake Hardware Clips,Brake Pads,curated
+Brake Caliper,Brake Fluid DOT4,Brake Pads;Brake Hardware Clips,curated
+Brake Master Cylinder,Brake Fluid DOT4,,curated
+Shock Absorber,,Coil Spring;Stabiliser Link,curated
+Control Arm,,Ball Joint;Stabiliser Link,curated
+Wheel Bearing,,Brake Disc,curated
+Tie Rod End,,Ball Joint,curated
+Steering Rack,,Tie Rod End,curated
+Clutch Kit,,Gearbox Mount,curated
+CV Joint,CV Boot,,curated
+Headlight,,Headlight Bulb,curated
+Front Bumper,,Grille;Fog Light,curated
+Rear Bumper,,Tail Light,curated
+Bonnet,,Grille,curated
+Windscreen,Wiper Blade,,curated
+Muffler,Exhaust Gasket,,curated
+Catalytic Converter,Exhaust Gasket,Oxygen Sensor,curated
+AC Compressor,,AC Condenser;Cabin Filter,curated
+AC Condenser,,Cabin Filter,curated
+Fuel Pump,Fuel Filter,,curated
+Fuel Injector,,Fuel Filter,curated
+Hybrid Battery Pack,,Inverter Coolant Pump,curated
+Traction Battery Pack,,DC-DC Converter,curated
