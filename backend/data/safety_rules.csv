@@ -5,3 +5,11 @@ steering,Economy,Steering components must be traceable; economy parts lack certi
 restraint_system,Economy;Certified_Aftermarket,Seat belts and airbags are single-use safety devices; only genuine units may be fitted.
 fuel_delivery,Economy,Fuel system leaks are a fire risk; economy pumps and injectors are not pressure-certified.
 ev_drivetrain,Economy;Certified_Aftermarket,High-voltage components require manufacturer certification; non-genuine units are a shock and fire hazard.
+body,,"Cosmetic and structural panels; tier affects finish and fit, not occupant safety."
+cooling,,Failure is progressive and shows as temperature rise before damage; all tiers acceptable.
+electrical,,Charging and starting faults are self-announcing; no tier restriction required.
+engine_management,,"Economy sensors degrade driveability and economy, not braking or control authority."
+exhaust,,REVIEW: economy catalytic converters may not meet emissions certification. No restriction applied yet.
+hvac,,Comfort systems; no safety consequence from tier choice.
+lighting,,REVIEW: economy headlamps can produce poor beam pattern and oncoming glare. No restriction applied yet.
+transmission,,Clutch and mount wear is gradual and audible; all tiers acceptable.

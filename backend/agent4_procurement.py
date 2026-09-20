@@ -156,7 +156,11 @@ def _build_bom(canonical: str, make: str, model: str, year: int, warnings: list[
         for proposed in proposal.get(key, []):
             if accepted >= MAX_PER_LIST:
                 break
-            match = resolver.resolve(proposed)
+            # Strict mode: the alias n-gram stage is disabled for machine
+            # proposals. It would otherwise pull a part name out of vague
+            # prose at confidence 0.9 - above the pricing floor - so
+            # "whatever pads they use" became a priced set of Brake Pads.
+            match = resolver.resolve(proposed, allow_partial=False)
             # A proposal the catalog cannot confirm is reported, never priced.
             if match["canonical"] and match["confidence"] >= LLM_RESOLVE_ACCEPT:
                 if match["canonical"] not in seen:

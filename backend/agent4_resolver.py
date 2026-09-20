@@ -96,8 +96,29 @@ class PartResolver:
         self.bm25 = BM25Okapi(self._corpus)
 
         # Fuzzy matching searches catalog names and alias surface forms
-        # together; an alias hit is mapped back to its canonical afterwards.
-        self._fuzzy_choices = self.names + list(self.aliases.keys())
+        # together, mapped back to a canonical afterwards.
+        #
+        # Both sides are squashed to lowercase deliberately. token_sort_ratio
+        # is case-sensitive, so comparing a lowercased query against
+        # capitalised catalog names cost every name about 10 points:
+        # 'altenator' vs 'Alternator' scored 84.2 where 'alternator' scores
+        # 94.7. Alias keys are already lowercase, so catalog names were
+        # systematically handicapped against them, and typos like 'radaitor'
+        # (75.0 as-is, 87.5 lowercased) fell below the acceptance floor for
+        # no reason but capitalisation.
+        self._fuzzy_canonical: dict[str, str] = dict(self.aliases)
+        for name in self.names:
+            # Names are authoritative: a surface form that is both a catalog
+            # name and an alias key resolves to the name itself.
+            self._fuzzy_canonical[squash(name)] = name
+        self._fuzzy_choices = list(self._fuzzy_canonical)
+
+        # Every token that legitimately belongs to a part: its own name plus
+        # the words of every alias pointing at it. Used by strict mode to
+        # reject a proposal padded with words the part does not own.
+        self._vocab_for: dict[str, set[str]] = {n: set(squash(n).split()) for n in self.names}
+        for alias_key, canonical in self.aliases.items():
+            self._vocab_for.setdefault(canonical, set()).update(alias_key.split())
 
         # Every surface form the n-gram pre-pass can recognise inside a longer
         # query: catalog names and alias keys alike. Aliases take precedence
@@ -150,7 +171,7 @@ class PartResolver:
             ranked.append((self.names[i], min(confidence, 1.0)))
         return ranked
 
-    def resolve(self, raw: str) -> dict:
+    def resolve(self, raw: str, *, allow_partial: bool = True) -> dict:
         """Resolve a free-text part string, stopping at the first stage that hits.
 
         Returns {"canonical", "confidence", "method", "candidates"}. On failure
@@ -186,7 +207,14 @@ class PartResolver:
         # (a2) ALIAS N-GRAM - an exact surface form embedded in a longer query.
         # Sits above ranking because it is a deterministic lexical hit, not an
         # approximation.
-        embedded = self._alias_ngram(exact_key.split())
+        #
+        # Skipped when allow_partial is False. This stage exists because a
+        # mechanic writes the symptom alongside the part ("dynamo not
+        # charging"), which is good evidence. A machine asked to output
+        # catalog part names has no such excuse: if its proposal needs a part
+        # name extracted from surrounding words, the proposal is vague, and a
+        # vague proposal must not become a priced line item.
+        embedded = self._alias_ngram(exact_key.split()) if allow_partial else None
         if embedded:
             return {
                 "canonical": embedded,
@@ -198,7 +226,18 @@ class PartResolver:
         ranked = self._bm25_ranked(norm)
 
         # (b) BM25 - lexical overlap, handles reordering and partial phrasing.
-        if ranked and ranked[0][1] >= BM25_ACCEPT:
+        #
+        # In strict mode the query must also be built only from words the
+        # matched part actually owns. The normalised score divides by the
+        # winning name's score against itself, so a one-token name like Horn
+        # scores a perfect 1.0 for any query containing "horn" - "maybe a
+        # horn" was indistinguishable from "Horn". No threshold can separate
+        # those; containment can. Reordering still passes ("Coolant Engine"),
+        # padding does not ("possibly the radiator").
+        if ranked and ranked[0][1] >= BM25_ACCEPT and (
+            allow_partial
+            or set(norm.split()) <= self._vocab_for.get(ranked[0][0], set())
+        ):
             return {
                 "canonical": ranked[0][0],
                 "confidence": float(ranked[0][1]),
@@ -212,7 +251,7 @@ class PartResolver:
             if match and match[1] >= FUZZY_ACCEPT:
                 matched = match[0]
                 return {
-                    "canonical": self.aliases.get(matched, matched),
+                    "canonical": self._fuzzy_canonical[matched],
                     "confidence": float(match[1]) / 100.0,
                     "method": "fuzzy",
                     "candidates": [],
@@ -240,7 +279,7 @@ class PartResolver:
         if not norm:
             return []
         return [
-            self.aliases.get(matched, matched)
+            self._fuzzy_canonical[matched]
             for matched, _, _ in process.extract(
                 norm, self._fuzzy_choices, scorer=fuzz.token_sort_ratio, limit=n
             )
@@ -290,7 +329,7 @@ class PartResolver:
                 norm, self._fuzzy_choices, scorer=fuzz.token_sort_ratio, limit=k
             ):
                 if score >= FUZZY_ACCEPT:
-                    add(self.aliases.get(matched, matched))
+                    add(self._fuzzy_canonical[matched])
 
         return ordered[:k]
 

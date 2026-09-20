@@ -159,6 +159,30 @@ VEHICLES = [
     # --- Commercial ---------------------------------------------------------
     ("Isuzu", "D-Max",          "RT85",    2012, 2020, "pickup",    1.45),
     ("Ford", "Ranger",          "PX",      2011, 2022, "pickup",    1.50),
+
+    # --- People carriers: the backbone of SL school-run and hire fleets ------
+    ("Toyota", "Sienta",        "XP170",   2015, 2022, "van",       1.10),
+    ("Toyota", "Noah",          "R80",     2014, 2021, "van",       1.30),
+    ("Toyota", "Voxy",          "R80",     2014, 2021, "van",       1.30),
+    ("Toyota", "Roomy",         "M900",    2016, 2023, "van",       0.95),
+    ("Toyota", "Corolla Cross", "XG10",    2020, 2025, "crossover", 1.35),
+    ("Honda", "Fit Shuttle",    "GP2",     2011, 2015, "hatchback", 0.95),
+    ("Honda", "N-Box",          "JF3",     2017, 2023, "kei",       0.75),
+    ("Nissan", "Serena",        "C27",     2016, 2023, "van",       1.30),
+    ("Nissan", "Juke",          "F15",     2010, 2019, "crossover", 1.15),
+    ("Nissan", "Dayz",          "B21",     2013, 2019, "kei",       0.65),
+    ("Suzuki", "Stingray",      "MH55S",   2017, 2024, "kei",       0.75),
+    ("Suzuki", "Ertiga",        "XL7",     2018, 2024, "van",       0.95),
+    ("Suzuki", "S-Presso",      "A6",      2019, 2025, "hatchback", 0.65),
+    ("Mitsubishi", "Attrage",   "A10",     2013, 2023, "sedan",     0.85),
+    ("Daihatsu", "Tanto",       "LA600",   2013, 2019, "kei",       0.65),
+    ("Daihatsu", "Thor",        "M900",    2016, 2023, "van",       0.90),
+    ("Hyundai", "Santa Fe",     "TM",      2018, 2024, "suv",       1.70),
+    ("Kia", "Cerato",           "BD",      2018, 2024, "sedan",     1.15),
+    ("Isuzu", "MU-X",           "RJ",      2013, 2021, "suv",       1.65),
+
+    # --- Chinese EVs, the fastest-growing segment in Colombo ----------------
+    ("BYD", "Atto 3",           "SC2E",    2022, 2025, "ev",        1.60),
 ]
 
 # ---------------------------------------------------------------------------
@@ -276,7 +300,7 @@ GENUINE_BRAND = {
     "Kia": "Kia Genuine", "BMW": "BMW Genuine",
     "Mercedes-Benz": "Mercedes-Benz Genuine", "Audi": "Audi Genuine",
     "Land Rover": "Land Rover Genuine", "Isuzu": "Isuzu Genuine",
-    "Ford": "Ford Genuine",
+    "Ford": "Ford Genuine", "BYD": "BYD Genuine",
 }
 
 # aftermarket brands that actually sell into Sri Lanka, by category
@@ -546,6 +570,191 @@ ALIASES = [
     ("charging socket", "EV Charging Port"),
     ("charge port", "EV Charging Port"),
     ("dcdc converter", "DC-DC Converter"),
+
+    # =======================================================================
+    # EXTENDED TRADE VOCABULARY
+    #
+    # Rule for this block: real words mechanics say, never misspellings.
+    # A typo ("altenator", "radaitor") is the fuzzy stage's job — putting it
+    # here trades a genuine capability for a lookup-table entry and makes the
+    # evaluation circular. "water pomp" above predates this rule.
+    #
+    # Multi-word terms are preferred over bare single tokens: the alias
+    # n-gram pre-pass matches any window of a longer query, so a short
+    # generic alias fires inside sentences that were never about that part.
+    # =======================================================================
+
+    # --- engine management -------------------------------------------------
+    ("lambda probe", "Oxygen Sensor"),
+    ("o2 probe", "Oxygen Sensor"),
+    ("air fuel sensor", "Oxygen Sensor"),
+    ("afr sensor", "Oxygen Sensor"),
+    ("throttle valve", "Throttle Body"),
+    ("throttle unit", "Throttle Body"),
+    ("butterfly valve", "Throttle Body"),
+    ("ignition pack", "Ignition Coil"),
+    ("coil unit", "Ignition Coil"),
+    ("sparking plug", "Spark Plug"),
+    ("plug set", "Spark Plug"),
+    ("air filter element", "Air Filter"),
+    ("engine filter", "Air Filter"),
+    ("v belt", "Drive Belt"),
+    ("serpentine belt", "Drive Belt"),
+    ("aux belt", "Drive Belt"),
+    ("ancillary belt", "Drive Belt"),
+    ("cambelt", "Timing Belt"),
+    ("timing kit", "Timing Belt"),
+
+    # --- fuel --------------------------------------------------------------
+    ("injector nozzle", "Fuel Injector"),
+    ("fuel nozzle", "Fuel Injector"),
+    ("petrol pump", "Fuel Pump"),
+    ("in tank pump", "Fuel Pump"),
+    ("fuel feed pump", "Fuel Pump"),
+    ("fuel strainer", "Fuel Filter"),
+
+    # --- cooling -----------------------------------------------------------
+    ("thermo valve", "Thermostat"),
+    ("coolant thermostat", "Thermostat"),
+    ("cooling radiator", "Radiator"),
+    ("radiator pipe", "Radiator Hose"),
+    ("coolant hose", "Radiator Hose"),
+    ("top hose", "Radiator Hose"),
+    ("bottom hose", "Radiator Hose"),
+    ("pump gasket", "Water Pump Gasket"),
+    ("water pump seal", "Water Pump Gasket"),
+    ("radiator coolant", "Engine Coolant 4L"),
+    ("coolant fluid", "Engine Coolant 4L"),
+
+    # --- electrical --------------------------------------------------------
+    ("charging dynamo", "Alternator"),
+    ("starting motor", "Starter Motor"),
+    ("lead acid battery", "Battery"),
+    ("car horn", "Horn"),
+    ("horn unit", "Horn"),
+
+    # --- lighting ----------------------------------------------------------
+    ("head lamp assembly", "Headlight"),
+    ("front lamp", "Headlight"),
+    ("tail lamp", "Tail Light"),
+    ("back lamp", "Tail Light"),
+    ("fog lamp", "Fog Light"),
+    ("driving light", "Fog Light"),
+    ("spot light", "Fog Light"),
+    ("head lamp globe", "Headlight Bulb"),
+
+    # --- braking -----------------------------------------------------------
+    ("disc brake pad", "Brake Pads"),
+    ("brake pad set", "Brake Pads"),
+    ("disc rotor", "Brake Disc"),
+    ("rotor disc", "Brake Disc"),
+    ("caliper assembly", "Brake Caliper"),
+    ("brake master", "Brake Master Cylinder"),
+    ("master pump", "Brake Master Cylinder"),
+    ("dot4", "Brake Fluid DOT4"),
+    ("dot 4 fluid", "Brake Fluid DOT4"),
+    ("parking brake cable", "Handbrake Cable"),
+    ("hand brake wire", "Handbrake Cable"),
+    ("pad clips", "Brake Hardware Clips"),
+    ("caliper clips", "Brake Hardware Clips"),
+
+    # --- suspension & steering ---------------------------------------------
+    ("gas shock", "Shock Absorber"),
+    ("suspension damper", "Shock Absorber"),
+    ("suspension coil", "Coil Spring"),
+    ("road spring", "Coil Spring"),
+    ("wishbone arm", "Control Arm"),
+    ("suspension arm", "Control Arm"),
+    ("track control arm", "Control Arm"),
+    ("lower ball joint", "Ball Joint"),
+    ("suspension ball joint", "Ball Joint"),
+    ("anti roll bar link", "Stabiliser Link"),
+    ("sway bar link", "Stabiliser Link"),
+    ("drop link", "Stabiliser Link"),
+    ("wheel hub bearing", "Wheel Bearing"),
+    ("hub assembly", "Wheel Bearing"),
+    ("steering tie rod", "Tie Rod End"),
+    ("track rod end", "Tie Rod End"),
+    ("rack and pinion", "Steering Rack"),
+    ("steering gear", "Steering Rack"),
+    ("ps pump", "Power Steering Pump"),
+    ("hydraulic steering pump", "Power Steering Pump"),
+
+    # --- transmission ------------------------------------------------------
+    ("clutch set", "Clutch Kit"),
+    ("clutch assembly", "Clutch Kit"),
+    ("clutch disc", "Clutch Kit"),
+    ("constant velocity joint", "CV Joint"),
+    ("drive shaft cv", "CV Joint"),
+    ("cv gaiter", "CV Boot"),
+    ("drive shaft boot", "CV Boot"),
+    ("engine bush", "Engine Mount"),
+    ("motor mount", "Engine Mount"),
+    ("transmission mount", "Gearbox Mount"),
+    ("gearbox mounting", "Gearbox Mount"),
+
+    # --- body --------------------------------------------------------------
+    ("front bumper cover", "Front Bumper"),
+    ("back bumper cover", "Rear Bumper"),
+    ("bonnet panel", "Bonnet"),
+    ("engine hood", "Bonnet"),
+    ("front wing", "Front Fender"),
+    ("fender panel", "Front Fender"),
+    ("hatch door", "Rear Hatch"),
+    ("boot door", "Rear Hatch"),
+    ("dicky", "Rear Hatch"),
+    ("wind screen", "Windscreen"),
+    ("windscreen glass", "Windscreen"),
+    ("radiator grille", "Grille"),
+    ("front grille", "Grille"),
+    ("windscreen wiper", "Wiper Blade"),
+    ("wiper set", "Wiper Blade"),
+    ("side view mirror", "Side Mirror"),
+    ("outside mirror", "Side Mirror"),
+    ("front door panel", "Front Door"),
+    ("driver door", "Front Door"),
+    ("passenger door", "Front Door"),
+
+    # --- exhaust -----------------------------------------------------------
+    ("exhaust silencer", "Muffler"),
+    ("rear silencer", "Muffler"),
+    ("exhaust muffler", "Muffler"),
+    ("cat con", "Catalytic Converter"),
+    ("emission converter", "Catalytic Converter"),
+    ("manifold gasket", "Exhaust Gasket"),
+    ("exhaust seal", "Exhaust Gasket"),
+
+    # --- hvac --------------------------------------------------------------
+    ("cabin air filter", "Cabin Filter"),
+    ("dust filter", "Cabin Filter"),
+    ("air con compressor", "AC Compressor"),
+    ("compressor pump", "AC Compressor"),
+    ("aircon condenser", "AC Condenser"),
+    ("condenser coil", "AC Condenser"),
+    ("heater blower", "Blower Motor"),
+    ("ac blower", "Blower Motor"),
+    ("blower fan", "Blower Motor"),
+
+    # --- restraint ---------------------------------------------------------
+    ("safety belt", "Seat Belt"),
+    ("seat belt assembly", "Seat Belt"),
+    ("air bag", "Airbag Module"),
+    ("airbag unit", "Airbag Module"),
+    ("srs module", "Airbag Module"),
+
+    # --- EV / hybrid -------------------------------------------------------
+    ("hybrid pack", "Hybrid Battery Pack"),
+    ("hv battery pack", "Hybrid Battery Pack"),
+    ("traction pack", "Traction Battery Pack"),
+    ("ev battery pack", "Traction Battery Pack"),
+    ("charging port", "EV Charging Port"),
+    ("charge socket", "EV Charging Port"),
+    ("charging inlet", "EV Charging Port"),
+    ("dc converter", "DC-DC Converter"),
+    ("voltage converter", "DC-DC Converter"),
+    ("inverter pump", "Inverter Coolant Pump"),
+    ("inverter water pump", "Inverter Coolant Pump"),
+    ("hybrid coolant pump", "Inverter Coolant Pump"),
 ]
 
 
@@ -589,6 +798,7 @@ BOM = [
     ("Fuel Injector", [], ["Fuel Filter"]),
     ("Hybrid Battery Pack", [], ["Inverter Coolant Pump"]),
     ("Traction Battery Pack", [], ["DC-DC Converter"]),
+
 ]
 
 
@@ -605,6 +815,33 @@ SAFETY_RULES = [
      "Fuel system leaks are a fire risk; economy pumps and injectors are not pressure-certified."),
     ("ev_drivetrain", "Economy;Certified_Aftermarket",
      "High-voltage components require manufacturer certification; non-genuine units are a shock and fire hazard."),
+
+    # =======================================================================
+    # EXPLICIT NO-RESTRICTION RULES
+    #
+    # An empty block_tiers means "reviewed, all three tiers may be sold".
+    # Without these rows the remaining 8 categories had NO record at all,
+    # and a missing rule is indistinguishable from a deliberate decision
+    # that the tier is safe. Agent 4 treats an empty string as no
+    # suppression, so behaviour is unchanged — what changes is that the
+    # judgement is now written down and reviewable.
+    # =======================================================================
+    ("body", "",
+     "Cosmetic and structural panels; tier affects finish and fit, not occupant safety."),
+    ("cooling", "",
+     "Failure is progressive and shows as temperature rise before damage; all tiers acceptable."),
+    ("electrical", "",
+     "Charging and starting faults are self-announcing; no tier restriction required."),
+    ("engine_management", "",
+     "Economy sensors degrade driveability and economy, not braking or control authority."),
+    ("exhaust", "",
+     "REVIEW: economy catalytic converters may not meet emissions certification. No restriction applied yet."),
+    ("hvac", "",
+     "Comfort systems; no safety consequence from tier choice."),
+    ("lighting", "",
+     "REVIEW: economy headlamps can produce poor beam pattern and oncoming glare. No restriction applied yet."),
+    ("transmission", "",
+     "Clutch and mount wear is gradual and audible; all tiers acceptable."),
 ]
 
 
@@ -692,7 +929,8 @@ def main():
         if r["part_category"] not in categories:
             print(f"FAIL safety rule category unused by any part: {r['part_category']}")
             ok = False
-        for t in r["block_tiers"].split(";"):
+        # An empty block_tiers is a valid "no restriction" record, not a bug.
+        for t in [x for x in r["block_tiers"].split(";") if x]:
             if t not in {"OEM_Genuine", "Certified_Aftermarket", "Economy"}:
                 print(f"FAIL bad tier in safety rule: {t}")
                 ok = False
