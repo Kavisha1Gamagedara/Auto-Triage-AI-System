@@ -5,6 +5,7 @@ from agent3_rag import get_repair_procedure
 from models import RepairRequest
 
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
+from models import ProcurementRequest, ProcurementResponse
 from nhtsa_validator import verify_vehicle
 from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_damaged_parts, nlp
 
@@ -15,6 +16,12 @@ try:
 except Exception as e:
     groq = None
     deduce_root_cause = None
+
+# Safely import Agent 4 procurement & pricing engine
+try:
+    from agent4_procurement import get_procurement_quote
+except Exception as e:
+    get_procurement_quote = None
 
 app = FastAPI(
     title="Auto-Triage AI System",
@@ -154,6 +161,44 @@ async def run_diagnostics(payload: Agent1Payload):
         if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Groq API error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Diagnostic reasoning error: {e}")
+
+
+@app.post(
+    "/api/v1/procure",
+    response_model=ProcurementResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["Agent 4 - Procurement & Pricing"]
+)
+async def run_procurement(request: ProcurementRequest):
+    """
+    Agent 4 Procurement & Pricing endpoint.
+    Resolves the root-cause component to a canonical catalog part, assembles the
+    bill of materials, and prices it across quality tiers from the MongoDB parts
+    catalog. All prices and part numbers originate from the database.
+
+    An unknown part or an unlisted vehicle is a normal result, returned as a 200
+    with a populated 'warnings' list - not an error.
+    """
+    if get_procurement_quote is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Agent 4 procurement engine is unavailable or missing required dependencies."
+        )
+    try:
+        return get_procurement_quote(
+            root_cause_component=request.root_cause_component,
+            make=request.make,
+            model=request.model,
+            year=request.year,
+            severity=request.severity,
+            safety_warning=request.safety_warning,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Groq API error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Procurement error: {e}")
 
 
 @app.post("/api/v1/repair")

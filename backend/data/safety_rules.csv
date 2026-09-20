@@ -1,0 +1,7 @@
+part_category,block_tiers,reason
+braking,Economy,Reconditioned braking components cannot be quality-verified; workshop liability risk.
+suspension,Economy,Economy dampers and arms fail unpredictably under load; refuse for safety-critical suspension work.
+steering,Economy,Steering components must be traceable; economy parts lack certification.
+restraint_system,Economy;Certified_Aftermarket,Seat belts and airbags are single-use safety devices; only genuine units may be fitted.
+fuel_delivery,Economy,Fuel system leaks are a fire risk; economy pumps and injectors are not pressure-certified.
+ev_drivetrain,Economy;Certified_Aftermarket,High-voltage components require manufacturer certification; non-genuine units are a shock and fire hazard.

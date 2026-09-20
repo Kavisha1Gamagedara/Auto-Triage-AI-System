@@ -1,0 +1,128 @@
+alias,canonical,source
+air flow meter,Mass Air Flow Sensor,trade_vocabulary
+airflow meter,Mass Air Flow Sensor,trade_vocabulary
+air flow sensor,Mass Air Flow Sensor,trade_vocabulary
+air mass meter,Mass Air Flow Sensor,trade_vocabulary
+maf,Mass Air Flow Sensor,trade_vocabulary
+maf sensor,Mass Air Flow Sensor,trade_vocabulary
+o2 sensor,Oxygen Sensor,trade_vocabulary
+lambda sensor,Oxygen Sensor,trade_vocabulary
+exhaust sensor,Oxygen Sensor,trade_vocabulary
+coil pack,Ignition Coil,trade_vocabulary
+engine coil,Ignition Coil,trade_vocabulary
+plug coil,Ignition Coil,trade_vocabulary
+plugs,Spark Plug,trade_vocabulary
+spark plugs,Spark Plug,trade_vocabulary
+ignition plug,Spark Plug,trade_vocabulary
+engine air filter,Air Filter,trade_vocabulary
+air cleaner,Air Filter,trade_vocabulary
+ac filter,Cabin Filter,trade_vocabulary
+pollen filter,Cabin Filter,trade_vocabulary
+aircon filter,Cabin Filter,trade_vocabulary
+diesel filter,Fuel Filter,trade_vocabulary
+petrol filter,Fuel Filter,trade_vocabulary
+coolant pump,Water Pump,trade_vocabulary
+radiator pump,Water Pump,trade_vocabulary
+water pomp,Water Pump,trade_vocabulary
+coolant,Engine Coolant 4L,trade_vocabulary
+antifreeze,Engine Coolant 4L,trade_vocabulary
+rad hose,Radiator Hose,trade_vocabulary
+water hose,Radiator Hose,trade_vocabulary
+fan belt,Drive Belt,trade_vocabulary
+alternator belt,Drive Belt,trade_vocabulary
+cam belt,Timing Belt,trade_vocabulary
+dynamo,Alternator,trade_vocabulary
+generator,Alternator,trade_vocabulary
+charging unit,Alternator,trade_vocabulary
+self motor,Starter Motor,trade_vocabulary
+self starter,Starter Motor,trade_vocabulary
+cranking motor,Starter Motor,trade_vocabulary
+batt,Battery,trade_vocabulary
+car battery,Battery,trade_vocabulary
+head lamp,Headlight,trade_vocabulary
+headlamp,Headlight,trade_vocabulary
+front light,Headlight,trade_vocabulary
+head light,Headlight,trade_vocabulary
+bulb,Headlight Bulb,trade_vocabulary
+head lamp bulb,Headlight Bulb,trade_vocabulary
+back light,Tail Light,trade_vocabulary
+rear lamp,Tail Light,trade_vocabulary
+stop light,Tail Light,trade_vocabulary
+mirror,Side Mirror,trade_vocabulary
+wing mirror,Side Mirror,trade_vocabulary
+door mirror,Side Mirror,trade_vocabulary
+brake pad,Brake Pads,trade_vocabulary
+pads,Brake Pads,trade_vocabulary
+brake lining,Brake Pads,trade_vocabulary
+disc pad,Brake Pads,trade_vocabulary
+brake rotor,Brake Disc,trade_vocabulary
+rotor,Brake Disc,trade_vocabulary
+disc plate,Brake Disc,trade_vocabulary
+brake oil,Brake Fluid DOT4,trade_vocabulary
+brake fluid,Brake Fluid DOT4,trade_vocabulary
+caliper,Brake Caliper,trade_vocabulary
+master cylinder,Brake Master Cylinder,trade_vocabulary
+hand brake cable,Handbrake Cable,trade_vocabulary
+shocker,Shock Absorber,trade_vocabulary
+shockers,Shock Absorber,trade_vocabulary
+shock,Shock Absorber,trade_vocabulary
+damper,Shock Absorber,trade_vocabulary
+strut,Shock Absorber,trade_vocabulary
+spring,Coil Spring,trade_vocabulary
+suspension spring,Coil Spring,trade_vocabulary
+wishbone,Control Arm,trade_vocabulary
+lower arm,Control Arm,trade_vocabulary
+a arm,Control Arm,trade_vocabulary
+ball joint kit,Ball Joint,trade_vocabulary
+stabilizer link,Stabiliser Link,trade_vocabulary
+link rod,Stabiliser Link,trade_vocabulary
+bearing,Wheel Bearing,trade_vocabulary
+hub bearing,Wheel Bearing,trade_vocabulary
+tie rod,Tie Rod End,trade_vocabulary
+track rod,Tie Rod End,trade_vocabulary
+steering box,Steering Rack,trade_vocabulary
+power steering,Power Steering Pump,trade_vocabulary
+clutch,Clutch Kit,trade_vocabulary
+clutch plate,Clutch Kit,trade_vocabulary
+drive shaft joint,CV Joint,trade_vocabulary
+cv boot kit,CV Boot,trade_vocabulary
+axle boot,CV Boot,trade_vocabulary
+engine mounting,Engine Mount,trade_vocabulary
+gear box mounting,Gearbox Mount,trade_vocabulary
+bumper,Front Bumper,trade_vocabulary
+front buffer,Front Bumper,trade_vocabulary
+rear buffer,Rear Bumper,trade_vocabulary
+back bumper,Rear Bumper,trade_vocabulary
+hood,Bonnet,trade_vocabulary
+engine cover,Bonnet,trade_vocabulary
+mudguard,Front Fender,trade_vocabulary
+wing,Front Fender,trade_vocabulary
+dicky door,Rear Hatch,trade_vocabulary
+boot lid,Rear Hatch,trade_vocabulary
+tailgate,Rear Hatch,trade_vocabulary
+windshield,Windscreen,trade_vocabulary
+front glass,Windscreen,trade_vocabulary
+front grill,Grille,trade_vocabulary
+wiper,Wiper Blade,trade_vocabulary
+wiper rubber,Wiper Blade,trade_vocabulary
+silencer,Muffler,trade_vocabulary
+exhaust box,Muffler,trade_vocabulary
+back box,Muffler,trade_vocabulary
+cat converter,Catalytic Converter,trade_vocabulary
+catalyst,Catalytic Converter,trade_vocabulary
+ac compressor,AC Compressor,trade_vocabulary
+aircon compressor,AC Compressor,trade_vocabulary
+ac pump,AC Compressor,trade_vocabulary
+condenser,AC Condenser,trade_vocabulary
+blower,Blower Motor,trade_vocabulary
+fan motor,Blower Motor,trade_vocabulary
+seatbelt,Seat Belt,trade_vocabulary
+airbag,Airbag Module,trade_vocabulary
+hybrid battery,Hybrid Battery Pack,trade_vocabulary
+ima battery,Hybrid Battery Pack,trade_vocabulary
+hv battery,Hybrid Battery Pack,trade_vocabulary
+traction battery,Traction Battery Pack,trade_vocabulary
+ev battery,Traction Battery Pack,trade_vocabulary
+charging socket,EV Charging Port,trade_vocabulary
+charge port,EV Charging Port,trade_vocabulary
+dcdc converter,DC-DC Converter,trade_vocabulary

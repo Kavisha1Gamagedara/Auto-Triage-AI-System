@@ -1,0 +1,105 @@
+make,model,generation,year_from,year_to,segment
+Toyota,Aqua,NHP10,2011,2021,hybrid
+Toyota,Aqua,MXPK10,2021,2025,hybrid
+Toyota,Vitz,XP130,2010,2020,hatchback
+Toyota,Vitz,XP90,2005,2010,hatchback
+Toyota,Yaris,XP210,2020,2025,hatchback
+Toyota,Corolla,E210,2018,2024,sedan
+Toyota,Corolla,E170,2013,2018,sedan
+Toyota,Corolla,E140,2006,2013,sedan
+Toyota,Axio,E160,2012,2021,sedan
+Toyota,Premio,T260,2007,2021,sedan
+Toyota,Allion,T260,2007,2021,sedan
+Toyota,Prius,XW30,2009,2015,hybrid
+Toyota,Prius,XW50,2015,2022,hybrid
+Toyota,CHR,AX10,2016,2023,crossover
+Toyota,Passo,M700,2016,2023,hatchback
+Toyota,Belta,XP90,2005,2012,sedan
+Toyota,Raize,A200,2019,2025,crossover
+Toyota,Rush,F800,2017,2024,suv
+Toyota,Hilux,AN120,2015,2024,pickup
+Toyota,Land Cruiser,J200,2007,2021,luxury
+Toyota,Land Cruiser Prado,J150,2009,2024,suv
+Toyota,Hiace,H200,2004,2019,van
+Toyota,Vios,XP150,2013,2022,sedan
+Honda,Fit,GK,2013,2020,hatchback
+Honda,Fit,GE,2007,2013,hatchback
+Honda,Fit,GR,2020,2025,hatchback
+Honda,Vezel,RU,2013,2021,crossover
+Honda,Vezel,RV,2021,2025,crossover
+Honda,Grace,GM4,2014,2020,sedan
+Honda,Civic,FC,2015,2021,sedan
+Honda,Civic,FD,2005,2011,sedan
+Honda,Civic,FE,2021,2025,sedan
+Honda,Insight,ZE2,2009,2014,hybrid
+Honda,CR-V,RW,2016,2022,suv
+Honda,Freed,GB5,2016,2024,van
+Honda,City,GM6,2014,2020,sedan
+Honda,Shuttle,GP7,2015,2022,hatchback
+Suzuki,Wagon R,MH55,2017,2024,kei
+Suzuki,Wagon R,MH34,2012,2017,kei
+Suzuki,Alto,HA36,2014,2021,kei
+Suzuki,Alto,HA25,2009,2014,kei
+Suzuki,Alto 800,AGS,2012,2022,kei
+Suzuki,Swift,ZC83,2017,2024,hatchback
+Suzuki,Swift,ZC72,2010,2017,hatchback
+Suzuki,Celerio,LF,2014,2021,hatchback
+Suzuki,Baleno,WB,2015,2022,hatchback
+Suzuki,Spacia,MK53,2017,2023,kei
+Suzuki,Every,DA17,2015,2024,van
+Suzuki,Vitara,LY,2015,2024,crossover
+Suzuki,Jimny,JB74,2018,2025,suv
+Suzuki,Dzire,ZC31,2017,2024,sedan
+Nissan,Leaf,ZE1,2017,2024,ev
+Nissan,Leaf,ZE0,2010,2017,ev
+Nissan,March,K13,2010,2022,hatchback
+Nissan,Note,E12,2012,2020,hatchback
+Nissan,Sunny,N17,2011,2020,sedan
+Nissan,X-Trail,T32,2013,2022,suv
+Nissan,Caravan,E26,2012,2024,van
+Nissan,Navara,D23,2014,2024,pickup
+Mitsubishi,Lancer,CY,2007,2017,sedan
+Mitsubishi,Outlander,GF,2012,2021,suv
+Mitsubishi,Montero Sport,QF,2015,2024,suv
+Mitsubishi,Pajero,V80,2006,2021,suv
+Mitsubishi,L200,KL,2015,2024,pickup
+Mazda,Demio,DJ,2014,2022,hatchback
+Mazda,Demio,DE,2007,2014,hatchback
+Mazda,Axela,BM,2013,2019,sedan
+Mazda,CX-5,KF,2017,2024,suv
+Mazda,CX-3,DK,2015,2023,crossover
+Daihatsu,Mira,LA300,2011,2018,kei
+Daihatsu,Move,LA150,2014,2022,kei
+Daihatsu,Terios,J210,2006,2017,suv
+Daihatsu,Hijet,S500,2014,2024,van
+Micro,Panda,MP1,2010,2018,hatchback
+Micro,Emgrand 7,EC7,2013,2021,sedan
+Micro,Trend,MT1,2014,2020,crossover
+Perodua,Axia,B200,2014,2022,hatchback
+Perodua,Bezza,B300,2016,2024,sedan
+Perodua,Viva,L251,2007,2014,kei
+Tata,Nano,BSIV,2008,2018,kei
+Tata,Indica,Vista,2008,2016,hatchback
+Tata,Xenon,XT,2010,2020,pickup
+Tata,Ace,HT,2005,2024,van
+Mahindra,Bolero,MDI,2011,2022,suv
+Mahindra,Scorpio,S11,2014,2022,suv
+Mahindra,KUV100,NXT,2016,2023,crossover
+Mahindra,Thar,CJ,2010,2020,suv
+Hyundai,Eon,HA,2011,2019,kei
+Hyundai,Accent,RB,2010,2019,sedan
+Hyundai,Elantra,AD,2015,2020,sedan
+Hyundai,Tucson,TL,2015,2020,suv
+Hyundai,Grand i10,BA,2013,2020,hatchback
+Kia,Picanto,JA,2017,2024,hatchback
+Kia,Sportage,QL,2015,2021,suv
+Kia,Sorento,UM,2014,2020,suv
+Kia,Rio,YB,2011,2017,hatchback
+BMW,3 Series,F30,2011,2019,luxury
+BMW,X1,F48,2015,2022,luxury
+Mercedes-Benz,C-Class,W205,2014,2021,luxury
+Mercedes-Benz,E-Class,W213,2016,2023,luxury
+Audi,A4,B9,2015,2023,luxury
+Land Rover,Defender,L663,2020,2025,luxury
+Isuzu,D-Max,RT85,2012,2020,pickup
+Ford,Ranger,PX,2011,2022,pickup

@@ -151,3 +151,65 @@ class RepairRequest(BaseModel):
     vehicle_model: str = Field(..., description="Vehicle model name")
     vehicle_year: int = Field(..., description="Vehicle manufacturing year")
     issue_summary: str = Field(..., description="The root cause or failure mode identified by Agent 2")
+
+
+class ProcurementRequest(BaseModel):
+    """
+    Payload sent to Agent 4 to price a repair.
+
+    Vehicle identity is carried as three separate fields, not a concatenated
+    string: parts are priced per generation, and the generation lookup needs
+    year as an integer to compare against year_from / year_to.
+    """
+    session_id: str = Field(..., description="Session identifier for tracking")
+    root_cause_component: str = Field(..., min_length=1, description="The failed component named by Agent 2 (e.g., 'Mass Air Flow Sensor')")
+    make: str = Field(..., min_length=1, description="Vehicle manufacturer make")
+    model: str = Field(..., min_length=1, description="Vehicle model name")
+    year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
+    severity: str = Field(default="Medium", description="Risk level passed through from Agent 2")
+    safety_warning: str = Field(default="", description="Safety hazards passed through from Agent 2")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "session_id": "sess_abc123",
+                "root_cause_component": "Brake Pads",
+                "make": "Toyota",
+                "model": "Corolla",
+                "year": 2020,
+                "severity": "High",
+                "safety_warning": "Support the vehicle on axle stands before removing road wheels."
+            }
+        }
+    }
+
+
+class QuotedPart(BaseModel):
+    """A single priced line item. Every field here is read from MongoDB."""
+    part_name: str = Field(..., description="Canonical catalog part name")
+    brand: str = Field(..., description="Supplying brand")
+    part_number: str = Field(..., description="Catalog part number")
+    price_lkr: int = Field(..., description="Price in LKR, from the catalog")
+    role: str = Field(..., description="primary, required, or recommended")
+
+
+class TierQuote(BaseModel):
+    """The basket for one quality tier."""
+    tier_total_lkr: int = Field(..., description="Sum of the cheapest row per BOM item at this tier")
+    complete: bool = Field(..., description="False if any BOM item has no part at this tier")
+    parts: List[QuotedPart] = Field(default_factory=list, description="Priced line items")
+
+
+class ProcurementResponse(BaseModel):
+    """Agent 4 output: a tiered, fully database-sourced quote."""
+    resolved_part: Optional[str] = Field(None, description="Canonical part name, or null if unresolved")
+    match_method: str = Field(..., description="exact, alias_exact, bm25, fuzzy, or none")
+    match_confidence: float = Field(..., description="Resolver confidence, 0.0-1.0")
+    bill_of_materials: List[str] = Field(default_factory=list, description="Primary part plus companion parts")
+    unpriced_items: List[str] = Field(default_factory=list, description="Proposed items the catalog could not confirm")
+    tiers: Dict[str, TierQuote] = Field(default_factory=dict, description="Quote per surviving quality tier")
+    suppressed_tiers: List[str] = Field(default_factory=list, description="Tiers withheld by a safety rule")
+    severity: str = Field(..., description="Passed through from the request")
+    safety_warning: str = Field(..., description="Passed through from the request")
+    warnings: List[str] = Field(default_factory=list, description="Non-fatal conditions affecting this quote")
+    candidates: List[str] = Field(default_factory=list, description="Near-miss part names when resolution failed")
