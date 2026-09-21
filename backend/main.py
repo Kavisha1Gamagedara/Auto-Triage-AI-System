@@ -7,7 +7,15 @@ from models import RepairRequest
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
 from models import ProcurementRequest, ProcurementResponse
 from nhtsa_validator import verify_vehicle
-from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_damaged_parts, nlp
+from nlp_extractor import (
+    extract_entities, 
+    sanitize_input, 
+    extract_dtc_codes, 
+    extract_damaged_parts, 
+    normalize_mechanic_notes, 
+    resolve_dtc_hierarchy, 
+    nlp
+)
 
 # Safely import Agent 2 diagnostic reasoning engine
 try:
@@ -122,6 +130,11 @@ async def ingest_diagnostic(request: DiagnosticRequest):
             detail=f"Vehicle configuration '{year} {make} {model}' was not found in the official US DOT NHTSA vPIC database."
         )
 
+    # Compute Information Retrieval normalized query & DTC taxonomic hierarchy
+    raw_user_note = request.raw_text or ""
+    canonical_query = normalize_mechanic_notes(raw_user_note)
+    dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+
     # Assemble and return verified A2A payload for Agent 2
     return Agent1Payload(
         session_id=request.session_id,
@@ -133,7 +146,9 @@ async def ingest_diagnostic(request: DiagnosticRequest):
         ),
         dtc_codes=dtc_codes,
         damaged_parts=damaged_parts,
-        user_note=request.raw_text or ""
+        user_note=raw_user_note,
+        canonical_query=canonical_query,
+        dtc_hierarchy=dtc_hierarchy
     )
 
 

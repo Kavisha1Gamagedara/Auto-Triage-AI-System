@@ -1,6 +1,13 @@
 import asyncio
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails
-from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_year
+from nlp_extractor import (
+    extract_entities, 
+    sanitize_input, 
+    extract_dtc_codes, 
+    extract_year, 
+    resolve_dtc_hierarchy, 
+    normalize_mechanic_notes
+)
 from nhtsa_validator import verify_vehicle
 
 
@@ -80,6 +87,8 @@ async def test_nhtsa_and_payloads():
     assert is_bogus_valid is False, "Expected non-existent vehicle to be rejected"
 
     # Build Agent 1 Payload
+    hierarchy = resolve_dtc_hierarchy(["P0301"])
+    canonical = normalize_mechanic_notes("rough idle when cold, shuddering and smells like fuel")
     payload = Agent1Payload(
         session_id="sess_live_123",
         vehicle_details=VehicleDetails(
@@ -88,18 +97,54 @@ async def test_nhtsa_and_payloads():
             year=2017,
             is_verified=True
         ),
-        dtc_codes=["P0300"],
-        damaged_parts=["spark plug"]
+        dtc_codes=["P0301"],
+        damaged_parts=["spark plug"],
+        user_note="rough idle when cold, shuddering and smells like fuel",
+        canonical_query=canonical,
+        dtc_hierarchy=hierarchy
     )
-    print("\nVerified Agent 1 A2A Payload:")
+    print("\nVerified Agent 1 A2A Payload with Hierarchical DTC and Normalized Query:")
     print(payload.model_dump_json(indent=2))
 
+    assert payload.canonical_query is not None
+    assert "misfire" in payload.canonical_query
+    assert payload.dtc_hierarchy[0].family_code == "P0300"
+    assert payload.dtc_hierarchy[0].system == "Powertrain"
+
     print("\nNHTSA & Payload Verification: ALL PASSED!")
+
+
+async def test_ir_query_and_dtc_hierarchy():
+    print("\n=== [3] Testing IR Query Processing & DTC Code Taxonomy ===")
+    
+    # Test 1: Mechanic Note Normalization & Synonym Expansion
+    test_note = "Customer reports violent shuddering, hesitates on acceleration, car smells like gas"
+    canonical = normalize_mechanic_notes(test_note)
+    print(f"Raw Note: '{test_note}'")
+    print(f"Canonical IR Query: '{canonical}'")
+    assert "misfire" in canonical, "Expected 'misfire' expansion from 'shuddering'"
+    assert "gas" not in canonical or "fuel vapor leak" in canonical, "Expected synonym expansion for fuel odor"
+
+    # Test 2: DTC Hierarchy Fallback (P0301 -> P0300 family, P0171 -> P0100 family)
+    hierarchy = resolve_dtc_hierarchy(["P0301", "P0171", "C0123"])
+    print(f"\nDTC Hierarchy Output:")
+    for h in hierarchy:
+        print(f"  {h['exact_code']} -> Family: {h['family_code']} ({h['family_name']}) | System: {h['system']}")
+
+    assert hierarchy[0]["exact_code"] == "P0301"
+    assert hierarchy[0]["family_code"] == "P0300"
+    assert hierarchy[0]["system"] == "Powertrain"
+    assert hierarchy[1]["exact_code"] == "P0171"
+    assert hierarchy[1]["family_code"] == "P0100"
+    assert hierarchy[2]["system"] == "Chassis"
+
+    print("\nIR Query Processing & DTC Hierarchy Tests: ALL PASSED!")
 
 
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
+    await test_ir_query_and_dtc_hierarchy()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")

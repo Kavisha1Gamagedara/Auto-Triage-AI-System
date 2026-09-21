@@ -57,6 +57,15 @@ class VehicleDetails(BaseModel):
         return getattr(self, key)
 
 
+class DTCCodeHierarchy(BaseModel):
+    """Taxonomic representation of an OBD-II trouble code for faceted search."""
+    exact_code: str = Field(..., description="Granular trouble code, e.g. P0301")
+    family_code: str = Field(..., description="Parent code family fallback, e.g. P0300")
+    family_name: str = Field(..., description="Functional subsystem, e.g. Ignition / Misfire")
+    system: str = Field(..., description="High-level vehicle system, e.g. Powertrain")
+    description: str = Field(..., description="Human-readable standard fault description")
+
+
 class Agent1Payload(BaseModel):
     """
     Agent-to-Agent (A2A) payload sent from Agent 1 to downstream cognitive agents (Agent 2, 3, 4).
@@ -68,6 +77,10 @@ class Agent1Payload(BaseModel):
     dtc_codes: List[str] = Field(default_factory=list, description="Extracted Diagnostic Trouble Codes (OBD-II)")
     damaged_parts: List[str] = Field(default_factory=list, description="Identified damaged physical parts")
     user_note: Optional[str] = Field(default="", description="Customer complaint or mechanic notes")
+    
+    # Normalized IR Query & Hierarchical Codes (Additive, 100% backward-compatible)
+    canonical_query: Optional[str] = Field(default="", description="Normalized, stopword-stripped canonical symptom query")
+    dtc_hierarchy: List[DTCCodeHierarchy] = Field(default_factory=list, description="Resolved hierarchical code families for faceted fallback")
 
     @model_validator(mode="before")
     @classmethod

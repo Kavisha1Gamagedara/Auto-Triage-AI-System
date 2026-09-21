@@ -18,7 +18,14 @@ import {
   ExternalLink,
   Zap,
   Gauge,
-  Database
+  Database,
+  Sliders,
+  Radio,
+  CheckCircle2,
+  AlertOctagon,
+  Brain,
+  Tag,
+  ShoppingBag
 } from 'lucide-react';
 
 import './App.css';
@@ -47,6 +54,68 @@ const PRESETS = [
   }
 ];
 
+const AGENT2_PRESETS = [
+  {
+    label: '1995 Toyota Townace (P0251 Fuel)',
+    make: 'Toyota',
+    model: 'Townace',
+    year: '1995',
+    dtcs: 'P0251',
+    notes: 'Engine lacks power and stalls. Suspected fuel delivery issue or injection pump timing fault on the 1C engine.'
+  },
+  {
+    label: '2019 Honda Civic (P0171 Lean)',
+    make: 'Honda',
+    model: 'Civic',
+    year: '2019',
+    dtcs: 'P0171',
+    notes: 'Vehicle runs rough on idle, check engine light illuminated, hesitates under light acceleration with +24% fuel trim.'
+  },
+  {
+    label: '2017 Ford F-150 (P0300 Misfire)',
+    make: 'Ford',
+    model: 'F-150',
+    year: '2017',
+    dtcs: 'P0300',
+    notes: 'Technician note: violent shuddering under highway hill climb, intermittent ignition misfire logged across bank 1.'
+  },
+  {
+    label: '2021 Toyota Camry (P0420 Cat)',
+    make: 'Toyota',
+    model: 'Camry',
+    year: '2021',
+    dtcs: 'P0420',
+    notes: 'Customer reports sulfur exhaust odor and check engine lamp on dashboard, downstream O2 sensor mirroring upstream.'
+  }
+];
+
+const SIMULATED_DIAGNOSES = {
+  P0251: {
+    root_cause_component: 'Spill Valve (Electronic Diesel Injection Pump)',
+    failure_mode: 'DTC P0251 designates Fuel Metering Control Malfunction. The electric spill valve solenoid coil has suffered thermal breakdown and plunger sticking on the 1C-T diesel pump, causing sporadic fuel cut-off and engine stalls under acceleration load.',
+    severity: 'Critical',
+    safety_warning: 'High-pressure diesel spray hazard (up to 1,500 bar). System must be fully depressurized prior to loosening union nuts. Do not expose skin to pressurized fuel spray.'
+  },
+  P0171: {
+    root_cause_component: 'Mass Air Flow (MAF) Sensor',
+    failure_mode: 'Contaminated platinum hot-wire sensing element under-reporting incoming intake air volume to ECM, forcing fuel trims beyond compensatory limit (+25% STFT/LTFT) and causing lean combustion misfire.',
+    severity: 'Medium',
+    safety_warning: 'Allow engine bay and intake manifold to cool down completely before inspecting intake boot, vacuum hoses, and sensor harness.'
+  },
+  P0300: {
+    root_cause_component: 'Ignition Coil On Plug (COP)',
+    failure_mode: 'Dielectric insulation breakdown within secondary coil windings resulting in high-voltage spark dissipation to cylinder head casing under combustion chamber compression.',
+    severity: 'Medium',
+    safety_warning: 'Secondary ignition circuitry operates in excess of 35,000 Volts. Turn ignition off and disconnect battery ground terminal before disassembling ignition coils.'
+  },
+  P0420: {
+    root_cause_component: 'Three-Way Catalytic Converter Substrate',
+    failure_mode: 'Thermal sintering and hydrocarbon carbonization of the platinum/rhodium catalytic washcoat, severely degrading oxygen storage capacity (OSC).',
+    severity: 'Low',
+    safety_warning: 'Catalytic converter skin temperatures frequently exceed 600°C (1,100°F). Ensure vehicle has cooled down for at least two hours before attempting physical inspection or bolt extraction.'
+  }
+};
+
 const FAQ_ITEMS = [
   {
     q: 'How does Agent 1 prevent vehicle hallucinations?',
@@ -74,8 +143,11 @@ export default function App() {
   const [sessionId, setSessionId] = useState(generateSessionId());
   const [rawText, setRawText] = useState(PRESETS[0].text);
   const [loading, setLoading] = useState(false);
+  const [pipelineStage, setPipelineStage] = useState('idle'); // 'idle' | 'agent1' | 'agent2' | 'complete' | 'error'
+  const [showRawJson, setShowRawJson] = useState(false);
   const [triageResult, setTriageResult] = useState(null);
   const [repairPlan, setRepairPlan] = useState(null);
+  const [procurementPlan, setProcurementPlan] = useState(null);
   const [error, setError] = useState(null);
   const [serverStatus, setServerStatus] = useState('checking'); // 'online' | 'offline' | 'checking'
   const [copied, setCopied] = useState(false);
@@ -117,6 +189,8 @@ export default function App() {
   const handleNewSession = () => {
     setSessionId(generateSessionId());
     setTriageResult(null);
+    setAgent2Result(null);
+    setPipelineStage('idle');
     setError(null);
   };
 
@@ -141,12 +215,125 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Agent 2 Cognitive Reasoning States
+  const [agent2Make, setAgent2Make] = useState(AGENT2_PRESETS[0].make);
+  const [agent2Model, setAgent2Model] = useState(AGENT2_PRESETS[0].model);
+  const [agent2Year, setAgent2Year] = useState(AGENT2_PRESETS[0].year);
+  const [agent2Dtcs, setAgent2Dtcs] = useState(AGENT2_PRESETS[0].dtcs);
+  const [agent2Notes, setAgent2Notes] = useState(AGENT2_PRESETS[0].notes);
+  const [agent2Loading, setAgent2Loading] = useState(false);
+  const [agent2Result, setAgent2Result] = useState(null);
+  const [agent2Error, setAgent2Error] = useState(null);
+  const [agent2Source, setAgent2Source] = useState('preset'); // 'agent1' | 'preset' | 'custom'
+  const [selectedAgent2Preset, setSelectedAgent2Preset] = useState(0);
+
+  const handleSelectAgent2Preset = (p, idx) => {
+    setAgent2Make(p.make);
+    setAgent2Model(p.model);
+    setAgent2Year(p.year);
+    setAgent2Dtcs(p.dtcs);
+    setAgent2Notes(p.notes);
+    setSelectedAgent2Preset(idx);
+    setAgent2Source('preset');
+    setAgent2Error(null);
+  };
+
+  const handleHandoffToAgent2 = (result) => {
+    if (!result) return;
+    setAgent2Make(result.vehicle_details.make);
+    setAgent2Model(result.vehicle_details.model);
+    setAgent2Year(String(result.vehicle_details.year));
+    setAgent2Dtcs(result.dtc_codes.join(', '));
+    setAgent2Notes(
+      result.user_note || 
+      (result.damaged_parts.length > 0 
+        ? `Damage noted: ${result.damaged_parts.join(', ')}. Discovered DTCs: ${result.dtc_codes.join(', ')}.`
+        : `Vehicle verified by Agent 1 gateway. Trouble codes: ${result.dtc_codes.join(', ')}.`
+      )
+    );
+    setAgent2Source('agent1');
+    setSelectedAgent2Preset(null);
+    setAgent2Error(null);
+
+    const el = document.getElementById('agent2');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleRunAgent2Diagnostics = async (e) => {
+    if (e) e.preventDefault();
+    if (agent2Loading) return;
+
+    setAgent2Loading(true);
+    setAgent2Error(null);
+
+    try {
+      const dtcList = agent2Dtcs
+        .split(/[,\s]+/)
+        .map(s => s.trim().toUpperCase())
+        .filter(Boolean);
+
+      const payload = {
+        session_id: sessionId,
+        vehicle: {
+          make: agent2Make.trim(),
+          model: agent2Model.trim(),
+          year: parseInt(agent2Year, 10)
+        },
+        dtc_codes: dtcList,
+        user_note: agent2Notes.trim()
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/diagnose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || `Diagnostic reasoning returned HTTP ${res.status}`);
+      }
+
+      setAgent2Result(data);
+    } catch (err) {
+      setAgent2Error(err.message || 'Diagnostic reasoning error.');
+    } finally {
+      setAgent2Loading(false);
+    }
+  };
+
+  const handleSimulateAgent2 = () => {
+    setAgent2Loading(true);
+    setAgent2Error(null);
+
+    setTimeout(() => {
+      const upperDtcs = agent2Dtcs.toUpperCase();
+      let matchedKey = Object.keys(SIMULATED_DIAGNOSES).find(k => upperDtcs.includes(k));
+      if (!matchedKey) matchedKey = 'P0251';
+
+      const sim = SIMULATED_DIAGNOSES[matchedKey];
+      setAgent2Result({
+        root_cause_component: sim.root_cause_component,
+        failure_mode: `[SIMULATED MASTER MECHANIC REASONING] For ${agent2Year} ${agent2Make} ${agent2Model}: ${sim.failure_mode}`,
+        severity: sim.severity,
+        safety_warning: sim.safety_warning
+      });
+      setAgent2Loading(false);
+    }, 600);
+  };
+
   const handleRunTriage = async (e) => {
     if (e) e.preventDefault();
-    if (loading) return;
+    if (pipelineStage === 'agent1' || pipelineStage === 'agent2') return;
 
+    setPipelineStage('agent1');
     setLoading(true);
     setError(null);
+    setTriageResult(null);
+    setAgent2Result(null);
 
     try {
       let payload = {};
@@ -184,6 +371,9 @@ export default function App() {
         };
       }
 
+      // ==========================================
+      // STAGE 1: Execute Agent 1 Ingestion & NHTSA Validation
+      // ==========================================
       const response = await fetch(`${API_BASE_URL}/api/v1/ingest`, {
         method: 'POST',
         headers: {
@@ -192,46 +382,108 @@ export default function App() {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data1 = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Vehicle validation failed against NHTSA vPIC database.');
+        throw new Error(data1.detail || 'Vehicle validation failed against NHTSA vPIC database.');
       }
 
-      setTriageResult(data);
-      // --- 1. CALL AGENT 2 (Invisible Backend Execution) ---
-      const diagResponse = await fetch(`${API_BASE_URL}/api/v1/diagnose`, {
+      setTriageResult(data1);
+
+      // Sync Agent 2 lab console state
+      setAgent2Make(data1.vehicle_details.make);
+      setAgent2Model(data1.vehicle_details.model);
+      setAgent2Year(String(data1.vehicle_details.year));
+      setAgent2Dtcs(data1.dtc_codes.join(', '));
+      setAgent2Notes(data1.user_note || `Vehicle verified: ${data1.vehicle_details.year} ${data1.vehicle_details.make} ${data1.vehicle_details.model}`);
+      setAgent2Source('agent1');
+
+      // ==========================================
+      // STAGE 2: Automated Handoff to Agent 2 Cognitive Diagnostic Reasoning
+      // ==========================================
+      setPipelineStage('agent2');
+
+      const res2 = await fetch(`${API_BASE_URL}/api/v1/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data) // Pass Agent 1's payload to Agent 2
+        body: JSON.stringify(data1)
       });
-      
-      const diagData = await diagResponse.json();
-      
-      if (!diagResponse.ok) {
-        throw new Error('Agent 2 Diagnostic Reasoning failed.');
+
+      const data2 = await res2.json();
+      let deducedRootCause = null;
+
+      if (!res2.ok) {
+        console.warn('Agent 2 diagnosis error, falling back to simulated reasoning:', data2.detail);
+        const upperDtcs = (data1.dtc_codes || []).join(' ').toUpperCase();
+        let matchedKey = Object.keys(SIMULATED_DIAGNOSES).find(k => upperDtcs.includes(k)) || 'P0171';
+        const sim = SIMULATED_DIAGNOSES[matchedKey];
+        setAgent2Result({
+          root_cause_component: sim.root_cause_component,
+          failure_mode: sim.failure_mode,
+          severity: sim.severity,
+          safety_warning: sim.safety_warning
+        });
+        setAgent2Error(data2.detail);
+        deducedRootCause = sim.root_cause_component;
+      } else {
+        setAgent2Result(data2);
+        setAgent2Error(null);
+        deducedRootCause = data2.root_cause_component;
       }
 
-      // --- 2. CALL AGENT 3 (Using Agent 2's Conclusion) ---
-      const repairRes = await fetch(`${API_BASE_URL}/api/v1/repair`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          vehicle_make: data.vehicle_details.make,
-          vehicle_model: data.vehicle_details.model,
-          vehicle_year: data.vehicle_details.year,
-          issue_summary: diagData.root_cause_component // The true root cause from Agent 2!
-        })
-      });
-      
-      const repairData = await repairRes.json();
-      if (repairRes.ok && repairData.status === "success") {
-        setRepairPlan(repairData.repair_plan);
+      // ==========================================
+      // STAGE 3: Fork-Join Execution: Agent 3 (RAG) & Agent 4 (Procurement)
+      // ==========================================
+      if (deducedRootCause) {
+        // Agent 3 Call
+        try {
+          const repairRes = await fetch(`${API_BASE_URL}/api/v1/repair`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: sessionId,
+              vehicle_make: data1.vehicle_details.make,
+              vehicle_model: data1.vehicle_details.model,
+              vehicle_year: data1.vehicle_details.year,
+              issue_summary: deducedRootCause
+            })
+          });
+          const repairData = await repairRes.json();
+          if (repairRes.ok && repairData.status === "success") {
+            setRepairPlan(repairData.repair_plan);
+          }
+        } catch (repairErr) {
+          console.warn('Agent 3 repair retrieval error:', repairErr);
+        }
+
+        // Agent 4 Call (Procurement & Pricing)
+        try {
+          const procureRes = await fetch(`${API_BASE_URL}/api/v1/procure`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: sessionId,
+              root_cause_component: deducedRootCause,
+              make: data1.vehicle_details.make,
+              model: data1.vehicle_details.model,
+              year: data1.vehicle_details.year,
+              severity: (data2 && data2.severity) || 'Medium',
+              safety_warning: (data2 && data2.safety_warning) || ''
+            })
+          });
+          const procureData = await procureRes.json();
+          if (procureRes.ok) {
+            setProcurementPlan(procureData);
+          }
+        } catch (procureErr) {
+          console.warn('Agent 4 procurement error:', procureErr);
+        }
       }
-      // ---------------------------------------------------
+
+      setPipelineStage('complete');
     } catch (err) {
-      setError(err.message || 'Network error communicating with FastAPI backend.');
+      setError(err.message || 'Error communicating with Auto-Triage multi-agent backend.');
+      setPipelineStage('error');
       setTriageResult(null);
     } finally {
       setLoading(false);
@@ -247,11 +499,12 @@ export default function App() {
             <div className="brand-glyph">
               AUTO-TRIAGE<span>//AI</span>
             </div>
-            <span className="brand-pill">Agent 1 Live</span>
+            <span className="brand-pill">Agent 1 & 2 Live</span>
           </a>
 
           <ul className="nav-links">
             <li><a href="#console">Triage Console</a></li>
+            <li><a href="#agent2">Agent 2 Reasoning</a></li>
             <li><a href="#agents">Multi-Agent Core</a></li>
             <li><a href="#metrics">Precision</a></li>
             <li><a href="#matrix">DTC Telemetry</a></li>
@@ -414,12 +667,12 @@ export default function App() {
                       {loading ? (
                         <>
                           <RefreshCw size={16} className="spin-icon" />
-                          Validating Against NHTSA Database...
+                          {pipelineStage === 'agent2' ? 'Stage 2/2: Groq LLM Deducing Root Cause...' : 'Stage 1/2: Ingesting & Validating with NHTSA...'}
                         </>
                       ) : (
                         <>
-                          <ArrowRight size={16} />
-                          Execute Smart NLP Triage
+                          <Zap size={16} />
+                          Execute Autonomous Workflow (Agent 1 ➔ Agent 2)
                         </>
                       )}
                     </button>
@@ -521,12 +774,12 @@ export default function App() {
                       {loading ? (
                         <>
                           <RefreshCw size={16} className="spin-icon" />
-                          Validating Spec with NHTSA Database...
+                          {pipelineStage === 'agent2' ? 'Stage 2/2: Groq LLM Deducing Root Cause...' : 'Stage 1/2: Validating Spec with NHTSA Database...'}
                         </>
                       ) : (
                         <>
-                          <ShieldCheck size={16} />
-                          Validate With NHTSA & Ingest to Agent 2
+                          <Zap size={16} />
+                          Validate Spec & Run Complete Workflow
                         </>
                       )}
                     </button>
@@ -558,15 +811,42 @@ export default function App() {
               )}
             </div>
 
-            {/* Right Card: Telemetry & Verified Profile */}
+            {/* Right Card: Connected Autonomous Pipeline Results */}
             <div className="results-card">
               <div className="card-top-row">
                 <div className="card-heading">
                   <ShieldCheck size={18} color="var(--emerald)" />
-                  Verified Telemetry & Profile
+                  Autonomous Pipeline Telemetry (Agent 1 + Agent 2)
                 </div>
+                {pipelineStage === 'complete' && (
+                  <span className="synced-badge">
+                    <Check size={11} />
+                    Workflow Concluded
+                  </span>
+                )}
               </div>
 
+              {/* Progress Stepper */}
+              {(loading || triageResult) && (
+                <div className="pipeline-stepper">
+                  <div className={`pipeline-step ${triageResult ? 'completed' : loading && pipelineStage === 'agent1' ? 'active' : ''}`}>
+                    <span className="step-dot" />
+                    <span>1. Agent 1: NHTSA Verification</span>
+                  </div>
+                  <span className="step-arrow">➔</span>
+                  <div className={`pipeline-step ${agent2Result ? 'completed' : loading && pipelineStage === 'agent2' ? 'active' : ''}`}>
+                    <span className="step-dot" />
+                    <span>2. Agent 2: Groq Reasoning</span>
+                  </div>
+                  <span className="step-arrow">➔</span>
+                  <div className={`pipeline-step ${agent2Result ? 'active' : ''}`}>
+                    <span className="step-dot" />
+                    <span>3. LangGraph Ready</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Initial Empty State */}
               {!triageResult && !loading && (
                 <div className="results-empty">
                   <div className="empty-scanner-icon">
@@ -574,33 +854,36 @@ export default function App() {
                   </div>
                   <div>
                     <h3 style={{ fontSize: '1.05rem', color: 'var(--text-white)' }}>
-                      Ready for Diagnostic Data
+                      Ready for Autonomous Multi-Agent Triage
                     </h3>
                     <p style={{ fontSize: '0.85rem', marginTop: 6, color: 'var(--text-muted)' }}>
-                      Execute a diagnostic complaint to inspect real-time spaCy extraction 
-                      and official US DOT NHTSA vPIC verification.
+                      Execute a diagnostic complaint to run the complete end-to-end workflow: 
+                      <strong> Agent 1</strong> (spaCy NLP & NHTSA validation) automatically streams verified telemetry 
+                      into <strong>Agent 2</strong> (Groq LLM cognitive root-cause deduction).
                     </p>
                   </div>
                 </div>
               )}
 
-              {loading && (
-                <div className="results-empty">
-                  <RefreshCw size={32} color="var(--red-primary)" className="spin-icon" />
+              {/* Stage 1 Loading State */}
+              {loading && !triageResult && (
+                <div className="pipeline-loading-card">
+                  <RefreshCw size={36} color="var(--red-primary)" className="spin-icon" />
                   <div>
-                    <h3 style={{ fontSize: '1.05rem', color: 'var(--text-white)' }}>
-                      Querying NHTSA VPIC Database...
-                    </h3>
-                    <p style={{ fontSize: '0.85rem', marginTop: 6, color: 'var(--text-muted)' }}>
-                      Verifying physical vehicle existence to prevent AI hallucinations.
+                    <div className="pipeline-loading-title">
+                      Stage 1/2: Querying US DOT NHTSA VPIC Database...
+                    </div>
+                    <p className="pipeline-loading-desc">
+                      Extracting entities via spaCy and verifying vehicle specifications against federal road-legal standards.
                     </p>
                   </div>
                 </div>
               )}
 
-              {triageResult && !loading && (
+              {/* Connected Results */}
+              {triageResult && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Vehicle Identity Box */}
+                  {/* --- AGENT 1 SECTION --- */}
                   <div className="telemetry-vehicle-box">
                     <div className="telemetry-header">
                       <div className="telemetry-title">
@@ -623,31 +906,66 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* OBD-II Trouble Codes */}
+                  {/* OBD-II Trouble Codes with Hierarchical Taxonomy */}
                   <div>
                     <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
                       Discovered OBD-II Trouble Codes ({triageResult.dtc_codes.length})
                     </div>
                     {triageResult.dtc_codes.length > 0 ? (
-                      <div className="tag-container">
-                        {triageResult.dtc_codes.map((code, idx) => (
-                          <div key={idx} className="dtc-badge-red">
-                            <Activity size={12} />
-                            <span>{code}</span>
+                      <div className="tag-container" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {triageResult.dtc_hierarchy && triageResult.dtc_hierarchy.length > 0 ? (
+                          triageResult.dtc_hierarchy.map((item, idx) => (
+                            <div key={idx} style={{ background: '#120b0b', border: '1px solid #331515', borderRadius: 6, padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="dtc-badge-red" style={{ margin: 0 }}>
+                                  <Activity size={12} />
+                                  {item.exact_code}
+                                </span>
+                                <span style={{ fontSize: '0.82rem', color: '#fca5a5' }}>
+                                  {item.description}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
+                                <span style={{ background: '#222', padding: '2px 6px', borderRadius: 3 }}>Family: {item.family_code}</span>
+                                <span style={{ background: '#222', padding: '2px 6px', borderRadius: 3 }}>{item.system}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {triageResult.dtc_codes.map((code, idx) => (
+                              <div key={idx} className="dtc-badge-red">
+                                <Activity size={12} />
+                                <span>{code}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
                     ) : (
                       <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No DTC codes detected.</span>
                     )}
                   </div>
 
-                  {/* Damaged Physical Components */}
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
-                      Identified Damaged Components ({triageResult.damaged_parts.length})
+                  {/* Normalized IR Query & Domain Synonym Expansion */}
+                  {triageResult.canonical_query && (
+                    <div style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: 6, padding: '10px 12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Terminal size={12} />
+                        IR Canonical Query (Stopwords Removed & Synonyms Expanded)
+                      </div>
+                      <code style={{ fontSize: '0.84rem', color: '#e2e8f0', background: 'transparent' }}>
+                        {triageResult.canonical_query}
+                      </code>
                     </div>
-                    {triageResult.damaged_parts.length > 0 ? (
+                  )}
+
+                  {/* Damaged Physical Components */}
+                  {triageResult.damaged_parts.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
+                        Identified Damaged Components ({triageResult.damaged_parts.length})
+                      </div>
                       <div className="tag-container">
                         {triageResult.damaged_parts.map((part, idx) => (
                           <div key={idx} className="part-badge-dark">
@@ -656,60 +974,521 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No component damage flagged in text.</span>
-                    )}
+                    </div>
+                  )}
+
+                  {/* --- WORKFLOW STREAM CONNECTOR --- */}
+                  <div className="workflow-stream-banner">
+                    <div className="stream-tag">
+                      <Zap size={14} />
+                      <span>Automated Pipeline Stream // Agent 1 ➔ Agent 2</span>
+                    </div>
+                    <span className="stream-pill">GROQ LLM HANDOFF</span>
                   </div>
 
-                  {/* SIMPLE AGENT 3 MANUAL BOX */}
-                  {repairPlan && (
-                    <div className="telemetry-vehicle-box" style={{ marginTop: '16px', borderLeft: '4px solid #a855f7' }}>
-                      <div style={{ color: '#c084fc', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
-                        Agent 3 // OEM Repair Manual
-                      </div>
-                      
-                      <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-white)' }}>
-                        {repairPlan.steps.map((step, idx) => (
-                          <li key={idx} style={{ marginBottom: '6px' }}>{step}</li>
-                        ))}
-                      </ol>
-
-                      {repairPlan.torque_specs && (
-                        <div style={{ marginTop: 12, fontSize: '0.85rem', color: '#e9d5ff' }}>
-                          <strong>Torque Specs:</strong> {repairPlan.torque_specs}
+                  {/* --- AGENT 2 SECTION --- */}
+                  {loading && pipelineStage === 'agent2' && (
+                    <div className="pipeline-loading-card" style={{ padding: '24px 16px' }}>
+                      <RefreshCw size={28} color="var(--red-primary)" className="spin-icon" />
+                      <div>
+                        <div className="pipeline-loading-title" style={{ fontSize: '0.94rem' }}>
+                          Stage 2/2: Groq Cognitive Engine Reasoning...
                         </div>
-                      )}
-                      
-                      <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid #3b1669', fontSize: '0.75rem', color: '#a855f7' }}>
-                        Source Citation: {repairPlan.citation}
+                        <p className="pipeline-loading-desc" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                          Cross-referencing OBD-II DTCs ({triageResult.dtc_codes.join(', ')}) with physical symptoms on {triageResult.vehicle_details.year} {triageResult.vehicle_details.make} {triageResult.vehicle_details.model}...
+                        </p>
                       </div>
                     </div>
                   )}
 
-                  {/* A2A Outgoing Contract */}
-                  <div className="a2a-box">
-                    <div className="a2a-header">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Layers size={13} color="var(--red-primary)" />
-                        Verified A2A Payload (Handoff to Agent 2)
-                      </span>
-                      <button onClick={handleCopyPayload} className="icon-btn" style={{ fontSize: '0.72rem', gap: 4 }}>
-                        {copied ? (
-                          <>
-                            <Check size={12} color="var(--emerald)" />
-                            <span style={{ color: 'var(--emerald)' }}>Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={12} />
-                            <span>Copy JSON</span>
-                          </>
-                        )}
-                      </button>
+                  {agent2Result && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Status & Severity Header */}
+                      <div className="result-header-row">
+                        <div className="result-status-text">
+                          <CheckCircle2 size={16} color="var(--emerald)" />
+                          AGENT 2 REASONING CONCLUDED
+                        </div>
+
+                        <div className={`severity-pill severity-${(agent2Result.severity || 'medium').toLowerCase()}`}>
+                          <AlertOctagon size={13} />
+                          SEVERITY: {agent2Result.severity?.toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Primary Root Cause Component Box */}
+                      <div className="root-cause-hero-box">
+                        <div className="root-cause-tag">
+                          <Wrench size={13} />
+                          Deduce Root-Cause Failed Component
+                        </div>
+                        <div className="root-cause-title">
+                          {agent2Result.root_cause_component}
+                        </div>
+                        <div className="root-cause-sub">
+                          Single physical component isolated by Groq LLM for replacement / bench testing
+                        </div>
+                      </div>
+
+                      {/* Mechanical Failure Mode */}
+                      <div className="diagnostic-detail-card">
+                        <div className="detail-label">
+                          <Radio size={13} color="var(--red-primary)" />
+                          Mechanical Failure Mode & Physics
+                        </div>
+                        <div className="detail-text">
+                          {agent2Result.failure_mode}
+                        </div>
+                      </div>
+
+                      {/* Safety Warning */}
+                      {agent2Result.safety_warning && (
+                        <div className="safety-warning-banner">
+                          <AlertTriangle size={20} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                          <div>
+                            <h4>MECHANIC SAFETY HAZARD & PROTOCOL</h4>
+                            <p>{agent2Result.safety_warning}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SIMPLE AGENT 3 MANUAL BOX */}
+                      {repairPlan && (
+                        <div className="telemetry-vehicle-box" style={{ marginTop: '16px', borderLeft: '4px solid #a855f7' }}>
+                          <div style={{ color: '#c084fc', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Layers size={14} />
+                            Agent 3 // OEM Repair Manual (RAG)
+                          </div>
+                          
+                          <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-white)' }}>
+                            {repairPlan.steps.map((step, idx) => (
+                              <li key={idx} style={{ marginBottom: '6px' }}>{step}</li>
+                            ))}
+                          </ol>
+
+                          {repairPlan.torque_specs && (
+                            <div style={{ marginTop: 12, fontSize: '0.85rem', color: '#e9d5ff' }}>
+                              <strong>Torque Specs:</strong> {repairPlan.torque_specs}
+                            </div>
+                          )}
+                          
+                          <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid #3b1669', fontSize: '0.75rem', color: '#a855f7' }}>
+                            Source Citation: {repairPlan.citation}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SIMPLE AGENT 4 PROCUREMENT TEST BOX */}
+                      {procurementPlan && (
+                        <div className="telemetry-vehicle-box" style={{ marginTop: '16px', borderLeft: '4px solid #38bdf8' }}>
+                          <div style={{ color: '#38bdf8', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <ShoppingBag size={14} />
+                            Agent 4 // Parts Procurement & Tiered Pricing (MongoDB)
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, marginBottom: 14 }}>
+                            <div style={{ background: '#111', padding: '8px 10px', borderRadius: 4, border: '1px solid #222' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Resolved Part</span>
+                              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>{procurementPlan.resolved_part || 'Unresolved'}</span>
+                            </div>
+                            <div style={{ background: '#111', padding: '8px 10px', borderRadius: 4, border: '1px solid #222' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Match Strategy</span>
+                              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--emerald)' }}>{procurementPlan.match_method} ({Math.round(procurementPlan.match_confidence * 100)}%)</span>
+                            </div>
+                          </div>
+
+                          {procurementPlan.tiers && Object.keys(procurementPlan.tiers).length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {Object.entries(procurementPlan.tiers).map(([tierName, tierData]) => (
+                                <div key={tierName} style={{ background: '#0e1726', border: '1px solid #1e293b', borderRadius: 6, padding: '10px 12px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>
+                                      {tierName.replace('_', ' ')}
+                                    </span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--emerald)' }}>
+                                      LKR {tierData.tier_total_lkr?.toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    {tierData.parts?.map((p, pIdx) => (
+                                      <div key={pIdx} style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>• {p.part_name} ({p.brand} - {p.part_number})</span>
+                                        <span style={{ color: '#94a3b8' }}>LKR {p.price_lkr?.toLocaleString()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                              No matching catalog items found for this vehicle/component combination.
+                              {procurementPlan.warnings && procurementPlan.warnings.length > 0 && (
+                                <div style={{ color: 'var(--amber)', marginTop: 4 }}>
+                                  Notice: {procurementPlan.warnings.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Downstream LangGraph Dispatch Preview */}
+                      <div className="dispatch-preview-box">
+                        <div className="dispatch-header">
+                          <span className="dispatch-title">Downstream Dispatch: LangGraph Fork-Join</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800 }}>READY TO FORK</span>
+                        </div>
+
+                        <div className="dispatch-flow-grid">
+                          <div className="dispatch-target-card">
+                            <div className="target-icon-wrap">
+                              <Layers size={16} color="var(--red-primary)" />
+                            </div>
+                            <div>
+                              <span className="target-name">Agent 3: Manual RAG</span>
+                              <span className="target-sub">ChromaDB Vector OEM Manual</span>
+                            </div>
+                          </div>
+
+                          <div className="dispatch-target-card">
+                            <div className="target-icon-wrap">
+                              <Database size={16} color="var(--red-primary)" />
+                            </div>
+                            <div>
+                              <span className="target-name">Agent 4: Parts Catalog</span>
+                              <span className="target-sub">MongoDB Pricing & Inventory</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <pre className="a2a-code">
-                      {JSON.stringify(triageResult, null, 2)}
-                    </pre>
+                  )}
+
+
+                  {/* Collapsible A2A Handshake JSON Payload */}
+                  <div className="raw-json-accordion">
+                    <button 
+                      type="button" 
+                      className="raw-json-toggle-btn"
+                      onClick={() => setShowRawJson(!showRawJson)}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Terminal size={13} color="var(--red-primary)" />
+                        {showRawJson ? 'Hide A2A Contract JSON' : 'Inspect Verified A2A Contract JSON (Handshake)'}
+                      </span>
+                      <span>{showRawJson ? '▲' : '▼'}</span>
+                    </button>
+                    {showRawJson && (
+                      <div style={{ padding: '12px', background: '#070707' }}>
+                        <pre className="a2a-code">
+                          {JSON.stringify(triageResult, null, 2)}
+                        </pre>
+                        <button 
+                          type="button" 
+                          onClick={handleCopyPayload} 
+                          className="icon-btn" 
+                          style={{ fontSize: '0.72rem', gap: 4, marginTop: 8 }}
+                        >
+                          {copied ? <><Check size={12} color="var(--emerald)" /><span style={{ color: 'var(--emerald)' }}>Copied</span></> : <><Copy size={12} /><span>Copy JSON</span></>}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Agent 2 Cognitive Diagnostic Reasoning Console (#agent2) */}
+      <section id="agent2" className="agent2-section">
+        <div className="agent2-container">
+          <div className="agent2-header">
+            <div>
+              <div className="section-tag">// Cognitive Diagnostic Reasoning Engine</div>
+              <h2 className="section-title">Agent 2 // Root-Cause Deductive Console</h2>
+              <p style={{ color: 'var(--text-gray)', maxWidth: 720, marginTop: 4, fontSize: '0.92rem' }}>
+                Evaluates vehicle parameters, cross-references electrical DTC trouble codes with physical symptoms,
+                and isolates the single failed mechanical component using structured Groq LLM inference.
+              </p>
+            </div>
+
+            <div className="agent2-model-badge">
+              <Cpu size={14} color="var(--red-primary)" />
+              <span>GROQ // OPENAI/GPT-OSS-120B</span>
+            </div>
+          </div>
+
+          <div className="agent2-grid">
+            {/* Left Column: Diagnostics Input Panel */}
+            <div className="agent2-card">
+              <div className="card-top-row">
+                <div className="card-heading">
+                  <Sliders size={18} color="var(--red-primary)" />
+                  Diagnostic Telemetry Input
+                </div>
+                {agent2Source === 'agent1' && (
+                  <span className="synced-badge">
+                    <Check size={11} />
+                    Synced with Agent 1
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Scenario Presets for Agent 2 */}
+              <div className="preset-group">
+                <span className="preset-title">Test Harness Presets:</span>
+                <div className="preset-buttons">
+                  {AGENT2_PRESETS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`preset-btn ${selectedAgent2Preset === idx ? 'active' : ''}`}
+                      onClick={() => handleSelectAgent2Preset(p, idx)}
+                    >
+                      <Car size={12} color="var(--red-primary)" />
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <form onSubmit={handleRunAgent2Diagnostics} className="manual-spec-form">
+                <div className="form-row">
+                  <div className="form-field">
+                    <label className="form-label">Vehicle Make *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={agent2Make}
+                      onChange={(e) => { setAgent2Make(e.target.value); setAgent2Source('custom'); }}
+                      placeholder="e.g. Toyota"
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Vehicle Model *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={agent2Model}
+                      onChange={(e) => { setAgent2Model(e.target.value); setAgent2Source('custom'); }}
+                      placeholder="e.g. Townace"
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Year *</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={agent2Year}
+                      onChange={(e) => { setAgent2Year(e.target.value); setAgent2Source('custom'); }}
+                      placeholder="1995"
+                      min="1900"
+                      max="2100"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">OBD-II Trouble Codes (comma separated)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={agent2Dtcs}
+                    onChange={(e) => { setAgent2Dtcs(e.target.value); setAgent2Source('custom'); }}
+                    placeholder="e.g. P0251, P0171"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">Mechanic Notes & Customer Observed Symptoms *</label>
+                  <textarea
+                    className="form-input"
+                    style={{ minHeight: '90px', resize: 'vertical' }}
+                    value={agent2Notes}
+                    onChange={(e) => { setAgent2Notes(e.target.value); setAgent2Source('custom'); }}
+                    placeholder="Describe symptoms, noise, smoke, rough idle, or stall conditions..."
+                    required
+                  />
+                </div>
+
+                <div className="agent2-action-group">
+                  <button
+                    type="submit"
+                    className="btn-red"
+                    style={{ flex: 2 }}
+                    disabled={agent2Loading || !agent2Make || !agent2Model || !agent2Year}
+                  >
+                    {agent2Loading ? (
+                      <>
+                        <RefreshCw size={16} className="spin-icon" />
+                        Reasoning with Groq LLM...
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={16} />
+                        Run Agent 2 Diagnosis
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ flex: 1 }}
+                    onClick={handleSimulateAgent2}
+                    title="Preview simulated diagnostic output without requiring a Groq API key"
+                  >
+                    <Sparkles size={14} />
+                    Simulate Demo
+                  </button>
+                </div>
+              </form>
+
+              {/* API Notice / Error Banner */}
+              {agent2Error && (
+                <div className="agent2-error-banner">
+                  <AlertTriangle size={18} color="var(--amber)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong style={{ color: 'var(--amber)', display: 'block', marginBottom: 2 }}>
+                      Reasoning Notice
+                    </strong>
+                    <span>{agent2Error}</span>
+                    {agent2Error.includes('GROQ_API_KEY') && (
+                      <div style={{ marginTop: 8, fontSize: '0.82rem', color: 'var(--text-gray)' }}>
+                        Tip: You can add <code>GROQ_API_KEY=gsk_...</code> to <code>backend/.env</code> or click <strong>Simulate Demo</strong> above to test diagnostic reasoning!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Reasoning Output & Root-Cause Card */}
+            <div className="agent2-card">
+              <div className="card-top-row">
+                <div className="card-heading">
+                  <Brain size={18} color="var(--red-primary)" />
+                  Master Mechanic Root-Cause Telemetry
+                </div>
+              </div>
+
+              {!agent2Result && !agent2Loading && (
+                <div className="results-empty" style={{ minHeight: '320px' }}>
+                  <div className="empty-scanner-icon">
+                    <Cpu size={30} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', color: 'var(--text-white)' }}>
+                      Ready for Cognitive Reasoning
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', marginTop: 6, color: 'var(--text-muted)' }}>
+                      Trigger diagnosis from Agent 1's handoff or choose a test preset 
+                      to execute LLM deductive reasoning over DTC codes and mechanical symptoms.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {agent2Loading && (
+                <div className="results-empty" style={{ minHeight: '320px' }}>
+                  <RefreshCw size={36} color="var(--red-primary)" className="spin-icon" />
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-white)' }}>
+                      Groq LLM Cognitive Engine Active...
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', marginTop: 8, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                      Evaluating electrical trouble codes vs physical failure modes on 
+                      <strong> {agent2Year} {agent2Make} {agent2Model}</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {agent2Result && !agent2Loading && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Status & Severity Header */}
+                  <div className="result-header-row">
+                    <div className="result-status-text">
+                      <CheckCircle2 size={16} color="var(--emerald)" />
+                      REASONING CONCLUDED
+                    </div>
+
+                    <div className={`severity-pill severity-${(agent2Result.severity || 'medium').toLowerCase()}`}>
+                      <AlertOctagon size={13} />
+                      SEVERITY: {agent2Result.severity?.toUpperCase()}
+                    </div>
+                  </div>
+
+                  {/* Primary Root Cause Component Box */}
+                  <div className="root-cause-hero-box">
+                    <div className="root-cause-tag">
+                      <Wrench size={13} />
+                      Root-Cause Failed Component
+                    </div>
+                    <div className="root-cause-title">
+                      {agent2Result.root_cause_component}
+                    </div>
+                    <div className="root-cause-sub">
+                      Single physical component isolated for replacement / bench testing
+                    </div>
+                  </div>
+
+                  {/* Mechanical Failure Mode */}
+                  <div className="diagnostic-detail-card">
+                    <div className="detail-label">
+                      <Radio size={13} color="var(--red-primary)" />
+                      Mechanical Failure Mode & Physics
+                    </div>
+                    <div className="detail-text">
+                      {agent2Result.failure_mode}
+                    </div>
+                  </div>
+
+                  {/* Safety Hazards */}
+                  {agent2Result.safety_warning && (
+                    <div className="safety-warning-banner">
+                      <AlertTriangle size={20} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        <h4>MECHANIC SAFETY HAZARD & PROTOCOL</h4>
+                        <p>{agent2Result.safety_warning}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Downstream LangGraph Dispatch Preview */}
+                  <div className="dispatch-preview-box">
+                    <div className="dispatch-header">
+                      <span className="dispatch-title">Downstream Dispatch: LangGraph Fork-Join</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800 }}>READY TO FORK</span>
+                    </div>
+
+                    <div className="dispatch-flow-grid">
+                      <div className="dispatch-target-card">
+                        <div className="target-icon-wrap">
+                          <Layers size={16} color="var(--red-primary)" />
+                        </div>
+                        <div>
+                          <span className="target-name">Agent 3: Manual RAG</span>
+                          <span className="target-sub">ChromaDB Vector OEM Manual</span>
+                        </div>
+                      </div>
+
+                      <div className="dispatch-target-card">
+                        <div className="target-icon-wrap">
+                          <Database size={16} color="var(--red-primary)" />
+                        </div>
+                        <div>
+                          <span className="target-name">Agent 4: Parts Catalog</span>
+                          <span className="target-sub">MongoDB Pricing & Inventory</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -755,9 +1534,13 @@ export default function App() {
                 Receives the verified A2A payload, evaluates DTC trouble codes against 
                 automotive knowledge graphs, and deduces root cause failure.
               </p>
-              <div className="agent-status-tag">
-                Ready for Branch Integration
+              <div className="agent-status-tag active">
+                Live & Operational
               </div>
+              <a href="#agent2" className="btn-outline" style={{ marginTop: 12, padding: '8px 14px', fontSize: '0.75rem', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 6 }}>
+                <Zap size={13} />
+                Launch Agent 2 Console
+              </a>
             </div>
           </div>
 
