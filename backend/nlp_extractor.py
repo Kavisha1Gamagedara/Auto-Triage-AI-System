@@ -190,6 +190,205 @@ DAMAGE_ADJECTIVES = {
     "blown", "bad", "worn", "faulty", "loose", "burned", "defective", "missing"
 }
 
+# Automotive mechanic slang and symptom synonym expansion dictionary
+AUTOMOTIVE_SYNONYMS = {
+    # Misfire, rough engine & combustion hesitation
+    "shudder": "engine misfire",
+    "shuddering": "engine misfire",
+    "hesitation": "engine misfire hesitation",
+    "hesitating": "engine misfire hesitation",
+    "hesitates": "engine misfire hesitation",
+    "bucking": "engine misfire surge",
+    "jerking": "engine hesitation misfire",
+    "rough idle": "rough idle misfire",
+    "chugging": "engine misfire rough running",
+    "stumble": "acceleration hesitation misfire",
+    "stumbling": "acceleration hesitation misfire",
+    "misfiring": "engine misfire",
+    
+    # Fuel, vapor & air leaks
+    "smells like gas": "fuel vapor leak rich condition",
+    "smells like fuel": "fuel vapor leak rich condition",
+    "fuel smell": "fuel vapor leak rich condition",
+    "gas smell": "fuel vapor leak rich condition",
+    "rotten egg smell": "catalytic converter failure sulfur odor",
+    "black smoke": "excessive rich fuel mixture",
+    "white smoke": "coolant leak head gasket failure",
+    "blue smoke": "engine oil burning piston ring failure",
+    
+    # Airflow & vacuum
+    "vacuum leak": "unmetered intake air leak",
+    "hissing sound": "intake vacuum leak",
+    "whistling": "intake or turbocharger vacuum leak",
+    
+    # Starting & electrical
+    "clicking sound when starting": "starter motor solenoid battery failure",
+    "clicking when starting": "starter motor solenoid battery failure",
+    "slow crank": "weak battery or starter motor draw",
+    "wont crank": "no crank starter battery failure",
+    "won't crank": "no crank starter battery failure",
+    
+    # Braking & suspension
+    "squealing brakes": "brake pad wear indicator worn pads",
+    "grinding brakes": "brake pad rotor metal on metal wear",
+    "spongy brake": "brake fluid air hydraulic leak",
+    "pulling to one side": "wheel alignment uneven brake caliper tie rod wear",
+    "clunking over bumps": "strut mount sway bar bushing ball joint wear"
+}
+
+# Standard English & colloquial filler stopwords to filter when creating canonical IR queries
+IR_STOPWORDS = {
+    "a", "about", "above", "after", "again", "all", "am", "an", "and", "any", "are", 
+    "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", 
+    "but", "by", "could", "did", "do", "does", "doing", "down", "during", "each", "few", 
+    "for", "from", "further", "had", "has", "have", "having", "he", "her", "here", "hers", 
+    "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "it", "its", 
+    "itself", "just", "me", "more", "most", "my", "myself", "no", "nor", "not", "now", 
+    "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", 
+    "over", "own", "same", "she", "should", "so", "some", "such", "than", "that", "the", 
+    "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", 
+    "those", "through", "to", "too", "under", "until", "up", "very", "was", "we", "were", 
+    "what", "when", "where", "which", "while", "who", "whom", "why", "with", "would", 
+    "you", "your", "yours", "yourself", "yourselves",
+    # Automotive conversational fillers
+    "customer", "states", "complaint", "noted", "reporting", "driver", "feels", "like", 
+    "says", "car", "vehicle", "truck", "suv", "problem", "issue", "got", "getting", "showing"
+}
+
+# Standard OBD-II code family taxonomy and hierarchy mapping
+DTC_TAXONOMY = {
+    # P00xx - Fuel and Air Metering and Auxiliary Emission Controls
+    "P00": {"family": "P0000", "family_name": "Fuel and Air Metering Auxiliary Controls", "system": "Powertrain"},
+    "P01": {"family": "P0100", "family_name": "Fuel and Air Metering Circuit / Sensor", "system": "Powertrain"},
+    "P02": {"family": "P0200", "family_name": "Fuel Injector Circuit / Injection Timing", "system": "Powertrain"},
+    "P03": {"family": "P0300", "family_name": "Ignition System or Misfire Detection", "system": "Powertrain"},
+    "P04": {"family": "P0400", "family_name": "Auxiliary Emission Controls (Catalyst/EVAP/EGR)", "system": "Powertrain"},
+    "P05": {"family": "P0500", "family_name": "Vehicle Speed, Idle Control, Auxiliary Inputs", "system": "Powertrain"},
+    "P06": {"family": "P0600", "family_name": "Computer and Output Auxiliary Circuits", "system": "Powertrain"},
+    "P07": {"family": "P0700", "family_name": "Transmission Control System", "system": "Powertrain"},
+    "P08": {"family": "P0800", "family_name": "Transmission Control System Auxiliary", "system": "Powertrain"},
+    # B0xxx - Body System
+    "B0": {"family": "B0000", "family_name": "Body Restraints / Airbags / Seatbelts", "system": "Body"},
+    # C0xxx - Chassis System
+    "C0": {"family": "C0000", "family_name": "Chassis / ABS / Traction Control", "system": "Chassis"},
+    # U0xxx - Network & Communication
+    "U0": {"family": "U0000", "family_name": "Network & CAN Bus Communication", "system": "Network Communication"}
+}
+
+# Known granular DTC descriptions for canonical resolution
+KNOWN_DTC_DESCRIPTIONS = {
+    "P0171": "System Too Lean (Bank 1)",
+    "P0172": "System Too Rich (Bank 1)",
+    "P0174": "System Too Lean (Bank 2)",
+    "P0300": "Random or Multiple Cylinder Misfire Detected",
+    "P0301": "Cylinder 1 Misfire Detected",
+    "P0302": "Cylinder 2 Misfire Detected",
+    "P0303": "Cylinder 3 Misfire Detected",
+    "P0304": "Cylinder 4 Misfire Detected",
+    "P0305": "Cylinder 5 Misfire Detected",
+    "P0306": "Cylinder 6 Misfire Detected",
+    "P0420": "Catalyst System Efficiency Below Threshold (Bank 1)",
+    "P0430": "Catalyst System Efficiency Below Threshold (Bank 2)",
+    "P0440": "Evaporative Emission (EVAP) System Malfunction",
+    "P0442": "EVAP System Small Leak Detected",
+    "P0455": "EVAP System Large Leak Detected",
+    "P0251": "Injection Pump Fuel Metering Control 'A' Malfunction",
+    "P0101": "Mass or Volume Air Flow Circuit Range/Performance",
+    "P0102": "Mass or Volume Air Flow Circuit Low Input",
+    "P0113": "Intake Air Temperature Circuit High Input",
+    "P0128": "Coolant Thermostat (Coolant Temperature Below Regulating Temp)",
+    "P0500": "Vehicle Speed Sensor 'A' Malfunction",
+    "P0700": "Transmission Control System Malfunction"
+}
+
+
+def normalize_mechanic_notes(raw_text: str) -> str:
+    """
+    Performs Information Retrieval query processing on customer/mechanic notes:
+    1. Lowercasing and punct-normalization
+    2. Automotive synonym and jargon expansion (e.g. 'shudder' -> 'misfire')
+    3. Stopword removal (filtering out conversational and generic filler words)
+    4. Canonical query synthesis for enhanced vector/lexical retrieval recall
+    """
+    if not raw_text or not raw_text.strip():
+        return ""
+
+    text = raw_text.lower()
+    
+    # 1. Expand domain slang and synonyms (phrase-level first, then word-level)
+    expanded_tokens = []
+    # Sort phrases by length descending to match multi-word phrases first
+    sorted_synonyms = sorted(AUTOMOTIVE_SYNONYMS.keys(), key=lambda s: len(s), reverse=True)
+    
+    # Replace known phrases with canonical markers
+    for phrase in sorted_synonyms:
+        if phrase in text:
+            replacement = f" {AUTOMOTIVE_SYNONYMS[phrase]} "
+            text = text.replace(phrase, replacement)
+
+    # 2. Tokenize into words
+    words = re.findall(r"\b[a-z0-9\-_]{2,}\b", text)
+
+    # 3. Filter stopwords and deduplicate preserving order
+    seen = set()
+    for w in words:
+        if w not in IR_STOPWORDS:
+            # Expand single-word synonym if not already expanded
+            expanded = AUTOMOTIVE_SYNONYMS.get(w, w)
+            for sub_word in expanded.split():
+                if sub_word not in seen and sub_word not in IR_STOPWORDS:
+                    seen.add(sub_word)
+                    expanded_tokens.append(sub_word)
+
+    return " ".join(expanded_tokens)
+
+
+def resolve_dtc_hierarchy(dtc_codes: List[str]) -> List[Dict[str, Any]]:
+    """
+    Resolves OBD-II Diagnostic Trouble Codes into a hierarchical taxonomy:
+    - Exact Code (e.g. P0301)
+    - Parent Family Code fallback (e.g. P0300)
+    - Subsystem / Functional Domain (e.g. Ignition / Misfire)
+    - High-level System (e.g. Powertrain)
+    - Official / standard description
+    """
+    hierarchies = []
+    for raw_code in dtc_codes:
+        code = raw_code.strip().upper()
+        if not code:
+            continue
+
+        # Extract prefix (e.g. P03 from P0301, or B0 from B0001)
+        prefix_3 = code[:3] if len(code) >= 3 else code
+        prefix_2 = code[:2] if len(code) >= 2 else code
+
+        # Match taxonomy
+        tax = DTC_TAXONOMY.get(prefix_3) or DTC_TAXONOMY.get(prefix_2)
+        if not tax:
+            # Fallback for standard P codes
+            if code.startswith("P"):
+                tax = {"family": "P0000", "family_name": "General Powertrain Fault", "system": "Powertrain"}
+            elif code.startswith("B"):
+                tax = {"family": "B0000", "family_name": "General Body Electrical Fault", "system": "Body"}
+            elif code.startswith("C"):
+                tax = {"family": "C0000", "family_name": "General Chassis Fault", "system": "Chassis"}
+            elif code.startswith("U"):
+                tax = {"family": "U0000", "family_name": "Network Communication Fault", "system": "Network Communication"}
+            else:
+                tax = {"family": code, "family_name": "Unknown Diagnostic Fault", "system": "Unknown"}
+
+        desc = KNOWN_DTC_DESCRIPTIONS.get(code, f"{tax['family_name']} (Fault Code {code})")
+
+        hierarchies.append({
+            "exact_code": code,
+            "family_code": tax["family"],
+            "family_name": tax["family_name"],
+            "system": tax["system"],
+            "description": desc
+        })
+
+    return hierarchies
+
 
 def sanitize_input(raw_text: str) -> str:
     """
@@ -293,8 +492,8 @@ def extract_damaged_parts(doc: Any) -> List[str]:
             if comp_norm not in detected:
                 detected.append(comp_norm)
 
-    # 2. Linguistic dependency & noun-chunk parsing (when spaCy is available)
-    if hasattr(doc, "noun_chunks"):
+    # 2. Linguistic dependency & noun-chunk parsing (when spaCy has a parser loaded)
+    if hasattr(doc, "noun_chunks") and getattr(doc, "has_annotation", lambda x: False)("DEP"):
         # Check token dependencies for adjectives modifying nouns (e.g., "crashed bumper", "dented door")
         for token in doc:
             if token.pos_ in ("NOUN", "PROPN"):
@@ -308,15 +507,18 @@ def extract_damaged_parts(doc: Any) -> List[str]:
 
         # Check noun chunks containing damage indicators
         NON_PART_WORDS = {"car", "truck", "suv", "vehicle", "problem", "issue", "acceleration", "acceleration code", "note", "code"}
-        for chunk in doc.noun_chunks:
-            chunk_text = chunk.text.lower()
-            if any(indicator in chunk_text for indicator in DAMAGE_ADJECTIVES):
-                for word in chunk:
-                    w_lower = word.text.lower()
-                    if (w_lower in AUTOMOTIVE_COMPONENTS or word.pos_ in ("NOUN", "PROPN")) and w_lower not in DAMAGE_ADJECTIVES and w_lower not in NON_PART_WORDS and len(w_lower) > 2:
-                        norm = w_lower.rstrip("s") if w_lower.endswith("s") and not w_lower.endswith("ss") else w_lower
-                        if norm not in detected:
-                            detected.append(norm)
+        try:
+            for chunk in doc.noun_chunks:
+                chunk_text = chunk.text.lower()
+                if any(indicator in chunk_text for indicator in DAMAGE_ADJECTIVES):
+                    for word in chunk:
+                        w_lower = word.text.lower()
+                        if (w_lower in AUTOMOTIVE_COMPONENTS or word.pos_ in ("NOUN", "PROPN")) and w_lower not in DAMAGE_ADJECTIVES and w_lower not in NON_PART_WORDS and len(w_lower) > 2:
+                            norm = w_lower.rstrip("s") if w_lower.endswith("s") and not w_lower.endswith("ss") else w_lower
+                            if norm not in detected:
+                                detected.append(norm)
+        except Exception as e:
+            logger.debug(f"Could not parse noun_chunks: {e}")
 
     # Clean up substrings (e.g., if 'spark plug' is in detected, drop 'plug' or 'spark')
     cleaned_parts = []
@@ -344,11 +546,16 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     dtc_codes = extract_dtc_codes(clean_text)
     damaged_parts = extract_damaged_parts(doc)
 
+    canonical_query = normalize_mechanic_notes(clean_text)
+    dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+
     # Fallback defaults if text did not specify
     return {
         "make": make or "Honda",
         "model": model or "Civic",
         "year": year or 2019,
         "dtc_codes": dtc_codes,
-        "damaged_parts": damaged_parts
+        "damaged_parts": damaged_parts,
+        "canonical_query": canonical_query,
+        "dtc_hierarchy": dtc_hierarchy
     }
