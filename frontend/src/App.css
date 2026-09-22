@@ -1468,4 +1468,87 @@
   color: var(--text-white);
 }
 
+/* VIN Mode & Telemetry Badges */
+.mode-toggle-bar {
+  display: flex;
+  gap: 8px;
+  background: #101010;
+  padding: 4px;
+  border-radius: var(--radius-sharp);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: var(--radius-sharp);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-tab:hover {
+  color: var(--text-white);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mode-tab.active {
+  background: #1e1e1e;
+  color: var(--red-primary);
+  border: 1px solid rgba(255, 30, 39, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.vin-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #151515;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sharp);
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-white);
+}
+
+.checksum-valid-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--emerald);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.checksum-invalid-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 30, 39, 0.12);
+  border: 1px solid rgba(255, 30, 39, 0.4);
+  color: var(--red-primary);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+
 

@@ -6,12 +6,17 @@ from models import RepairRequest
 
 from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
 from models import ProcurementRequest, ProcurementResponse
-from nhtsa_validator import verify_vehicle
+from nhtsa_validator import (
+    verify_vehicle,
+    decode_vin_nhtsa,
+    validate_vin_checksum
+)
 from nlp_extractor import (
     extract_entities, 
     sanitize_input, 
     extract_dtc_codes, 
     extract_damaged_parts, 
+    extract_vin,
     normalize_mechanic_notes, 
     resolve_dtc_hierarchy, 
     nlp
@@ -89,8 +94,38 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     Both modes validate against the official US DOT NHTSA vPIC database and format
     an Agent-to-Agent (A2A) payload ready for Agent 2.
     """
-    # Check if direct vehicle specs were provided (Manual Spec Entry Mode)
-    if request.make and request.model and request.year:
+    # Initialize extended VIN metadata
+    vin = (request.vin or "").strip().upper() if request.vin else None
+    vin_data = None
+
+    # Check Mode 1: Direct VIN Intake Mode
+    if vin:
+        vin_res = await decode_vin_nhtsa(vin)
+        if not vin_res.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"VIN decoding failed for '{vin}': {vin_res.get('error')}"
+            )
+        make = vin_res["make"]
+        model = vin_res["model"]
+        year = vin_res["year"]
+        vin_data = vin_res
+
+        dtc_codes = list(request.dtc_codes or [])
+        damaged_parts = list(request.damaged_parts or [])
+
+        if request.raw_text and request.raw_text.strip():
+            clean_text = sanitize_input(request.raw_text)
+            for code in extract_dtc_codes(clean_text):
+                if code not in dtc_codes:
+                    dtc_codes.append(code)
+            doc = nlp(clean_text) if nlp is not None else clean_text
+            for part in extract_damaged_parts(doc):
+                if part not in damaged_parts:
+                    damaged_parts.append(part)
+
+    # Check Mode 2: Manual Spec Entry Mode (explicit make, model, year)
+    elif request.make and request.model and request.year:
         make = request.make.strip()
         model = request.model.strip()
         year = int(request.year)
@@ -112,17 +147,36 @@ async def ingest_diagnostic(request: DiagnosticRequest):
                 if part not in damaged_parts:
                     damaged_parts.append(part)
     else:
-        # Smart NLP Intake Mode
+        # Mode 3: Smart NLP Intake Mode (extracts VIN, specs, DTCs from text)
         sanitized_text = sanitize_input(request.raw_text or "")
         extracted = extract_entities(sanitized_text)
-        make = extracted["make"]
-        model = extracted["model"]
-        year = extracted["year"]
+        
+        # If a 17-character VIN was discovered in the complaint notes, decode via NHTSA
+        if extracted.get("vin"):
+            vin = extracted["vin"]
+            vin_res = await decode_vin_nhtsa(vin)
+            if vin_res.get("success"):
+                make = vin_res["make"]
+                model = vin_res["model"]
+                year = vin_res["year"]
+                vin_data = vin_res
+            else:
+                make = extracted["make"]
+                model = extracted["model"]
+                year = extracted["year"]
+        else:
+            make = extracted["make"]
+            model = extracted["model"]
+            year = extracted["year"]
+
         dtc_codes = extracted["dtc_codes"]
         damaged_parts = extracted["damaged_parts"]
 
-    # Validate against external official NHTSA vPIC database
-    is_valid = await verify_vehicle(make=make, model=model, year=year)
+    # Validate against external official NHTSA vPIC database (unless already validated via VIN)
+    if vin_data:
+        is_valid = True
+    else:
+        is_valid = await verify_vehicle(make=make, model=model, year=year)
 
     if not is_valid:
         raise HTTPException(
@@ -135,21 +189,50 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     canonical_query = normalize_mechanic_notes(raw_user_note)
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
 
+    # Build detailed vehicle specifications
+    vehicle_details = VehicleDetails(
+        make=make,
+        model=model,
+        year=year,
+        is_verified=True,
+        vin=vin,
+        engine=vin_data.get("engine_displacement_l") if vin_data else None,
+        fuel_type=vin_data.get("fuel_type") if vin_data else None,
+        drive_type=vin_data.get("drive_type") if vin_data else None,
+        body_class=vin_data.get("body_class") if vin_data else None,
+        vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None)
+    )
+
     # Assemble and return verified A2A payload for Agent 2
     return Agent1Payload(
         session_id=request.session_id,
-        vehicle_details=VehicleDetails(
-            make=make,
-            model=model,
-            year=year,
-            is_verified=True
-        ),
+        vehicle_details=vehicle_details,
         dtc_codes=dtc_codes,
         damaged_parts=damaged_parts,
         user_note=raw_user_note,
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy
     )
+
+
+@app.get(
+    "/api/v1/vin/{vin}",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def decode_vin_endpoint(vin: str):
+    """
+    Dedicated endpoint to decode and validate a 17-character ISO 3779 VIN:
+    - Runs offline MOD-11 checksum validation
+    - Queries official US DOT NHTSA vPIC API for full specifications
+    """
+    clean_vin = vin.strip().upper()
+    checksum = validate_vin_checksum(clean_vin)
+    decode_result = await decode_vin_nhtsa(clean_vin)
+    return {
+        "vin": clean_vin,
+        "checksum": checksum,
+        "decode": decode_result
+    }
 
 
 @app.post(
