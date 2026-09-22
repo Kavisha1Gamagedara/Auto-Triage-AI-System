@@ -401,6 +401,17 @@ def sanitize_input(raw_text: str) -> str:
     return " ".join(cleaned.split())
 
 
+def extract_vin(text: str) -> Optional[str]:
+    """
+    Extracts a standard 17-character ISO 3779 VIN from unstructured text.
+    Standard VINs consist of letters A-Z (excluding I, O, Q) and digits 0-9.
+    """
+    matches = re.findall(r"\b([A-HJ-NPR-Z0-9]{17})\b", text.upper())
+    if matches:
+        return matches[0]
+    return None
+
+
 def extract_year(text: str) -> Optional[int]:
     """Extracts a valid 4-digit automotive year (between 1980 and 2026)."""
     matches = re.findall(r"\b(19[89][0-9]|20[0-2][0-9])\b", text)
@@ -541,6 +552,7 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     clean_text = sanitize_input(raw_text)
     doc = nlp(clean_text) if nlp is not None else clean_text
 
+    vin = extract_vin(clean_text)
     year = extract_year(clean_text)
     make, model = extract_make_and_model(doc)
     dtc_codes = extract_dtc_codes(clean_text)
@@ -551,6 +563,7 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
 
     # Fallback defaults if text did not specify
     return {
+        "vin": vin,
         "make": make or "Honda",
         "model": model or "Civic",
         "year": year or 2019,

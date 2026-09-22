@@ -25,7 +25,8 @@ import {
   AlertOctagon,
   Brain,
   Tag,
-  ShoppingBag
+  ShoppingBag,
+  Barcode
 } from 'lucide-react';
 
 import './App.css';
@@ -153,12 +154,23 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
 
-  const [intakeMode, setIntakeMode] = useState('smart'); // 'smart' | 'manual'
+  const [intakeMode, setIntakeMode] = useState('smart'); // 'smart' | 'manual' | 'vin'
   const [manualMake, setManualMake] = useState('Honda');
   const [manualModel, setManualModel] = useState('Civic');
   const [manualYear, setManualYear] = useState('2019');
   const [manualDtcs, setManualDtcs] = useState('P0171');
   const [manualParts, setManualParts] = useState('crashed bumper');
+
+  const [vinInput, setVinInput] = useState('1HGCR2F85HA000000');
+  const [vinDtcs, setVinDtcs] = useState('P0171, P0420');
+  const [vinParts, setVinParts] = useState('crashed bumper');
+
+  const VIN_PRESETS = [
+    { label: '2017 Honda Accord (Valid)', vin: '1HGCR2F85HA000000', dtcs: 'P0171', parts: 'intake manifold leak' },
+    { label: '2021 Ford F-150 (Valid)', vin: '1FTFW1E84MFA00000', dtcs: 'P0300', parts: 'cracked ignition coil' },
+    { label: '2020 Toyota Camry (Valid)', vin: '4T1B11HK5LU000000', dtcs: 'P0420', parts: 'catalytic converter' },
+    { label: 'Invalid Checksum Test', vin: '1HGCR2F89HA000000', dtcs: 'P0171', parts: 'bogus check digit' }
+  ];
 
   const MANUAL_PRESETS = [
     { label: '2019 Honda Civic', make: 'Honda', model: 'Civic', year: 2019, dtcs: 'P0171', parts: 'crashed bumper' },
@@ -205,6 +217,13 @@ export default function App() {
     setManualYear(String(p.year));
     setManualDtcs(p.dtcs);
     setManualParts(p.parts);
+    setError(null);
+  };
+
+  const handleVinPresetClick = (p) => {
+    setVinInput(p.vin);
+    setVinDtcs(p.dtcs);
+    setVinParts(p.parts);
     setError(null);
   };
 
@@ -343,6 +362,28 @@ export default function App() {
         payload = {
           session_id: sessionId,
           raw_text: rawText.trim()
+        };
+      } else if (intakeMode === 'vin') {
+        if (!vinInput.trim()) {
+          throw new Error('Please enter a 17-character VIN.');
+        }
+
+        const dtcArray = vinDtcs
+          .split(/[,\s]+/)
+          .map(s => s.trim().toUpperCase())
+          .filter(Boolean);
+
+        const partsArray = vinParts
+          .split(',')
+          .map(s => s.trim().toLowerCase())
+          .filter(Boolean);
+
+        payload = {
+          session_id: sessionId,
+          vin: vinInput.trim().toUpperCase(),
+          dtc_codes: dtcArray,
+          damaged_parts: partsArray,
+          raw_text: `VIN Intake: ${vinInput.trim().toUpperCase()}`
         };
       } else {
         // Manual Spec Entry Mode
@@ -623,6 +664,14 @@ export default function App() {
                   <Wrench size={14} />
                   Manual Spec Entry
                 </button>
+                <button
+                  type="button"
+                  className={`mode-tab ${intakeMode === 'vin' ? 'active' : ''}`}
+                  onClick={() => { setIntakeMode('vin'); setError(null); }}
+                >
+                  <Barcode size={14} />
+                  VIN Decoder Intake
+                </button>
               </div>
 
               {/* MODE A: SMART NLP INTAKE */}
@@ -787,6 +836,93 @@ export default function App() {
                 </>
               )}
 
+              {/* MODE C: VIN DECODER & CHECKSUM INTAKE */}
+              {intakeMode === 'vin' && (
+                <>
+                  <div className="preset-group">
+                    <span className="preset-title">Test 17-Char VIN Presets:</span>
+                    <div className="preset-buttons">
+                      {VIN_PRESETS.map((p, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="preset-btn"
+                          onClick={() => handleVinPresetClick(p)}
+                        >
+                          <Barcode size={12} color="var(--red-primary)" />
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleRunTriage} className="manual-spec-form">
+                    <div className="form-field">
+                      <div className="input-labels">
+                        <label className="form-label">17-Character ISO 3779 VIN Barcode / String *</label>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{vinInput.length} / 17 chars</span>
+                      </div>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. 1HGCR2F85HA000000"
+                        value={vinInput}
+                        onChange={(e) => setVinInput(e.target.value.toUpperCase())}
+                        maxLength={17}
+                        style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.12em', fontSize: '1.05rem', fontWeight: 700 }}
+                        required
+                      />
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                        Offline MOD-11 Checksum (9th digit) verification executes immediately in 0.1ms before querying NHTSA.
+                      </span>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-field">
+                        <label className="form-label">OBD-II DTC Codes (Optional)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. P0171, P0420"
+                          value={vinDtcs}
+                          onChange={(e) => setVinDtcs(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-field">
+                        <label className="form-label">Damaged Components (Optional)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. intake leak, dented bumper"
+                          value={vinParts}
+                          onChange={(e) => setVinParts(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn-red" 
+                      disabled={loading || !vinInput.trim()}
+                      style={{ width: '100%', marginTop: 8 }}
+                    >
+                      {loading ? (
+                        <>
+                          <RefreshCw size={16} className="spin-icon" />
+                          {pipelineStage === 'agent2' ? 'Stage 2/2: Groq LLM Deducing Root Cause...' : 'Stage 1/2: Decoding VIN via NHTSA vPIC...'}
+                        </>
+                      ) : (
+                        <>
+                          <Barcode size={16} />
+                          Decode VIN & Run Autonomous Triage
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+
               {/* Error Banner */}
               {error && (
                 <div style={{
@@ -903,7 +1039,43 @@ export default function App() {
                       <div className="spec-badge">Model: <strong>{triageResult.vehicle_details.model}</strong></div>
                       <div className="spec-badge">Year: <strong>{triageResult.vehicle_details.year}</strong></div>
                       <div className="spec-badge">Status: <strong>ROAD-LEGAL</strong></div>
+                      {triageResult.vehicle_details.engine && (
+                        <div className="spec-badge">Engine: <strong>{triageResult.vehicle_details.engine}</strong></div>
+                      )}
+                      {triageResult.vehicle_details.fuel_type && (
+                        <div className="spec-badge">Fuel: <strong>{triageResult.vehicle_details.fuel_type}</strong></div>
+                      )}
+                      {triageResult.vehicle_details.drive_type && (
+                        <div className="spec-badge">Drive: <strong>{triageResult.vehicle_details.drive_type}</strong></div>
+                      )}
+                      {triageResult.vehicle_details.body_class && (
+                        <div className="spec-badge">Body: <strong>{triageResult.vehicle_details.body_class}</strong></div>
+                      )}
                     </div>
+
+                    {/* VIN Identity Bar if VIN decoded */}
+                    {triageResult.vehicle_details.vin && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0e0e0e', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '8px 12px', marginTop: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Barcode size={14} color="var(--red-primary)" />
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Decoded VIN:</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-white)', letterSpacing: '0.08em' }}>
+                            {triageResult.vehicle_details.vin}
+                          </span>
+                        </div>
+                        {triageResult.vehicle_details.vin_checksum_valid ? (
+                          <span className="checksum-valid-pill">
+                            <Check size={11} />
+                            MOD-11 Checksum: Valid
+                          </span>
+                        ) : (
+                          <span className="checksum-invalid-pill">
+                            <AlertTriangle size={11} />
+                            MOD-11 Checksum: Warning
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* OBD-II Trouble Codes with Hierarchical Taxonomy */}

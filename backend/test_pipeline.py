@@ -5,10 +5,15 @@ from nlp_extractor import (
     sanitize_input, 
     extract_dtc_codes, 
     extract_year, 
+    extract_vin,
     resolve_dtc_hierarchy, 
     normalize_mechanic_notes
 )
-from nhtsa_validator import verify_vehicle
+from nhtsa_validator import (
+    verify_vehicle, 
+    decode_vin_nhtsa, 
+    validate_vin_checksum
+)
 
 
 async def test_extraction_cases():
@@ -141,10 +146,48 @@ async def test_ir_query_and_dtc_hierarchy():
     print("\nIR Query Processing & DTC Hierarchy Tests: ALL PASSED!")
 
 
+async def test_vin_decoding():
+    print("\n=== [4] Testing ISO 3779 VIN Checksum & NHTSA Decoder ===")
+
+    # Test 1: Offline MOD-11 Checksum Validation
+    valid_vin = "1HGCR2F85HA000000"  # Real Honda Accord VIN with calculated 9th check digit 5
+    invalid_vin = "1HGCR2F89HA000000"  # Checksum mismatch
+    illegal_vin = "1HGCR2F85HI000000"  # Contains illegal character 'I'
+
+    check_valid = validate_vin_checksum(valid_vin)
+    print(f"Valid VIN ({valid_vin}) check: valid={check_valid['is_valid']}, check_digit={check_valid['actual_check_digit']}")
+    assert check_valid["is_valid"] is True
+
+    check_invalid = validate_vin_checksum(invalid_vin)
+    print(f"Invalid VIN ({invalid_vin}) check: valid={check_invalid['is_valid']}, error={check_invalid['error']}")
+    assert check_invalid["is_valid"] is False
+
+    check_illegal = validate_vin_checksum(illegal_vin)
+    print(f"Illegal VIN ({illegal_vin}) check: valid={check_illegal['is_valid']}, error={check_illegal['error']}")
+    assert check_illegal["is_valid"] is False
+
+    # Test 2: Online NHTSA VIN Decoder
+    print(f"\nQuerying NHTSA to decode '{valid_vin}'...")
+    decoded = await decode_vin_nhtsa(valid_vin)
+    print(f"Decoded: Make={decoded.get('make')}, Model={decoded.get('model')}, Year={decoded.get('year')}, Engine={decoded.get('engine_displacement_l')}L, Fuel={decoded.get('fuel_type')}")
+    assert decoded["success"] is True
+    assert decoded["make"].upper() == "HONDA"
+    assert "ACCORD" in decoded["model"].upper()
+    assert decoded["year"] == 2017
+
+    # Test 3: Unstructured text containing a VIN
+    text_with_vin = "Technician scan on VIN 1HGCR2F85HA000000 showing rough idling and code P0301"
+    extracted_vin = extract_vin(text_with_vin)
+    assert extracted_vin == valid_vin
+
+    print("\nVIN Checksum & NHTSA Decoder Tests: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
     await test_ir_query_and_dtc_hierarchy()
+    await test_vin_decoding()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")

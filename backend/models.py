@@ -5,13 +5,17 @@ from pydantic import BaseModel, Field, model_validator
 class DiagnosticRequest(BaseModel):
     """
     Payload received by Agent 1 from the technician or customer interface.
-    Supports Dual-Mode:
-    1. Smart NLP Mode: 'raw_text' provided for automatic spaCy extraction.
+    Supports Multi-Mode Intake:
+    1. Smart NLP Mode: 'raw_text' provided for automatic spaCy & VIN extraction.
     2. Manual Spec Entry Mode: 'make', 'model', 'year' provided directly.
+    3. Direct VIN Intake Mode: 17-character VIN provided directly.
     """
     session_id: str = Field(..., description="Unique session identifier for triage tracking")
     raw_text: Optional[str] = Field(None, description="Unstructured mechanic notes or customer complaint")
     
+    # Optional direct VIN Mode
+    vin: Optional[str] = Field(None, min_length=17, max_length=17, description="17-character vehicle identification number (ISO 3779)")
+
     # Optional direct fields for Manual Spec Entry Mode
     make: Optional[str] = Field(None, description="Direct vehicle make (e.g., Honda, Toyota)")
     model: Optional[str] = Field(None, description="Direct vehicle model (e.g., Civic, Camry)")
@@ -23,19 +27,21 @@ class DiagnosticRequest(BaseModel):
     def validate_input_mode(self):
         has_text = bool(self.raw_text and self.raw_text.strip())
         has_specs = bool(self.make and self.model and self.year)
+        has_vin = bool(self.vin and self.vin.strip())
 
-        if not has_text and not has_specs:
-            raise ValueError("Either 'raw_text' (for Smart NLP Mode) or ('make', 'model', 'year') (for Manual Spec Entry Mode) must be provided.")
+        if not has_text and not has_specs and not has_vin:
+            raise ValueError("Provide 'vin' (for Direct VIN Mode), 'raw_text' (for Smart NLP Mode), or ('make', 'model', 'year') (for Manual Spec Entry Mode).")
         return self
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "session_id": "sess_abc123",
-                "raw_text": "2019 Honda Civic with crashed bumper and code P0171",
+                "vin": "1HGCR2F85HA000000",
+                "raw_text": "2017 Honda Accord with code P0171 and check engine light",
                 "make": "Honda",
-                "model": "Civic",
-                "year": 2019,
+                "model": "Accord",
+                "year": 2017,
                 "dtc_codes": ["P0171"],
                 "damaged_parts": ["bumper"]
             }
@@ -44,11 +50,19 @@ class DiagnosticRequest(BaseModel):
 
 
 class VehicleDetails(BaseModel):
-    """Normalized vehicle specifications verified against NHTSA vPIC."""
+    """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
     model: str = Field(..., description="Vehicle model name (e.g., Civic)")
     year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
     is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC")
+    
+    # Extended VIN Decoded Telemetry (Additive)
+    vin: Optional[str] = Field(default=None, description="17-character ISO 3779 VIN if provided/extracted")
+    engine: Optional[str] = Field(default=None, description="Engine displacement (e.g., '2.4L')")
+    fuel_type: Optional[str] = Field(default=None, description="Primary fuel type (e.g., 'Gasoline')")
+    drive_type: Optional[str] = Field(default=None, description="Drive type (e.g., 'FWD', 'AWD', '4x2')")
+    body_class: Optional[str] = Field(default=None, description="Body class (e.g., 'Sedan/Saloon')")
+    vin_checksum_valid: Optional[bool] = Field(default=None, description="Whether the 9th check digit passed MOD-11 validation")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
