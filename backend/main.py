@@ -10,7 +10,9 @@ from models import (
     Agent1Payload, 
     VehicleDetails, 
     DiagnosticResult,
-    SpellcheckRequest
+    SpellcheckRequest,
+    DTCCascadeRequest,
+    DTCCascadeAnalysis
 )
 from models import ProcurementRequest, ProcurementResponse
 from nhtsa_validator import (
@@ -26,6 +28,7 @@ from nlp_extractor import (
     extract_vin,
     normalize_mechanic_notes, 
     resolve_dtc_hierarchy,
+    classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
     nlp
@@ -208,6 +211,7 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     raw_user_note = request.raw_text or ""
     canonical_query = normalize_mechanic_notes(raw_user_note)
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+    dtc_cascade = classify_dtc_cascades(dtc_codes)
 
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
@@ -233,6 +237,7 @@ async def ingest_diagnostic(request: DiagnosticRequest):
         user_note=raw_user_note,
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy,
+        dtc_cascade=dtc_cascade,
         fuzzy_corrections=fuzzy_corrections
     )
 
@@ -278,6 +283,21 @@ async def decode_vin_endpoint(vin: str):
         "checksum": checksum,
         "decode": decode_result
     }
+
+
+@app.post(
+    "/api/v1/dtc-cascade",
+    response_model=DTCCascadeAnalysis,
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def analyze_dtc_cascade(data: DTCCascadeRequest):
+    """
+    Dedicated endpoint for multi-DTC cascade and causal correlation analysis:
+    - Isolates primary upstream root-cause trigger code
+    - Detects downstream consequential symptoms (e.g. misfires from vacuum leak or bad MAF)
+    - Maps causal propagation chains and provides master mechanic explanation
+    """
+    return classify_dtc_cascades(data.dtc_codes)
 
 
 @app.post(

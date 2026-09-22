@@ -12,6 +12,7 @@ import {
   Sparkles, 
   Activity, 
   Layers, 
+  GitMerge,
   ChevronDown,
   ChevronUp,
   Terminal,
@@ -37,6 +38,14 @@ import mechanicDiagnostics from './assets/mechanic_diagnostics.jpg';
 const API_BASE_URL = 'http://localhost:8000';
 
 const PRESETS = [
+  {
+    label: 'Cascade: P0171 + P0300 + P0420',
+    text: '2019 Honda Civic with codes P0171, P0300, and P0420 running rough with sulfur exhaust odor'
+  },
+  {
+    label: 'Cascade: P0101 + P0171 + P0300',
+    text: '2017 Ford F-150 showing codes P0101, P0171, and P0300 with hesitation and misfires'
+  },
   {
     label: 'Honda Civic (P0171 Lean)',
     text: '2019 Honda Civic with trouble code P0171 running rough and check engine light on'
@@ -68,6 +77,14 @@ const PRESETS = [
 ];
 
 const AGENT2_PRESETS = [
+  {
+    label: 'Cascade: P0171 + P0300 + P0420 (Civic)',
+    make: 'Honda',
+    model: 'Civic',
+    year: '2019',
+    dtcs: 'P0171, P0300, P0420',
+    notes: 'Severe multi-code issue: P0171 lean fuel trim leading to P0300 cylinder misfires and downstream P0420 catalyst efficiency breakdown.'
+  },
   {
     label: '1995 Toyota Townace (P0251 Fuel)',
     make: 'Toyota',
@@ -1160,6 +1177,58 @@ export default function App() {
                       <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No DTC codes detected.</span>
                     )}
                   </div>
+
+                  {/* Multi-DTC Causal Cascade & Correlation Analysis */}
+                  {triageResult.dtc_cascade && triageResult.dtc_cascade.has_cascade && (
+                    <div className="dtc-cascade-box">
+                      <div className="dtc-cascade-header">
+                        <div className="dtc-cascade-title">
+                          <GitMerge size={15} color="#fb7185" />
+                          <span>Multi-DTC Causal Cascade Detected</span>
+                        </div>
+                        <span className="dtc-cascade-pill">
+                          <Zap size={11} />
+                          ROOT TRIGGER ISOLATED
+                        </span>
+                      </div>
+
+                      {/* Causal Flow Chain */}
+                      <div className="dtc-cascade-flow">
+                        <span className="cascade-node-root">
+                          ROOT: {triageResult.dtc_cascade.primary_code}
+                        </span>
+                        {triageResult.dtc_cascade.cascade_codes.map((cc, idx) => (
+                          <React.Fragment key={idx}>
+                            <span className="cascade-arrow">➔</span>
+                            <span className="cascade-node-secondary">
+                              CASCADE: {cc}
+                            </span>
+                          </React.Fragment>
+                        ))}
+                      </div>
+
+                      {/* Master Mechanic Plain-Language Summary */}
+                      <div className="dtc-cascade-summary">
+                        {triageResult.dtc_cascade.diagnostic_summary}
+                      </div>
+
+                      {/* Detailed Propagation Links */}
+                      {triageResult.dtc_cascade.cascade_chains && triageResult.dtc_cascade.cascade_chains.length > 0 && (
+                        <div className="dtc-cascade-chains-list">
+                          {triageResult.dtc_cascade.cascade_chains.map((chain, idx) => (
+                            <div key={idx} className="cascade-chain-item">
+                              <span className="cascade-chain-pair">
+                                {chain.root_code} ➔ {chain.consequential_code}
+                              </span>
+                              <span className="cascade-chain-desc">
+                                {chain.mechanism}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Normalized IR Query & Domain Synonym Expansion */}
                   {triageResult.canonical_query && (

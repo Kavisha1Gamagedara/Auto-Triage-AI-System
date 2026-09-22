@@ -27,12 +27,23 @@ The JSON object must match this JSON schema exactly, using these exact field nam
 
 def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     client = get_client()
-    # Construct the context for the LLM
     diagnostic_context = (
         f"Vehicle: {payload.vehicle.get('year')} {payload.vehicle.get('make')} {payload.vehicle.get('model')}\n"
         f"DTC Codes: {', '.join(payload.dtc_codes)}\n"
         f"Mechanic Notes: {payload.user_note}"
     )
+
+    # If multi-DTC cascade is detected by Agent 1, inject root trigger priority hint
+    if payload.dtc_cascade and payload.dtc_cascade.has_cascade:
+        cascade = payload.dtc_cascade
+        diagnostic_context += (
+            f"\nMulti-DTC Cascade Analysis: Root trigger code is {cascade.primary_code} "
+            f"({cascade.primary_description} in {cascade.primary_subsystem}). "
+            f"Downstream cascade symptoms: {', '.join(cascade.cascade_codes)}. "
+            f"Diagnosis hint: Focus root-cause deduction primarily on the upstream trigger {cascade.primary_code} "
+            f"rather than replacing parts for downstream cascade codes."
+        )
+
 
     # Execute the structured LLM call
     response = client.chat.completions.create(
