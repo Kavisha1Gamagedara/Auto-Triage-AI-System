@@ -5,6 +5,13 @@ from typing import Dict, List, Any, Optional, Tuple
 logger = logging.getLogger("nlp_extractor")
 
 try:
+    from rapidfuzz import fuzz, process, distance
+    HAS_RAPIDFUZZ = True
+except ImportError as e:
+    logger.warning(f"RapidFuzz is not installed ({e}). Approximate string matching disabled.")
+    HAS_RAPIDFUZZ = False
+
+try:
     import spacy
     try:
         nlp = spacy.load("en_core_web_sm")
@@ -86,7 +93,7 @@ POPULAR_MODELS = {
     "sportage": "Sportage",
     "sorento": "Sorento",
     "outback": "Outback",
-    "forester": "Foreester",
+    "forester": "Forester",
     "impreza": "Impreza",
     "wrangler": "Wrangler",
     "grand cherokee": "Grand Cherokee",
@@ -101,7 +108,11 @@ POPULAR_MODELS = {
     "cx-5": "CX-5",
     "cx5": "CX-5",
     "mazda3": "Mazda3",
-    "mazda6": "Mazda6"
+    "mazda6": "Mazda6",
+    "prius": "Prius",
+    "4runner": "4Runner",
+    "townace": "Townace",
+    "town ace": "Townace"
 }
 
 # Recognized automotive physical components (Mechanical, Body, Collision, Electrical, Suspension)
@@ -429,39 +440,168 @@ def extract_dtc_codes(text: str) -> List[str]:
     return list(dict.fromkeys([code.upper() for code in matches]))
 
 
-def extract_make_and_model(doc: Any) -> Tuple[Optional[str], Optional[str]]:
+FUZZY_EXCLUDED_TOKENS = {
+    "the", "car", "truck", "auto", "vehicle", "suv", "van", "with", "has", "had", "have",
+    "and", "for", "code", "codes", "light", "engine", "check", "running", "rough",
+    "note", "notes", "customer", "brought", "technician", "showing", "misfire",
+    "broken", "damaged", "leak", "leaking", "smell", "brake", "sound", "noise",
+    "threw", "started", "miles", "speed", "idle", "door", "part", "parts", "in", "at",
+    "from", "into", "over", "under", "after", "front", "rear", "left", "right", "side",
+    "turn", "headlight", "bumper", "mirror", "fender", "hood", "trunk", "exhaust", "sensor"
+}
+
+
+def fuzzy_correct_make(token: str) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """
+    Normalizes a vehicle manufacturer name using Levenshtein distance and RapidFuzz ratio.
+    Tolerates typos (e.g., 'Toyta' -> 'Toyota', 'Mercdes' -> 'Mercedes-Benz', 'Hnda' -> 'Honda').
+    
+    Returns:
+        (canonical_make_or_original, correction_metadata_or_none)
+    """
+    if not token or not isinstance(token, str):
+        return token, None
+
+    clean = token.lower().strip()
+    if not clean or len(clean) < 3 or clean in FUZZY_EXCLUDED_TOKENS or clean.isdigit():
+        return token, None
+
+    # Exact match check
+    if clean in AUTOMOTIVE_MAKES:
+        return AUTOMOTIVE_MAKES[clean], None
+
+    if not HAS_RAPIDFUZZ:
+        return token, None
+
+    # RapidFuzz approximate match
+    best_choice, best_score, _ = process.extractOne(clean, list(AUTOMOTIVE_MAKES.keys()), scorer=fuzz.ratio)
+    lev = distance.Levenshtein.distance(clean, best_choice)
+
+    matched = False
+    # For short tokens (len <= 3): only allow lev <= 1 and score >= 80.0
+    if len(clean) <= 3 and len(best_choice) <= 3:
+        if lev <= 1 and best_score >= 80.0:
+            matched = True
+    # For 4-letter tokens (e.g. 'hnda'): lev <= 1 or score >= 85.0
+    elif len(clean) == 4 or len(best_choice) == 4:
+        if (lev <= 1 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 1:
+            matched = True
+    # For tokens len >= 5 (e.g. 'toyta', 'mercdes'): lev <= 2 or score >= 85.0 (with score >= 70.0)
+    elif (lev <= 2 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 2 and best_score >= 70.0:
+        matched = True
+
+    if matched:
+        canonical = AUTOMOTIVE_MAKES[best_choice]
+        return canonical, {
+            "field": "make",
+            "raw": token,
+            "corrected": canonical,
+            "similarity": round(float(best_score), 1),
+            "levenshtein_distance": int(lev)
+        }
+
+    return token, None
+
+
+def fuzzy_correct_model(token: str, make: Optional[str] = None) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """
+    Normalizes a vehicle model name using Levenshtein distance and RapidFuzz ratio.
+    Tolerates typos (e.g., 'Commry' -> 'Camry', 'Silvrado' -> 'Silverado', 'Civc' -> 'Civic').
+    
+    Returns:
+        (canonical_model_or_original, correction_metadata_or_none)
+    """
+    if not token or not isinstance(token, str):
+        return token, None
+
+    clean = token.lower().strip()
+    if not clean or len(clean) < 3 or clean in FUZZY_EXCLUDED_TOKENS or clean.isdigit():
+        return token, None
+
+    # Exact match check
+    if clean in POPULAR_MODELS:
+        return POPULAR_MODELS[clean], None
+
+    if not HAS_RAPIDFUZZ:
+        return token, None
+
+    # RapidFuzz approximate match
+    best_choice, best_score, _ = process.extractOne(clean, list(POPULAR_MODELS.keys()), scorer=fuzz.ratio)
+    lev = distance.Levenshtein.distance(clean, best_choice)
+
+    matched = False
+    if len(clean) <= 3 and len(best_choice) <= 3:
+        if lev <= 1 and best_score >= 80.0:
+            matched = True
+    elif len(clean) == 4 or len(best_choice) == 4:
+        if (lev <= 1 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 1:
+            matched = True
+    elif (lev <= 2 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 2 and best_score >= 70.0:
+        matched = True
+
+    if matched:
+        canonical = POPULAR_MODELS[best_choice]
+        return canonical, {
+            "field": "model",
+            "raw": token,
+            "corrected": canonical,
+            "similarity": round(float(best_score), 1),
+            "levenshtein_distance": int(lev)
+        }
+
+    return token, None
+
+
+def extract_make_and_model(doc: Any) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
     """
     Identifies vehicle make and model using lexical dictionary matching,
-    token proximity, and linguistic analysis.
+    RapidFuzz fuzzy string matching (typo tolerance), and linguistic proximity.
     """
     if doc is None:
-        return None, None
+        return None, None, []
 
     if hasattr(doc, "text"):
         text_lower = doc.text.lower()
         tokens = [t.text.lower() for t in doc]
+        raw_tokens = [t.text for t in doc]
     else:
         text_lower = str(doc).lower()
         tokens = re.findall(r"\b[\w-]+\b", text_lower)
+        raw_tokens = re.findall(r"\b[\w-]+\b", str(doc))
 
     detected_make = None
     make_idx = -1
+    corrections: List[Dict[str, Any]] = []
 
-    # 1. Identify Make
+    # 1. Identify Make (Exact match first)
     for i, token in enumerate(tokens):
         if token in AUTOMOTIVE_MAKES:
             detected_make = AUTOMOTIVE_MAKES[token]
             make_idx = i
             break
 
-    # Check multi-word makes if not found
+    # Multi-word exact makes check
     if not detected_make:
         if "mercedes-benz" in text_lower or "mercedes benz" in text_lower:
             detected_make = "Mercedes-Benz"
+        elif "land rover" in text_lower:
+            detected_make = "Land Rover"
         elif "grand cherokee" not in text_lower and "jeep" in text_lower:
             detected_make = "Jeep"
 
-    # 2. Identify Model
+    # If make not found by exact match, try fuzzy typo match across tokens
+    if not detected_make:
+        for i, token in enumerate(tokens):
+            if token.isdigit() or len(token) < 3 or token in FUZZY_EXCLUDED_TOKENS:
+                continue
+            canonical_make, corr = fuzzy_correct_make(raw_tokens[i] if i < len(raw_tokens) else token)
+            if corr:
+                detected_make = canonical_make
+                make_idx = i
+                corrections.append(corr)
+                break
+
+    # 2. Identify Model (Exact match first)
     detected_model = None
 
     # First check known model lexicon
@@ -470,17 +610,37 @@ def extract_make_and_model(doc: Any) -> Tuple[Optional[str], Optional[str]]:
             detected_model = canonical_name
             break
 
-    # If model not in popular lexicon but make was detected, check token immediately following Make
+    # If model not in popular lexicon, try fuzzy match on candidate tokens
+    if not detected_model:
+        # Check token immediately following Make first
+        candidate_indices = []
+        if make_idx != -1 and make_idx + 1 < len(tokens):
+            candidate_indices.append(make_idx + 1)
+        # Then all other tokens
+        for idx in range(len(tokens)):
+            if idx not in candidate_indices and idx != make_idx:
+                candidate_indices.append(idx)
+
+        for idx in candidate_indices:
+            token = tokens[idx]
+            if token.isdigit() or len(token) < 3 or token in FUZZY_EXCLUDED_TOKENS:
+                continue
+            raw_token = raw_tokens[idx] if idx < len(raw_tokens) else token
+            canonical_model, corr = fuzzy_correct_model(raw_token)
+            if corr:
+                detected_model = canonical_model
+                corrections.append(corr)
+                break
+
+    # If still not found, check if make was detected and token immediately following looks like a model
     if not detected_model and make_idx != -1 and make_idx + 1 < len(tokens):
         candidate = tokens[make_idx + 1]
-        # Ignore common non-model words
-        if candidate not in {"with", "has", "is", "car", "truck", "suv", "vehicle", "code", "threw", "showing"}:
-            # Check if followed by alphanumeric like F-150 or single token
+        if candidate not in FUZZY_EXCLUDED_TOKENS and not candidate.isdigit() and len(candidate) >= 2:
             if make_idx + 2 < len(tokens) and tokens[make_idx + 2] in {"si", "type-r", "sport"}:
                 candidate = f"{candidate} {tokens[make_idx + 2]}"
             detected_model = candidate.capitalize()
 
-    return detected_make, detected_model
+    return detected_make, detected_model, corrections
 
 
 def extract_damaged_parts(doc: Any) -> List[str]:
@@ -554,7 +714,7 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
 
     vin = extract_vin(clean_text)
     year = extract_year(clean_text)
-    make, model = extract_make_and_model(doc)
+    make, model, fuzzy_corrections = extract_make_and_model(doc)
     dtc_codes = extract_dtc_codes(clean_text)
     damaged_parts = extract_damaged_parts(doc)
 
@@ -570,5 +730,6 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "dtc_codes": dtc_codes,
         "damaged_parts": damaged_parts,
         "canonical_query": canonical_query,
-        "dtc_hierarchy": dtc_hierarchy
+        "dtc_hierarchy": dtc_hierarchy,
+        "fuzzy_corrections": fuzzy_corrections
     }

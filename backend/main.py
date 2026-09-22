@@ -18,7 +18,9 @@ from nlp_extractor import (
     extract_damaged_parts, 
     extract_vin,
     normalize_mechanic_notes, 
-    resolve_dtc_hierarchy, 
+    resolve_dtc_hierarchy,
+    fuzzy_correct_make,
+    fuzzy_correct_model,
     nlp
 )
 
@@ -94,9 +96,10 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     Both modes validate against the official US DOT NHTSA vPIC database and format
     an Agent-to-Agent (A2A) payload ready for Agent 2.
     """
-    # Initialize extended VIN metadata
+    # Initialize extended VIN metadata and fuzzy typo corrections
     vin = (request.vin or "").strip().upper() if request.vin else None
     vin_data = None
+    fuzzy_corrections: List[Dict[str, Any]] = []
 
     # Check Mode 1: Direct VIN Intake Mode
     if vin:
@@ -126,9 +129,18 @@ async def ingest_diagnostic(request: DiagnosticRequest):
 
     # Check Mode 2: Manual Spec Entry Mode (explicit make, model, year)
     elif request.make and request.model and request.year:
-        make = request.make.strip()
-        model = request.model.strip()
+        raw_make = request.make.strip()
+        raw_model = request.model.strip()
         year = int(request.year)
+
+        # Apply RapidFuzz approximate string matching to tolerate typos in user input
+        make, make_corr = fuzzy_correct_make(raw_make)
+        model, model_corr = fuzzy_correct_model(raw_model)
+
+        if make_corr:
+            fuzzy_corrections.append(make_corr)
+        if model_corr:
+            fuzzy_corrections.append(model_corr)
         
         # Combine provided DTC codes and any found in raw_text
         dtc_codes = list(request.dtc_codes or [])
@@ -171,6 +183,7 @@ async def ingest_diagnostic(request: DiagnosticRequest):
 
         dtc_codes = extracted["dtc_codes"]
         damaged_parts = extracted["damaged_parts"]
+        fuzzy_corrections = extracted.get("fuzzy_corrections", [])
 
     # Validate against external official NHTSA vPIC database (unless already validated via VIN)
     if vin_data:
@@ -200,7 +213,8 @@ async def ingest_diagnostic(request: DiagnosticRequest):
         fuel_type=vin_data.get("fuel_type") if vin_data else None,
         drive_type=vin_data.get("drive_type") if vin_data else None,
         body_class=vin_data.get("body_class") if vin_data else None,
-        vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None)
+        vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None),
+        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -211,8 +225,32 @@ async def ingest_diagnostic(request: DiagnosticRequest):
         damaged_parts=damaged_parts,
         user_note=raw_user_note,
         canonical_query=canonical_query,
-        dtc_hierarchy=dtc_hierarchy
+        dtc_hierarchy=dtc_hierarchy,
+        fuzzy_corrections=fuzzy_corrections
     )
+
+
+@app.post(
+    "/api/v1/spellcheck-vehicle",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def spellcheck_vehicle(data: Dict[str, str]):
+    """
+    Dedicated Information Retrieval endpoint for approximate string matching & spell-checking of vehicle names.
+    Calculates Levenshtein edit distance and RapidFuzz ratio similarity.
+    """
+    raw_make = data.get("make", "")
+    raw_model = data.get("model", "")
+    make, make_corr = fuzzy_correct_make(raw_make)
+    model, model_corr = fuzzy_correct_model(raw_model)
+    return {
+        "original_make": raw_make,
+        "corrected_make": make,
+        "make_correction": make_corr,
+        "original_model": raw_model,
+        "corrected_model": model,
+        "model_correction": model_corr
+    }
 
 
 @app.get(

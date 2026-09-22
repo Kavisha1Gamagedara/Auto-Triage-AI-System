@@ -9,18 +9,25 @@ NHTSA_BASE_URL = "https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear"
 async def verify_vehicle(make: str, model: str, year: int, timeout_seconds: float = 10.0) -> bool:
     """
     Queries the U.S. DOT NHTSA vPIC API to verify if a make/model/year combination exists.
+    Applies RapidFuzz approximate string matching to tolerate typos in user input.
 
     Args:
-        make: Vehicle manufacturer (e.g., 'Honda', 'Toyota', 'Ford').
-        model: Vehicle model name (e.g., 'Civic', 'Camry', 'F-150').
+        make: Vehicle manufacturer (e.g., 'Honda', 'Toyota', 'Ford', 'Toyta').
+        model: Vehicle model name (e.g., 'Civic', 'Camry', 'F-150', 'Commry').
         year: Vehicle model year (e.g., 2019).
         timeout_seconds: Request timeout duration in seconds.
 
     Returns:
         bool: True if vehicle model exists in the official NHTSA database for that year, False otherwise.
     """
-    cleaned_make = make.strip().lower()
-    cleaned_model = model.strip().lower()
+    from nlp_extractor import fuzzy_correct_make, fuzzy_correct_model
+
+    # Automatically normalize potential typos to canonical names
+    canonical_make, _ = fuzzy_correct_make(make)
+    canonical_model, _ = fuzzy_correct_model(model)
+
+    cleaned_make = canonical_make.strip().lower()
+    cleaned_model = canonical_model.strip().lower()
 
     url = f"{NHTSA_BASE_URL}/make/{cleaned_make}/modelyear/{year}?format=json"
 
@@ -48,14 +55,26 @@ async def verify_vehicle(make: str, model: str, year: int, timeout_seconds: floa
             if item.get("Model_Name")
         ]
 
-        # Match exact model name or model contained as primary token
+        # 1. Match exact model name or model contained as primary token
         is_match = any(
             cleaned_model == official or cleaned_model in official.split()
             for official in official_models
         )
 
+        # 2. RapidFuzz approximate match against NHTSA official model list
+        if not is_match and official_models and len(cleaned_model) >= 3:
+            try:
+                from rapidfuzz import fuzz, process, distance
+                best_match, best_score, _ = process.extractOne(cleaned_model, official_models, scorer=fuzz.ratio)
+                lev = distance.Levenshtein.distance(cleaned_model, best_match)
+                if (lev <= 2 or best_score >= 85.0) and best_score >= 70.0:
+                    logger.info(f"NHTSA fuzzy matched model '{model}' to official '{best_match}' (score: {best_score:.1f}%, lev: {lev})")
+                    is_match = True
+            except Exception as err:
+                logger.debug(f"RapidFuzz model matching skipped: {err}")
+
         if is_match:
-            logger.info(f"NHTSA verified vehicle: {year} {make} {model}")
+            logger.info(f"NHTSA verified vehicle: {year} {canonical_make} {canonical_model}")
         else:
             logger.warning(f"Vehicle model '{model}' not found among official models: {official_models[:5]}...")
 

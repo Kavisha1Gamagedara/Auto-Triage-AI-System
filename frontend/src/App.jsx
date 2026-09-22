@@ -42,6 +42,18 @@ const PRESETS = [
     text: '2019 Honda Civic with trouble code P0171 running rough and check engine light on'
   },
   {
+    label: 'Typo: "Toyta Commry" (P0171)',
+    text: 'Customer brought in 2019 Toyta Commry with trouble code P0171 and rough idle'
+  },
+  {
+    label: 'Typo: "Chevy Silvrado" (P0300)',
+    text: 'Technician note: 2017 Chevy Silvrado misfiring on acceleration code P0300 with cracked spark plug'
+  },
+  {
+    label: 'Typo: "Hnda Civc" (P0171)',
+    text: '2019 Hnda Civc engine hesitation code P0171'
+  },
+  {
     label: 'Ford F-150 (P0300 Misfire)',
     text: 'Technician note: 2017 Ford F-150 misfiring on acceleration code P0300 with cracked spark plug'
   },
@@ -174,6 +186,7 @@ export default function App() {
 
   const MANUAL_PRESETS = [
     { label: '2019 Honda Civic', make: 'Honda', model: 'Civic', year: 2019, dtcs: 'P0171', parts: 'crashed bumper' },
+    { label: 'Typo: "Toyta Commry"', make: 'Toyta', model: 'Commry', year: 2019, dtcs: 'P0171', parts: 'intake manifold' },
     { label: '2017 Ford F-150', make: 'Ford', model: 'F-150', year: 2017, dtcs: 'P0300', parts: 'cracked spark plug' },
     { label: '2021 Toyota Camry', make: 'Toyota', model: 'Camry', year: 2021, dtcs: 'P0420', parts: 'catalytic converter' },
     { label: 'Bogus Car Test', make: 'Ford', model: 'GalaxyCruiser9000', year: 2025, dtcs: 'P0999', parts: 'warp drive' }
@@ -1077,6 +1090,35 @@ export default function App() {
                       </div>
                     )}
                   </div>
+
+                  {/* IR Approximate Matching & Typo Correction Telemetry */}
+                  {triageResult.fuzzy_corrections && triageResult.fuzzy_corrections.length > 0 && (
+                    <div className="fuzzy-correction-box">
+                      <div className="fuzzy-correction-header">
+                        <div className="fuzzy-correction-title">
+                          <Sparkles size={14} color="#f59e0b" />
+                          <span>IR Typo-Tolerant Normalization (RapidFuzz / Levenshtein)</span>
+                        </div>
+                        <span className="fuzzy-pill">AUTO-CORRECTED</span>
+                      </div>
+                      <div className="fuzzy-items-list">
+                        {triageResult.fuzzy_corrections.map((corr, idx) => (
+                          <div key={idx} className="fuzzy-item">
+                            <div className="fuzzy-item-left">
+                              <span className="fuzzy-field-tag">{corr.field.toUpperCase()}:</span>
+                              <span className="fuzzy-raw-text">"{corr.raw}"</span>
+                              <span className="fuzzy-arrow">➔</span>
+                              <span className="fuzzy-corrected-text">"{corr.corrected}"</span>
+                            </div>
+                            <div className="fuzzy-metrics">
+                              <span className="metric-tag">Levenshtein Dist: {corr.levenshtein_distance}</span>
+                              <span className="metric-tag score">{corr.similarity}% Similarity</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* OBD-II Trouble Codes with Hierarchical Taxonomy */}
                   <div>
