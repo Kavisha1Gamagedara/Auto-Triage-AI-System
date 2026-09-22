@@ -1,21 +1,53 @@
 import asyncio
-from models import DiagnosticRequest, Agent1Payload, VehicleDetails
-from nlp_extractor import (
-    extract_entities, 
-    sanitize_input, 
-    extract_dtc_codes, 
-    extract_year, 
-    extract_vin,
-    resolve_dtc_hierarchy, 
-    normalize_mechanic_notes,
-    fuzzy_correct_make,
-    fuzzy_correct_model
-)
-from nhtsa_validator import (
-    verify_vehicle, 
-    decode_vin_nhtsa, 
-    validate_vin_checksum
-)
+import sys
+import os
+
+# Ensure backend root is on sys.path
+_backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
+try:
+    from core.models import DiagnosticRequest, Agent1Payload, VehicleDetails
+except ImportError:
+    from models import DiagnosticRequest, Agent1Payload, VehicleDetails
+
+try:
+    from .nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from .nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
+except ImportError:
+    from nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
 
 
 async def test_extraction_cases():
@@ -242,12 +274,83 @@ async def test_fuzzy_vehicle_matching():
     print("\nFuzzy / Typo-Tolerant Vehicle Name Correction Tests: ALL PASSED!")
 
 
+async def test_dtc_cascade_classification():
+    print("\n=== [6] Testing Multi-DTC Cascade & Causal Correlation Classifier ===")
+
+    # Test 1: Classic Lean -> Misfire -> Catalyst Cascade
+    codes_cascade = ["P0171", "P0300", "P0420"]
+    cascade_res = classify_dtc_cascades(codes_cascade)
+    print(f"\nAnalyzing Multi-DTC set: {codes_cascade}")
+    print(f"  -> Has Cascade? {cascade_res['has_cascade']}")
+    print(f"  -> Primary Trigger Code: {cascade_res['primary_code']} ({cascade_res['primary_description']})")
+    print(f"  -> Consequential Cascade Symptoms: {cascade_res['cascade_codes']}")
+    print(f"  -> Causal Propagation Links ({len(cascade_res['cascade_chains'])} detected):")
+    for chain in cascade_res["cascade_chains"]:
+        print(f"     * {chain['root_code']} -> {chain['consequential_code']}: {chain['mechanism']}")
+    print(f"  -> Diagnostic Summary: {cascade_res['diagnostic_summary']}")
+
+    assert cascade_res["has_cascade"] is True
+    assert cascade_res["primary_code"] == "P0171"
+    assert "P0300" in cascade_res["cascade_codes"]
+    assert "P0420" in cascade_res["cascade_codes"]
+    assert len(cascade_res["cascade_chains"]) >= 2
+
+    # Test 2: Upstream Sensor (MAF) -> Fuel Trim -> Combustion Misfire
+    codes_sensor = ["P0101", "P0171", "P0300"]
+    sensor_res = classify_dtc_cascades(codes_sensor)
+    print(f"\nAnalyzing Sensor Multi-DTC set: {codes_sensor}")
+    print(f"  -> Primary Trigger Code: {sensor_res['primary_code']}")
+    print(f"  -> Cascade Codes: {sensor_res['cascade_codes']}")
+    assert sensor_res["has_cascade"] is True
+    assert sensor_res["primary_code"] == "P0101"
+    assert "P0171" in sensor_res["cascade_codes"]
+    assert "P0300" in sensor_res["cascade_codes"]
+
+    # Test 3: Single DTC (No multi-code cascade)
+    codes_single = ["P0171"]
+    single_res = classify_dtc_cascades(codes_single)
+    print(f"\nAnalyzing Single DTC: {codes_single}")
+    print(f"  -> Has Cascade? {single_res['has_cascade']} (Expected False)")
+    assert single_res["has_cascade"] is False
+    assert single_res["primary_code"] == "P0171"
+    assert len(single_res["cascade_codes"]) == 0
+
+    # Test 4: End-to-End Extraction with Multi-DTC complaint text
+    complaint = "2019 Honda Civic with codes P0171, P0300, and P0420 running rough with sulfur exhaust odor"
+    nlp_res = extract_entities(complaint)
+    print(f"\nTesting Full NLP Extraction for Cascade Complaint:")
+    print(f"  -> Extracted DTCs: {nlp_res['dtc_codes']}")
+    print(f"  -> Cascade Detected: {nlp_res['dtc_cascade']['has_cascade']}")
+    print(f"  -> Primary Trigger: {nlp_res['dtc_cascade']['primary_code']}")
+    assert nlp_res["dtc_cascade"]["has_cascade"] is True
+    assert nlp_res["dtc_cascade"]["primary_code"] == "P0171"
+
+    # Test 5: Verify Agent1Payload schema serialization with dtc_cascade
+    payload = Agent1Payload(
+        session_id="test_cascade_session",
+        vehicle_details=VehicleDetails(
+            make="Honda",
+            model="Civic",
+            year=2019,
+            is_verified=True
+        ),
+        dtc_codes=codes_cascade,
+        user_note=complaint,
+        dtc_cascade=cascade_res
+    )
+    assert payload.dtc_cascade is not None
+    assert payload.dtc_cascade.has_cascade is True
+    assert payload.dtc_cascade.primary_code == "P0171"
+    print("\nMulti-DTC Cascade & Causal Correlation Classifier Tests: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
     await test_ir_query_and_dtc_hierarchy()
     await test_vin_decoding()
     await test_fuzzy_vehicle_matching()
+    await test_dtc_cascade_classification()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
@@ -255,3 +358,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
