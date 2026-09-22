@@ -49,6 +49,12 @@ class DiagnosticRequest(BaseModel):
     }
 
 
+class SpellcheckRequest(BaseModel):
+    """Payload for vehicle make and model approximate string matching / spell-checking."""
+    make: Optional[str] = Field(default="", description="Raw make string, e.g. 'Toyta'")
+    model: Optional[str] = Field(default="", description="Raw model string, e.g. 'Commry'")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")

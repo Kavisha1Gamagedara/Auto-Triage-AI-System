@@ -1,10 +1,17 @@
 import os
+from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from agent3_rag import get_repair_procedure
 from models import RepairRequest
 
-from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
+from models import (
+    DiagnosticRequest, 
+    Agent1Payload, 
+    VehicleDetails, 
+    DiagnosticResult,
+    SpellcheckRequest
+)
 from models import ProcurementRequest, ProcurementResponse
 from nhtsa_validator import (
     verify_vehicle,
@@ -234,13 +241,13 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     "/api/v1/spellcheck-vehicle",
     tags=["Agent 1 - Ingestion & Validation"]
 )
-async def spellcheck_vehicle(data: Dict[str, str]):
+async def spellcheck_vehicle(data: SpellcheckRequest):
     """
     Dedicated Information Retrieval endpoint for approximate string matching & spell-checking of vehicle names.
     Calculates Levenshtein edit distance and RapidFuzz ratio similarity.
     """
-    raw_make = data.get("make", "")
-    raw_model = data.get("model", "")
+    raw_make = (data.make or "").strip()
+    raw_model = (data.model or "").strip()
     make, make_corr = fuzzy_correct_make(raw_make)
     model, model_corr = fuzzy_correct_model(raw_model)
     return {
