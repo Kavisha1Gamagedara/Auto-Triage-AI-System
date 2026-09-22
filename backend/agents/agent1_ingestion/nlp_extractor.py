@@ -401,6 +401,148 @@ def resolve_dtc_hierarchy(dtc_codes: List[str]) -> List[Dict[str, Any]]:
     return hierarchies
 
 
+# Automotive fault causality priority weights (Higher score = higher likelihood of being root trigger)
+DTC_CASCADE_PRIORITY = {
+    # Tier 1: Battery Voltage & Controller Area Network (CAN) Bus (Root Triggers: 100)
+    "U0": 100, "P056": 100, "P060": 95,
+    # Tier 2: Timing / Crankshaft / Camshaft Synchronizer (Root Triggers: 85)
+    "P033": 85, "P034": 85, "P0115": 80,
+    # Tier 3: Primary Metering & Induction Sensors (Root Triggers: 75)
+    "P0100": 75, "P0101": 75, "P0102": 75, "P0103": 75, "P0105": 75, "P0120": 70,
+    # Tier 4: Fuel Metering & Fuel Trim (Intermediate Root Triggers: 60-65)
+    "P0171": 60, "P0172": 60, "P0174": 60, "P0175": 60, "P0251": 65, "P0190": 65,
+    # Tier 5: Combustion / Spark Ignition Misfires (Consequential Symptoms: 40)
+    "P0300": 40, "P0301": 40, "P0302": 40, "P0303": 40, "P0304": 40, "P0305": 40, "P0306": 40, "P0307": 40, "P0308": 40,
+    # Tier 6: Downstream Emissions & Catalytic Converter (Terminal Symptoms: 20-25)
+    "P0420": 20, "P0430": 20, "P0440": 25, "P0442": 25, "P0455": 25
+}
+
+# Empirical automotive fault causality propagation rules
+DTC_CASCADE_CAUSALITY_RULES = [
+    # 1. MAF / Metering -> Fuel Trim Lean/Rich
+    (("P0100", "P0101", "P0102", "P0103"), ("P0171", "P0174"), "Unmetered intake air or contaminated MAF sensor forces fuel trims lean beyond adaptive compensation (+25%)."),
+    # 2. MAF / Metering -> Combustion Misfire
+    (("P0100", "P0101", "P0102", "P0103"), ("P0300", "P0301", "P0302", "P0303", "P0304"), "Inaccurate air volume reporting starves cylinder charge, producing combustion hesitation and random misfires."),
+    # 3. Lean Fuel Trim -> Combustion Misfire
+    (("P0171", "P0174"), ("P0300", "P0301", "P0302", "P0303", "P0304", "P0305", "P0306"), "Severely lean air-fuel ratio cannot be ignited by spark plug, producing cylinder flameout misfires."),
+    # 4. Rich Fuel Trim -> Combustion Misfire (Fuel Fouling)
+    (("P0172", "P0175"), ("P0300", "P0301", "P0302", "P0303", "P0304", "P0305", "P0306"), "Excessive rich fuel charge causes liquid fuel deposition on spark plug electrodes, inducing spark dissipation and misfire."),
+    # 5. Combustion Misfire -> Catalytic Converter Thermal Breakdown
+    (("P0300", "P0301", "P0302", "P0303", "P0304", "P0305", "P0306"), ("P0420", "P0430"), "Unburnt hydrocarbons dumped from misfiring cylinders enter the exhaust and burn inside the catalytic converter, thermally sintering the precious metal washcoat."),
+    # 6. Chronic Fuel Trim Imbalance -> Catalytic Converter Degradation
+    (("P0171", "P0172", "P0174", "P0175"), ("P0420", "P0430"), "Chronic stoichiometric deviation rapidly depletes catalytic converter oxygen storage capacity (OSC)."),
+    # 7. Diesel Injection Pump Spill Valve -> Fuel Starvation Misfire
+    (("P0251",), ("P0300", "P0301", "P0302"), "High-pressure fuel injection pump spill valve solenoid breakdown starves diesel rail pressure, inducing sudden power loss and misfire."),
+    # 8. Crankshaft / Camshaft Position Sensor -> Ignition Timing Misfire
+    (("P0335", "P0340", "P0341"), ("P0300", "P0301", "P0302"), "Loss of crankshaft or camshaft reference pulses prevents ECM from accurately synchronizing ignition coil firing."),
+    # 9. Low System Voltage / Alternator -> CAN Network & Sensor Reference Failure
+    (("P0560", "P0561", "P0562", "P0563"), ("U0100", "P0101", "P0171"), "System battery voltage dropping below operational threshold disrupts sensor 5V reference rails and CAN bus communications.")
+]
+
+
+def classify_dtc_cascades(dtc_codes: List[str]) -> Dict[str, Any]:
+    """
+    Analyzes multiple OBD-II Diagnostic Trouble Codes to detect causal cascade propagation:
+    - Isolates the primary upstream root-cause trigger code
+    - Distinguishes consequential downstream symptom codes
+    - Builds physical causality chains explaining how one failure triggered the next
+    """
+    clean_codes = list(dict.fromkeys([c.upper().strip() for c in dtc_codes if c and c.strip()]))
+    if not clean_codes:
+        return {
+            "has_cascade": False,
+            "primary_code": None,
+            "primary_description": None,
+            "primary_subsystem": None,
+            "cascade_codes": [],
+            "isolated_codes": [],
+            "cascade_chains": [],
+            "diagnostic_summary": "No trouble codes provided."
+        }
+
+    if len(clean_codes) == 1:
+        single = clean_codes[0]
+        desc = KNOWN_DTC_DESCRIPTIONS.get(single, f"Fault Code {single}")
+        tax = DTC_TAXONOMY.get(single[:3]) or DTC_TAXONOMY.get(single[:2])
+        subsystem = tax["family_name"] if tax else "Powertrain"
+        return {
+            "has_cascade": False,
+            "primary_code": single,
+            "primary_description": desc,
+            "primary_subsystem": subsystem,
+            "cascade_codes": [],
+            "isolated_codes": [],
+            "cascade_chains": [],
+            "diagnostic_summary": f"Single trouble code detected ({single}: {desc}). No multi-DTC cascade present."
+        }
+
+    def get_priority(code: str) -> int:
+        for prefix, score in sorted(DTC_CASCADE_PRIORITY.items(), key=lambda x: len(x[0]), reverse=True):
+            if code.startswith(prefix):
+                return score
+        return 30
+
+    ranked = sorted(clean_codes, key=get_priority, reverse=True)
+
+    detected_chains = []
+    cascade_set = set()
+    root_triggers = set()
+
+    for cause_tuple, effect_tuple, mechanism in DTC_CASCADE_CAUSALITY_RULES:
+        for c in clean_codes:
+            if any(c.startswith(pat) for pat in cause_tuple):
+                for e in clean_codes:
+                    if c != e and any(e.startswith(pat) for pat in effect_tuple):
+                        cascade_set.add(e)
+                        root_triggers.add(c)
+                        detected_chains.append({
+                            "root_code": c,
+                            "consequential_code": e,
+                            "mechanism": mechanism
+                        })
+
+    primary = ranked[0]
+    # If explicit root trigger exists with higher causal precedent, promote it
+    if root_triggers and primary not in root_triggers:
+        for candidate in ranked:
+            if candidate in root_triggers:
+                primary = candidate
+                break
+
+    cascades = [c for c in ranked if c in cascade_set and c != primary]
+    isolated = [c for c in ranked if c not in cascade_set and c != primary]
+
+    has_cascade = len(detected_chains) > 0
+
+    if has_cascade:
+        chain_order = list(dict.fromkeys([primary] + cascades))
+        chain_str = " -> ".join(chain_order)
+        summary = (
+            f"Causal Cascade Detected ({chain_str}): {primary} is the primary root trigger. "
+            f"Consequential secondary faults: {', '.join(cascades)}."
+        )
+    else:
+        summary = (
+            f"Multiple concurrent DTCs detected ({', '.join(clean_codes)}). "
+            f"Independent faults spanning multiple subsystems without direct single-fault cascade."
+        )
+
+    desc = KNOWN_DTC_DESCRIPTIONS.get(primary, f"Fault Code {primary}")
+    tax = DTC_TAXONOMY.get(primary[:3]) or DTC_TAXONOMY.get(primary[:2])
+    subsystem = tax["family_name"] if tax else "Powertrain"
+
+    return {
+        "has_cascade": has_cascade,
+        "primary_code": primary,
+        "primary_description": desc,
+        "primary_subsystem": subsystem,
+        "cascade_codes": cascades,
+        "isolated_codes": isolated,
+        "cascade_chains": detected_chains,
+        "diagnostic_summary": summary
+    }
+
+
 def sanitize_input(raw_text: str) -> str:
     """
     Sanitizes raw mechanic / user input to prevent prompt injection and remove malformed characters.
@@ -720,6 +862,7 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
 
     canonical_query = normalize_mechanic_notes(clean_text)
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+    dtc_cascade = classify_dtc_cascades(dtc_codes)
 
     # Fallback defaults if text did not specify
     return {
@@ -731,5 +874,6 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "damaged_parts": damaged_parts,
         "canonical_query": canonical_query,
         "dtc_hierarchy": dtc_hierarchy,
-        "fuzzy_corrections": fuzzy_corrections
+        "fuzzy_corrections": fuzzy_corrections,
+        "dtc_cascade": dtc_cascade
     }

@@ -20,7 +20,10 @@ async def verify_vehicle(make: str, model: str, year: int, timeout_seconds: floa
     Returns:
         bool: True if vehicle model exists in the official NHTSA database for that year, False otherwise.
     """
-    from nlp_extractor import fuzzy_correct_make, fuzzy_correct_model
+    try:
+        from .nlp_extractor import fuzzy_correct_make, fuzzy_correct_model
+    except ImportError:
+        from nlp_extractor import fuzzy_correct_make, fuzzy_correct_model
 
     # Automatically normalize potential typos to canonical names
     canonical_make, _ = fuzzy_correct_make(make)

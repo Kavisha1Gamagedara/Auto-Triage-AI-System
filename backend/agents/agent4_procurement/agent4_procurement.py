@@ -15,8 +15,15 @@ this module's output originates from a model.
 import json
 import os
 
-from db import get_db
-from agent4_resolver import PartResolver
+try:
+    from core.db import get_db
+except ImportError:
+    from db import get_db
+
+try:
+    from .agent4_resolver import PartResolver
+except ImportError:
+    from agent4_resolver import PartResolver
 
 TIERS = ["OEM_Genuine", "Certified_Aftermarket", "Economy"]
 

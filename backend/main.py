@@ -2,23 +2,22 @@ import os
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from agent3_rag import get_repair_procedure
-from models import RepairRequest
-
-from models import (
+# Core shared schemas and database
+from core.models import (
     DiagnosticRequest, 
     Agent1Payload, 
     VehicleDetails, 
     DiagnosticResult,
-    SpellcheckRequest
+    SpellcheckRequest,
+    DTCCascadeRequest,
+    DTCCascadeAnalysis,
+    RepairRequest,
+    ProcurementRequest, 
+    ProcurementResponse
 )
-from models import ProcurementRequest, ProcurementResponse
-from nhtsa_validator import (
-    verify_vehicle,
-    decode_vin_nhtsa,
-    validate_vin_checksum
-)
-from nlp_extractor import (
+
+# Agent 1 - Ingestion, Validation, IR & Cascade
+from agents.agent1_ingestion import (
     extract_entities, 
     sanitize_input, 
     extract_dtc_codes, 
@@ -26,22 +25,32 @@ from nlp_extractor import (
     extract_vin,
     normalize_mechanic_notes, 
     resolve_dtc_hierarchy,
+    classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
-    nlp
+    nlp,
+    verify_vehicle,
+    decode_vin_nhtsa,
+    validate_vin_checksum
 )
 
-# Safely import Agent 2 diagnostic reasoning engine
+# Agent 2 - Cognitive Diagnostic Reasoning
 try:
     import groq
-    from agent2_logic import deduce_root_cause
+    from agents.agent2_reasoning import deduce_root_cause
 except Exception as e:
     groq = None
     deduce_root_cause = None
 
-# Safely import Agent 4 procurement & pricing engine
+# Agent 3 - Retrieval-Augmented Generation (OEM Manuals)
 try:
-    from agent4_procurement import get_procurement_quote
+    from agents.agent3_rag import get_repair_procedure
+except Exception as e:
+    get_repair_procedure = None
+
+# Agent 4 - Procurement & Pricing
+try:
+    from agents.agent4_procurement import get_procurement_quote
 except Exception as e:
     get_procurement_quote = None
 
@@ -208,6 +217,7 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     raw_user_note = request.raw_text or ""
     canonical_query = normalize_mechanic_notes(raw_user_note)
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+    dtc_cascade = classify_dtc_cascades(dtc_codes)
 
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
@@ -233,6 +243,7 @@ async def ingest_diagnostic(request: DiagnosticRequest):
         user_note=raw_user_note,
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy,
+        dtc_cascade=dtc_cascade,
         fuzzy_corrections=fuzzy_corrections
     )
 
@@ -278,6 +289,21 @@ async def decode_vin_endpoint(vin: str):
         "checksum": checksum,
         "decode": decode_result
     }
+
+
+@app.post(
+    "/api/v1/dtc-cascade",
+    response_model=DTCCascadeAnalysis,
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def analyze_dtc_cascade(data: DTCCascadeRequest):
+    """
+    Dedicated endpoint for multi-DTC cascade and causal correlation analysis:
+    - Isolates primary upstream root-cause trigger code
+    - Detects downstream consequential symptoms (e.g. misfires from vacuum leak or bad MAF)
+    - Maps causal propagation chains and provides master mechanic explanation
+    """
+    return classify_dtc_cascades(data.dtc_codes)
 
 
 @app.post(

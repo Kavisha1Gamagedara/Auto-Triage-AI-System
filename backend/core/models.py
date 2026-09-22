@@ -55,6 +55,12 @@ class SpellcheckRequest(BaseModel):
     model: Optional[str] = Field(default="", description="Raw model string, e.g. 'Commry'")
 
 
+class DTCCascadeRequest(BaseModel):
+    """Payload for multi-DTC cascade and causal correlation analysis."""
+    dtc_codes: List[str] = Field(..., description="List of OBD-II Diagnostic Trouble Codes to analyze")
+
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -96,6 +102,25 @@ class FuzzyCorrection(BaseModel):
     levenshtein_distance: int = Field(..., description="Levenshtein edit distance")
 
 
+class DTCCascadeChain(BaseModel):
+    """Causal relationship link between two co-occurring DTC trouble codes."""
+    root_code: str = Field(..., description="The upstream causal trigger DTC code")
+    consequential_code: str = Field(..., description="The downstream consequential symptom DTC code")
+    mechanism: str = Field(..., description="Physical/electrical mechanism explaining the causality")
+
+
+class DTCCascadeAnalysis(BaseModel):
+    """Multi-DTC causal hierarchy and cascade classification."""
+    has_cascade: bool = Field(default=False, description="Whether a causal cascade relationship was detected among codes")
+    primary_code: Optional[str] = Field(default=None, description="The identified root-cause trigger DTC code")
+    primary_description: Optional[str] = Field(default=None, description="Description of the primary root code")
+    primary_subsystem: Optional[str] = Field(default=None, description="Vehicle subsystem where fault originated")
+    cascade_codes: List[str] = Field(default_factory=list, description="Consequential secondary DTC codes")
+    isolated_codes: List[str] = Field(default_factory=list, description="Unrelated secondary DTC codes")
+    cascade_chains: List[DTCCascadeChain] = Field(default_factory=list, description="List of causal propagation links")
+    diagnostic_summary: Optional[str] = Field(default="", description="Master mechanic plain-language explanation of cascade")
+
+
 class Agent1Payload(BaseModel):
     """
     Agent-to-Agent (A2A) payload sent from Agent 1 to downstream cognitive agents (Agent 2, 3, 4).
@@ -114,6 +139,9 @@ class Agent1Payload(BaseModel):
     
     # Fuzzy Typo Correction Telemetry (Additive)
     fuzzy_corrections: List[FuzzyCorrection] = Field(default_factory=list, description="Fuzzy string matching corrections applied to typos in make/model")
+
+    # Multi-DTC Cascade & Correlation Analysis (Additive)
+    dtc_cascade: Optional[DTCCascadeAnalysis] = Field(default=None, description="Multi-DTC causal hierarchy and cascade classification")
 
     @model_validator(mode="before")
     @classmethod
