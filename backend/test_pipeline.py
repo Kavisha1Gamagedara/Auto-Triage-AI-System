@@ -7,7 +7,9 @@ from nlp_extractor import (
     extract_year, 
     extract_vin,
     resolve_dtc_hierarchy, 
-    normalize_mechanic_notes
+    normalize_mechanic_notes,
+    fuzzy_correct_make,
+    fuzzy_correct_model
 )
 from nhtsa_validator import (
     verify_vehicle, 
@@ -183,11 +185,69 @@ async def test_vin_decoding():
     print("\nVIN Checksum & NHTSA Decoder Tests: ALL PASSED!")
 
 
+async def test_fuzzy_vehicle_matching():
+    print("\n=== [5] Testing Fuzzy Typo-Tolerant Vehicle Name Correction (RapidFuzz / Levenshtein) ===")
+
+    # Test 1: Direct fuzzy token correction
+    toyta, toyta_corr = fuzzy_correct_make("Toyta")
+    print(f"Make 'Toyta' -> {toyta} (Lev: {toyta_corr['levenshtein_distance']}, Sim: {toyta_corr['similarity']}%)")
+    assert toyta == "Toyota"
+    assert toyta_corr["levenshtein_distance"] == 1
+
+    commry, commry_corr = fuzzy_correct_model("Commry")
+    print(f"Model 'Commry' -> {commry} (Lev: {commry_corr['levenshtein_distance']}, Sim: {commry_corr['similarity']}%)")
+    assert commry == "Camry"
+    assert commry_corr["levenshtein_distance"] == 2
+
+    silvrado, silvrado_corr = fuzzy_correct_model("Silvrado")
+    print(f"Model 'Silvrado' -> {silvrado} (Lev: {silvrado_corr['levenshtein_distance']}, Sim: {silvrado_corr['similarity']}%)")
+    assert silvrado == "Silverado"
+    assert silvrado_corr["levenshtein_distance"] == 1
+
+    hnda, hnda_corr = fuzzy_correct_make("Hnda")
+    civc, civc_corr = fuzzy_correct_model("Civc")
+    assert hnda == "Honda" and civc == "Civic"
+
+    mercdes, mercdes_corr = fuzzy_correct_make("Mercdes")
+    assert mercdes == "Mercedes-Benz"
+
+    # Test 2: Negative/False positive checks (conversational words must NOT match)
+    for word in ["the", "car", "code", "engine", "with"]:
+        m, corr_m = fuzzy_correct_make(word)
+        mod, corr_mod = fuzzy_correct_model(word)
+        assert corr_m is None and corr_mod is None, f"Word '{word}' was mistakenly matched as make/model"
+
+    # Test 3: Unstructured Complaint NLP Extraction with Multiple Typos
+    typo_text = "Customer brought in 2019 Toyta Commry showing code P0171 and rough idle"
+    entities = extract_entities(typo_text)
+    print(f"\nNLP Typo Extraction for: '{typo_text}'")
+    print(f"  -> Extracted Make: {entities['make']}")
+    print(f"  -> Extracted Model: {entities['model']}")
+    print(f"  -> Extracted Year: {entities['year']}")
+    print(f"  -> Typo Corrections: {entities['fuzzy_corrections']}")
+    assert entities["make"] == "Toyota"
+    assert entities["model"] == "Camry"
+    assert len(entities["fuzzy_corrections"]) == 2
+
+    # Test 4: End-to-End NHTSA Verification with Typo inputs
+    print("\nVerifying typo inputs against NHTSA...")
+    valid_with_typo = await verify_vehicle("Toyta", "Commry", 2019)
+    print(f"2019 Toyta Commry verified via NHTSA with auto-correction: {valid_with_typo}")
+    assert valid_with_typo is True
+
+    valid_chevy_typo = await verify_vehicle("Chevy", "Silvrado", 2017)
+    print(f"2017 Chevy Silvrado verified via NHTSA with auto-correction: {valid_chevy_typo}")
+    assert valid_chevy_typo is True
+
+    print("\nFuzzy / Typo-Tolerant Vehicle Name Correction Tests: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
     await test_ir_query_and_dtc_hierarchy()
     await test_vin_decoding()
+    await test_fuzzy_vehicle_matching()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")

@@ -1550,5 +1550,113 @@
   text-transform: uppercase;
 }
 
+/* Fuzzy Typo Correction Box */
+.fuzzy-correction-box {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sharp);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fuzzy-correction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fuzzy-correction-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fuzzy-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.fuzzy-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fuzzy-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111111;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fuzzy-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+
+.fuzzy-field-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.fuzzy-raw-text {
+  color: #f87171;
+  text-decoration: line-through;
+  font-family: var(--font-mono);
+}
+
+.fuzzy-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.fuzzy-corrected-text {
+  color: #34d399;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.fuzzy-metrics {
+  display: flex;
+  gap: 6px;
+}
+
+.metric-tag {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  background: #1e1e1e;
+  color: var(--text-gray);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+}
+
+.metric-tag.score {
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+
 
 

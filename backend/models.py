@@ -49,6 +49,12 @@ class DiagnosticRequest(BaseModel):
     }
 
 
+class SpellcheckRequest(BaseModel):
+    """Payload for vehicle make and model approximate string matching / spell-checking."""
+    make: Optional[str] = Field(default="", description="Raw make string, e.g. 'Toyta'")
+    model: Optional[str] = Field(default="", description="Raw model string, e.g. 'Commry'")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -63,6 +69,7 @@ class VehicleDetails(BaseModel):
     drive_type: Optional[str] = Field(default=None, description="Drive type (e.g., 'FWD', 'AWD', '4x2')")
     body_class: Optional[str] = Field(default=None, description="Body class (e.g., 'Sedan/Saloon')")
     vin_checksum_valid: Optional[bool] = Field(default=None, description="Whether the 9th check digit passed MOD-11 validation")
+    fuzzy_corrections: Optional[List[Dict[str, Any]]] = Field(default=None, description="Fuzzy string corrections applied")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
@@ -80,6 +87,15 @@ class DTCCodeHierarchy(BaseModel):
     description: str = Field(..., description="Human-readable standard fault description")
 
 
+class FuzzyCorrection(BaseModel):
+    """Details of approximate string matching / spell-checking correction applied to vehicle name."""
+    field: str = Field(..., description="Field corrected ('make' or 'model')")
+    raw: str = Field(..., description="Original raw token from user or complaint text")
+    corrected: str = Field(..., description="Canonical corrected string sent to NHTSA")
+    similarity: float = Field(..., description="RapidFuzz ratio similarity score (0-100)")
+    levenshtein_distance: int = Field(..., description="Levenshtein edit distance")
+
+
 class Agent1Payload(BaseModel):
     """
     Agent-to-Agent (A2A) payload sent from Agent 1 to downstream cognitive agents (Agent 2, 3, 4).
@@ -95,6 +111,9 @@ class Agent1Payload(BaseModel):
     # Normalized IR Query & Hierarchical Codes (Additive, 100% backward-compatible)
     canonical_query: Optional[str] = Field(default="", description="Normalized, stopword-stripped canonical symptom query")
     dtc_hierarchy: List[DTCCodeHierarchy] = Field(default_factory=list, description="Resolved hierarchical code families for faceted fallback")
+    
+    # Fuzzy Typo Correction Telemetry (Additive)
+    fuzzy_corrections: List[FuzzyCorrection] = Field(default_factory=list, description="Fuzzy string matching corrections applied to typos in make/model")
 
     @model_validator(mode="before")
     @classmethod
