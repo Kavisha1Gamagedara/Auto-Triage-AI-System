@@ -1,0 +1,41 @@
+query,expected
+brake pads worn out,Brake Pads
+Alternator,Alternator
+dynamo not charging,Alternator
+water pomp leaking,Water Pump
+silencer rusted,Muffler
+dicky door dented,Rear Hatch
+front bumper cracked,Front Bumper
+left head lamp broken,Headlight
+shockers gone,Shock Absorber
+self motor not turning,Starter Motor
+coil pack misfire,Ignition Coil
+plugs need changing,Spark Plug
+o2 sensor fault,Oxygen Sensor
+MAF senser dirty,Mass Air Flow Sensor
+air flow meter reading wrong,Mass Air Flow Sensor
+clutch slipping,Clutch Kit
+cv boot torn,CV Boot
+wishbone bush gone,Control Arm
+tie rod end play,Tie Rod End
+wheel bearing noise,Wheel Bearing
+ac compressor not cooling,AC Compressor
+aircon filter dirty,Cabin Filter
+blower not working,Blower Motor
+radiator leaking,Radiator
+thermostat stuck,Thermostat
+fan belt squealing,Drive Belt
+cam belt due,Timing Belt
+fuel pump weak,Fuel Pump
+diesel filter clogged,Fuel Filter
+brake rotor warped,Brake Disc
+master cylinder leak,Brake Master Cylinder
+hand brake cable loose,Handbrake Cable
+power steering leaking,Power Steering Pump
+steering box play,Steering Rack
+windshield crack,Windscreen
+wiper rubber worn,Wiper Blade
+hybrid battery weak,Hybrid Battery Pack
+charging socket damaged,EV Charging Port
+engine mounting broken,Engine Mount
+bonnet dented,Bonnet

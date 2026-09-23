@@ -31,6 +31,11 @@ Repair RAG  Procurement
 - **Agent 3 (Technical Repair RAG)**: Queries vector storage (ChromaDB) containing OEM repair manuals to generate step-by-step repair guides with citations.
 - **Agent 4 (Procurement & Pricing)**: Queries a MongoDB parts catalog to find matching OEM and aftermarket part numbers and approximate local prices.
 
+## Documentation
+
+- [`docs/AGENT4.md`](docs/AGENT4.md) — Agent 4 (Procurement & Pricing): data model, workflow, resolver, API, testing, evaluation, limitations.
+- [`docs/OTHER-AGENTS.md`](docs/OTHER-AGENTS.md) — audit findings and improvement plan for Agents 1–3.
+
 ## Repository Layout
 
 ```

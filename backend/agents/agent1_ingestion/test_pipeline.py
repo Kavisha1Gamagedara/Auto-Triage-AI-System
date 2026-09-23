@@ -1,0 +1,361 @@
+import asyncio
+import sys
+import os
+
+# Ensure backend root is on sys.path
+_backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
+try:
+    from core.models import DiagnosticRequest, Agent1Payload, VehicleDetails
+except ImportError:
+    from models import DiagnosticRequest, Agent1Payload, VehicleDetails
+
+try:
+    from .nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from .nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
+except ImportError:
+    from nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
+
+
+async def test_extraction_cases():
+    print("=== [1] Testing Multi-Vehicle spaCy NLP Extraction ===")
+
+    test_cases = [
+        {
+            "input": "2019 Honda Civic with trouble code P0171 running rough and check engine light",
+            "expected_make": "Honda",
+            "expected_model": "Civic",
+            "expected_year": 2019,
+            "expected_dtc": "P0171"
+        },
+        {
+            "input": "Technician note: 2017 Ford F-150 misfiring on acceleration code P0300 with cracked spark plug",
+            "expected_make": "Ford",
+            "expected_model": "F-150",
+            "expected_year": 2017,
+            "expected_dtc": "P0300",
+            "expected_part": "spark plug"
+        },
+        {
+            "input": "Customer brought in 2021 Toyota Camry showing code P0420 and damaged catalytic converter",
+            "expected_make": "Toyota",
+            "expected_model": "Camry",
+            "expected_year": 2021,
+            "expected_dtc": "P0420",
+            "expected_part": "catalytic converter"
+        },
+        {
+            "input": "2019 Honda Civic with crashed bumper",
+            "expected_make": "Honda",
+            "expected_model": "Civic",
+            "expected_year": 2019,
+            "expected_dtc": None,
+            "expected_part": "bumper"
+        }
+    ]
+
+    for i, case in enumerate(test_cases, 1):
+        clean = sanitize_input(case["input"])
+        extracted = extract_entities(clean)
+        print(f"\nCase {i}: '{case['input']}'")
+        print(f"  -> Extracted: Year={extracted['year']}, Make={extracted['make']}, Model={extracted['model']}, DTCs={extracted['dtc_codes']}, Parts={extracted['damaged_parts']}")
+
+        assert extracted["make"] == case["expected_make"], f"Expected {case['expected_make']}, got {extracted['make']}"
+        assert extracted["model"] == case["expected_model"], f"Expected {case['expected_model']}, got {extracted['model']}"
+        if case.get("expected_dtc"):
+            assert case["expected_dtc"] in extracted["dtc_codes"], f"Expected DTC {case['expected_dtc']} in {extracted['dtc_codes']}"
+
+        if "expected_part" in case:
+            assert case["expected_part"] in extracted["damaged_parts"], f"Expected part '{case['expected_part']}' in {extracted['damaged_parts']}"
+
+    print("\nExtraction Test Cases: ALL PASSED!")
+
+
+async def test_nhtsa_and_payloads():
+    print("\n=== [2] Testing NHTSA Validation & Pydantic Payloads ===")
+
+    # Test Ford F-150 validation with US DOT
+    print("Verifying 2017 Ford F-150 against NHTSA...")
+    is_f150_valid = await verify_vehicle("Ford", "F-150", 2017)
+    print(f"2017 Ford F-150 valid? {is_f150_valid}")
+    assert is_f150_valid is True, "Expected 2017 Ford F-150 to be valid in NHTSA"
+
+    # Test Toyota Camry validation with US DOT
+    print("Verifying 2021 Toyota Camry against NHTSA...")
+    is_camry_valid = await verify_vehicle("Toyota", "Camry", 2021)
+    print(f"2021 Toyota Camry valid? {is_camry_valid}")
+    assert is_camry_valid is True, "Expected 2021 Toyota Camry to be valid in NHTSA"
+
+    # Test Fictitious vehicle validation
+    print("Verifying non-existent vehicle (2025 Ford GalaxyCruiser9000)...")
+    is_bogus_valid = await verify_vehicle("Ford", "GalaxyCruiser9000", 2025)
+    print(f"GalaxyCruiser9000 valid? {is_bogus_valid}")
+    assert is_bogus_valid is False, "Expected non-existent vehicle to be rejected"
+
+    # Build Agent 1 Payload
+    hierarchy = resolve_dtc_hierarchy(["P0301"])
+    canonical = normalize_mechanic_notes("rough idle when cold, shuddering and smells like fuel")
+    payload = Agent1Payload(
+        session_id="sess_live_123",
+        vehicle_details=VehicleDetails(
+            make="Ford",
+            model="F-150",
+            year=2017,
+            is_verified=True
+        ),
+        dtc_codes=["P0301"],
+        damaged_parts=["spark plug"],
+        user_note="rough idle when cold, shuddering and smells like fuel",
+        canonical_query=canonical,
+        dtc_hierarchy=hierarchy
+    )
+    print("\nVerified Agent 1 A2A Payload with Hierarchical DTC and Normalized Query:")
+    print(payload.model_dump_json(indent=2))
+
+    assert payload.canonical_query is not None
+    assert "misfire" in payload.canonical_query
+    assert payload.dtc_hierarchy[0].family_code == "P0300"
+    assert payload.dtc_hierarchy[0].system == "Powertrain"
+
+    print("\nNHTSA & Payload Verification: ALL PASSED!")
+
+
+async def test_ir_query_and_dtc_hierarchy():
+    print("\n=== [3] Testing IR Query Processing & DTC Code Taxonomy ===")
+    
+    # Test 1: Mechanic Note Normalization & Synonym Expansion
+    test_note = "Customer reports violent shuddering, hesitates on acceleration, car smells like gas"
+    canonical = normalize_mechanic_notes(test_note)
+    print(f"Raw Note: '{test_note}'")
+    print(f"Canonical IR Query: '{canonical}'")
+    assert "misfire" in canonical, "Expected 'misfire' expansion from 'shuddering'"
+    assert "gas" not in canonical or "fuel vapor leak" in canonical, "Expected synonym expansion for fuel odor"
+
+    # Test 2: DTC Hierarchy Fallback (P0301 -> P0300 family, P0171 -> P0100 family)
+    hierarchy = resolve_dtc_hierarchy(["P0301", "P0171", "C0123"])
+    print(f"\nDTC Hierarchy Output:")
+    for h in hierarchy:
+        print(f"  {h['exact_code']} -> Family: {h['family_code']} ({h['family_name']}) | System: {h['system']}")
+
+    assert hierarchy[0]["exact_code"] == "P0301"
+    assert hierarchy[0]["family_code"] == "P0300"
+    assert hierarchy[0]["system"] == "Powertrain"
+    assert hierarchy[1]["exact_code"] == "P0171"
+    assert hierarchy[1]["family_code"] == "P0100"
+    assert hierarchy[2]["system"] == "Chassis"
+
+    print("\nIR Query Processing & DTC Hierarchy Tests: ALL PASSED!")
+
+
+async def test_vin_decoding():
+    print("\n=== [4] Testing ISO 3779 VIN Checksum & NHTSA Decoder ===")
+
+    # Test 1: Offline MOD-11 Checksum Validation
+    valid_vin = "1HGCR2F85HA000000"  # Real Honda Accord VIN with calculated 9th check digit 5
+    invalid_vin = "1HGCR2F89HA000000"  # Checksum mismatch
+    illegal_vin = "1HGCR2F85HI000000"  # Contains illegal character 'I'
+
+    check_valid = validate_vin_checksum(valid_vin)
+    print(f"Valid VIN ({valid_vin}) check: valid={check_valid['is_valid']}, check_digit={check_valid['actual_check_digit']}")
+    assert check_valid["is_valid"] is True
+
+    check_invalid = validate_vin_checksum(invalid_vin)
+    print(f"Invalid VIN ({invalid_vin}) check: valid={check_invalid['is_valid']}, error={check_invalid['error']}")
+    assert check_invalid["is_valid"] is False
+
+    check_illegal = validate_vin_checksum(illegal_vin)
+    print(f"Illegal VIN ({illegal_vin}) check: valid={check_illegal['is_valid']}, error={check_illegal['error']}")
+    assert check_illegal["is_valid"] is False
+
+    # Test 2: Online NHTSA VIN Decoder
+    print(f"\nQuerying NHTSA to decode '{valid_vin}'...")
+    decoded = await decode_vin_nhtsa(valid_vin)
+    print(f"Decoded: Make={decoded.get('make')}, Model={decoded.get('model')}, Year={decoded.get('year')}, Engine={decoded.get('engine_displacement_l')}L, Fuel={decoded.get('fuel_type')}")
+    assert decoded["success"] is True
+    assert decoded["make"].upper() == "HONDA"
+    assert "ACCORD" in decoded["model"].upper()
+    assert decoded["year"] == 2017
+
+    # Test 3: Unstructured text containing a VIN
+    text_with_vin = "Technician scan on VIN 1HGCR2F85HA000000 showing rough idling and code P0301"
+    extracted_vin = extract_vin(text_with_vin)
+    assert extracted_vin == valid_vin
+
+    print("\nVIN Checksum & NHTSA Decoder Tests: ALL PASSED!")
+
+
+async def test_fuzzy_vehicle_matching():
+    print("\n=== [5] Testing Fuzzy Typo-Tolerant Vehicle Name Correction (RapidFuzz / Levenshtein) ===")
+
+    # Test 1: Direct fuzzy token correction
+    toyta, toyta_corr = fuzzy_correct_make("Toyta")
+    print(f"Make 'Toyta' -> {toyta} (Lev: {toyta_corr['levenshtein_distance']}, Sim: {toyta_corr['similarity']}%)")
+    assert toyta == "Toyota"
+    assert toyta_corr["levenshtein_distance"] == 1
+
+    commry, commry_corr = fuzzy_correct_model("Commry")
+    print(f"Model 'Commry' -> {commry} (Lev: {commry_corr['levenshtein_distance']}, Sim: {commry_corr['similarity']}%)")
+    assert commry == "Camry"
+    assert commry_corr["levenshtein_distance"] == 2
+
+    silvrado, silvrado_corr = fuzzy_correct_model("Silvrado")
+    print(f"Model 'Silvrado' -> {silvrado} (Lev: {silvrado_corr['levenshtein_distance']}, Sim: {silvrado_corr['similarity']}%)")
+    assert silvrado == "Silverado"
+    assert silvrado_corr["levenshtein_distance"] == 1
+
+    hnda, hnda_corr = fuzzy_correct_make("Hnda")
+    civc, civc_corr = fuzzy_correct_model("Civc")
+    assert hnda == "Honda" and civc == "Civic"
+
+    mercdes, mercdes_corr = fuzzy_correct_make("Mercdes")
+    assert mercdes == "Mercedes-Benz"
+
+    # Test 2: Negative/False positive checks (conversational words must NOT match)
+    for word in ["the", "car", "code", "engine", "with"]:
+        m, corr_m = fuzzy_correct_make(word)
+        mod, corr_mod = fuzzy_correct_model(word)
+        assert corr_m is None and corr_mod is None, f"Word '{word}' was mistakenly matched as make/model"
+
+    # Test 3: Unstructured Complaint NLP Extraction with Multiple Typos
+    typo_text = "Customer brought in 2019 Toyta Commry showing code P0171 and rough idle"
+    entities = extract_entities(typo_text)
+    print(f"\nNLP Typo Extraction for: '{typo_text}'")
+    print(f"  -> Extracted Make: {entities['make']}")
+    print(f"  -> Extracted Model: {entities['model']}")
+    print(f"  -> Extracted Year: {entities['year']}")
+    print(f"  -> Typo Corrections: {entities['fuzzy_corrections']}")
+    assert entities["make"] == "Toyota"
+    assert entities["model"] == "Camry"
+    assert len(entities["fuzzy_corrections"]) == 2
+
+    # Test 4: End-to-End NHTSA Verification with Typo inputs
+    print("\nVerifying typo inputs against NHTSA...")
+    valid_with_typo = await verify_vehicle("Toyta", "Commry", 2019)
+    print(f"2019 Toyta Commry verified via NHTSA with auto-correction: {valid_with_typo}")
+    assert valid_with_typo is True
+
+    valid_chevy_typo = await verify_vehicle("Chevy", "Silvrado", 2017)
+    print(f"2017 Chevy Silvrado verified via NHTSA with auto-correction: {valid_chevy_typo}")
+    assert valid_chevy_typo is True
+
+    print("\nFuzzy / Typo-Tolerant Vehicle Name Correction Tests: ALL PASSED!")
+
+
+async def test_dtc_cascade_classification():
+    print("\n=== [6] Testing Multi-DTC Cascade & Causal Correlation Classifier ===")
+
+    # Test 1: Classic Lean -> Misfire -> Catalyst Cascade
+    codes_cascade = ["P0171", "P0300", "P0420"]
+    cascade_res = classify_dtc_cascades(codes_cascade)
+    print(f"\nAnalyzing Multi-DTC set: {codes_cascade}")
+    print(f"  -> Has Cascade? {cascade_res['has_cascade']}")
+    print(f"  -> Primary Trigger Code: {cascade_res['primary_code']} ({cascade_res['primary_description']})")
+    print(f"  -> Consequential Cascade Symptoms: {cascade_res['cascade_codes']}")
+    print(f"  -> Causal Propagation Links ({len(cascade_res['cascade_chains'])} detected):")
+    for chain in cascade_res["cascade_chains"]:
+        print(f"     * {chain['root_code']} -> {chain['consequential_code']}: {chain['mechanism']}")
+    print(f"  -> Diagnostic Summary: {cascade_res['diagnostic_summary']}")
+
+    assert cascade_res["has_cascade"] is True
+    assert cascade_res["primary_code"] == "P0171"
+    assert "P0300" in cascade_res["cascade_codes"]
+    assert "P0420" in cascade_res["cascade_codes"]
+    assert len(cascade_res["cascade_chains"]) >= 2
+
+    # Test 2: Upstream Sensor (MAF) -> Fuel Trim -> Combustion Misfire
+    codes_sensor = ["P0101", "P0171", "P0300"]
+    sensor_res = classify_dtc_cascades(codes_sensor)
+    print(f"\nAnalyzing Sensor Multi-DTC set: {codes_sensor}")
+    print(f"  -> Primary Trigger Code: {sensor_res['primary_code']}")
+    print(f"  -> Cascade Codes: {sensor_res['cascade_codes']}")
+    assert sensor_res["has_cascade"] is True
+    assert sensor_res["primary_code"] == "P0101"
+    assert "P0171" in sensor_res["cascade_codes"]
+    assert "P0300" in sensor_res["cascade_codes"]
+
+    # Test 3: Single DTC (No multi-code cascade)
+    codes_single = ["P0171"]
+    single_res = classify_dtc_cascades(codes_single)
+    print(f"\nAnalyzing Single DTC: {codes_single}")
+    print(f"  -> Has Cascade? {single_res['has_cascade']} (Expected False)")
+    assert single_res["has_cascade"] is False
+    assert single_res["primary_code"] == "P0171"
+    assert len(single_res["cascade_codes"]) == 0
+
+    # Test 4: End-to-End Extraction with Multi-DTC complaint text
+    complaint = "2019 Honda Civic with codes P0171, P0300, and P0420 running rough with sulfur exhaust odor"
+    nlp_res = extract_entities(complaint)
+    print(f"\nTesting Full NLP Extraction for Cascade Complaint:")
+    print(f"  -> Extracted DTCs: {nlp_res['dtc_codes']}")
+    print(f"  -> Cascade Detected: {nlp_res['dtc_cascade']['has_cascade']}")
+    print(f"  -> Primary Trigger: {nlp_res['dtc_cascade']['primary_code']}")
+    assert nlp_res["dtc_cascade"]["has_cascade"] is True
+    assert nlp_res["dtc_cascade"]["primary_code"] == "P0171"
+
+    # Test 5: Verify Agent1Payload schema serialization with dtc_cascade
+    payload = Agent1Payload(
+        session_id="test_cascade_session",
+        vehicle_details=VehicleDetails(
+            make="Honda",
+            model="Civic",
+            year=2019,
+            is_verified=True
+        ),
+        dtc_codes=codes_cascade,
+        user_note=complaint,
+        dtc_cascade=cascade_res
+    )
+    assert payload.dtc_cascade is not None
+    assert payload.dtc_cascade.has_cascade is True
+    assert payload.dtc_cascade.primary_code == "P0171"
+    print("\nMulti-DTC Cascade & Causal Correlation Classifier Tests: ALL PASSED!")
+
+
+async def main():
+    await test_extraction_cases()
+    await test_nhtsa_and_payloads()
+    await test_ir_query_and_dtc_hierarchy()
+    await test_vin_decoding()
+    await test_fuzzy_vehicle_matching()
+    await test_dtc_cascade_classification()
+    print("\n==========================================")
+    print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
+    print("==========================================")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+

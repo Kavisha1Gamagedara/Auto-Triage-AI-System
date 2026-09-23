@@ -40,6 +40,9 @@ backend/.venv/
 .env
 .env.local
 .env.*.local
+backend/.env
+backend/.env.local
+backend/.env.*.local
 
 # IDEs and Editors
 .vscode/
@@ -62,3 +65,5 @@ ehthumbs_vista.db
 *.stackdump
 [Dd]esktop.ini
 .DS_Store
+
+chroma_db/
