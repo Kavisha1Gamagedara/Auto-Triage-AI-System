@@ -21,10 +21,10 @@ try:
     response = requests.post(URL, json=mock_payload)
     response.raise_for_status()
     
-    print("\n✅ Success! Agent 2 Output:")
+    print("\n Success! Agent 2 Output:")
     print(json.dumps(response.json(), indent=2))
     
 except requests.exceptions.ConnectionError:
     print("\n[ERROR] Connection refused. Is your FastAPI server running on port 8000?")
 except requests.exceptions.HTTPError:
-    print(f"\n[HTTP {response.status_code} Error from Agent 2]:\n{response.text}")
+    print(f"\n[HTTP {response.status_code} Error from Agent 2]:\n{response.text}")
