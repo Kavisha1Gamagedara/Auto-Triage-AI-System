@@ -1,7 +1,25 @@
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, model_validator
+from typing import List, Optional, Dict, Any,Literal
+from pydantic import BaseModel, Field, model_validator, computed_field
 
 
+
+class Hypothesis(BaseModel):
+    root_cause_component: str = Field(
+        ..., description="The specific failing component, e.g. 'Mass Airflow (MAF) Sensor'"
+    )
+    failure_mode: str = Field(
+        ..., description="How it fails, e.g. 'Contaminated hot-wire element under-reporting airflow'"
+    )
+    confidence: int = Field(
+        ..., ge=0, le=100,
+        description="Independent confidence 0-100 for THIS hypothesis. Values across hypotheses do NOT sum to 100."
+    )
+    supporting_evidence: List[str] = Field(
+        ..., description="The specific DTC codes and phrases from the user note that support this"
+    )
+    confirming_test: str = Field(
+        ..., description="The cheapest workshop test that confirms or eliminates this hypothesis"
+    )
 class DiagnosticRequest(BaseModel):
     """
     Payload received by Agent 1 from the technician or customer interface.
