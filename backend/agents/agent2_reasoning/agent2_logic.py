@@ -1,4 +1,6 @@
 import json
+import unicodedata
+from core.models import DiagnosticResult, Agent1Payload
 import os
 from dotenv import load_dotenv
 from groq import Groq
@@ -17,16 +19,30 @@ def get_client() -> Groq:
         raise ValueError("GROQ_API_KEY is not set. Please add GROQ_API_KEY to your .env file or environment variables.")
     return Groq(api_key=api_key)
 
-RESULT_SCHEMA = json.dumps(DiagnosticResult.model_json_schema(), indent=2)
+SYSTEM_PROMPT = """You are an expert automotive diagnostic technician performing structured differential diagnosis.
 
-SYSTEM_PROMPT = f"""
-You are an expert Master Auto Mechanic. Analyze the vehicle specifications, DTC codes, and user symptoms to deduce the SINGLE most likely physical component that has failed.
-Evaluate the data logically: cross-reference electrical codes with physical symptoms to isolate the root cause. Do not guess blindly. Output the exact component name clearly so a parts database can search for it.
+Work in this exact order:
+1. Reason step by step from the DTC codes and described symptoms to a set of candidate causes. Record these in "reasoning_steps".
+2. Only then rank the candidates and assign confidence.
 
-Respond with ONLY a valid JSON object - no markdown, no code fences, no extra text.
-The JSON object must match this JSON schema exactly, using these exact field names:
-{RESULT_SCHEMA}
+Rules:
+- Produce ONE primary hypothesis and 1-3 differential hypotheses.
+- Differentials must be genuinely DIFFERENT components or systems, never a rewording of the primary.
+- Every hypothesis must physically exist on the stated year/make/model and be consistent with its drivetrain.
+- "confidence" is independent per hypothesis and must NOT sum to 100 across hypotheses.
+- The primary hypothesis must carry the highest confidence.
+- "supporting_evidence" must reference the actual DTC codes and actual phrases from the user note. Never invent symptoms that were not reported.
+- "confirming_test" must be the cheapest test that separates this hypothesis from the others.
+- If evidence is thin, express that through low confidence values rather than inventing certainty.
+- Use only plain ASCII characters. No typographic dashes, curly quotes, or emoji.
+
+Respond with a single JSON object and nothing else, matching this schema exactly:
+{schema}
 """
+
+SYSTEM_CONTENT = SYSTEM_PROMPT.replace(
+    "{schema}",json.dumps(DiagnosticResult.model_json_schema(), indent=2)
+)
 
 def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     client = get_client()
@@ -53,16 +69,24 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
 
         model=GROQ_MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_CONTENT},
             {"role": "user", "content": diagnostic_context}
         ],
         response_format={"type":"json_object"},
+        max_completion_tokens=4096,
         temperature=0.1 # Keep temperature low for deterministic, factual reasoning
     )
 
     choice = response.choices[0]
     raw = choice.message.content
- 
+
+    if not raw:
+        raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")
+
+    #Fold typgraphic characters to ASCII equivalents before parsing,
+    #so downstream agents and Windows consoles never choke on curly quotes or em-dashes.
+    raw = unicodedata.normalize("NFKC",raw)
+    
     # Debug output - remove once everything works
     print("MODEL:", GROQ_MODEL)
     print("RAW LLM OUTPUT:", repr(raw))
