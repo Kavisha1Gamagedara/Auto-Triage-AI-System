@@ -258,7 +258,7 @@ class DiagnosticResult(BaseModel):
 
     @model_validator(mode="after")
     def primary_must_rank_highest(self):
-        candidates = [h for h in self.differrential_hypotheses if h.verified]
+        candidates = [h for h in self.differential_hypotheses if h.verified]
 
        #Ranking the verified candidates
         if candidates:
