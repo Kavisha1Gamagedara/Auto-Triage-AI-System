@@ -1,13 +1,12 @@
 import json
 import unicodedata
-from core.models import DiagnosticResult, Agent1Payload
 import os
 from dotenv import load_dotenv
 from groq import Groq
 try:
-    from core.models import Agent1Payload, DiagnosticResult
+    from core.models import Agent1Payload, DiagnosticResult, Hypothesis, VerificationResponse
 except ImportError:
-    from models import Agent1Payload, DiagnosticResult
+    from models import Agent1Payload, DiagnosticResult, Hypothesis, VerificationResponse
 
 load_dotenv()
 
@@ -18,7 +17,7 @@ def get_client() -> Groq:
     if not api_key:
         raise ValueError("GROQ_API_KEY is not set. Please add GROQ_API_KEY to your .env file or environment variables.")
     return Groq(api_key=api_key)
-
+    
 SYSTEM_PROMPT = """You are an expert automotive diagnostic technician performing structured differential diagnosis.
 
 Work in this exact order:
@@ -40,9 +39,84 @@ Respond with a single JSON object and nothing else, matching this schema exactly
 {schema}
 """
 
+
 SYSTEM_CONTENT = SYSTEM_PROMPT.replace(
     "{schema}",json.dumps(DiagnosticResult.model_json_schema(), indent=2)
 )
+
+VERIFIER_PROMPT = """You are a vehicle systems expert. You are NOT diagnosing anything.
+
+For each candidate component listed, decide two things about the specified vehicle:
+1. Does this component physically exist on this year/make/model, given its drivetrain and engine type?
+2. Could a fault in it plausibly set the listed DTC codes?
+
+Mark plausible=false only when you are confident the component does not exist on this vehicle
+or cannot set these codes. Uncertainty is not grounds for rejection.
+
+Common failures to catch: distributor caps on coil-on-plug engines, spark plugs or oxygen
+sensors on battery electric vehicles, carburettor parts on fuel-injected engines, timing belts
+on timing-chain engines.
+
+Use only plain ASCII. Respond with a single JSON object matching this schema:
+{schema}
+"""
+
+VERIFIER_CONTENT = VERIFIER_PROMPT.replace(
+    "{schema}", json.dumps(VerificationResponse.model_json_schema(), indent=2)
+)
+
+def verify_hypotheses(result: DiagnosticResult, payload: Agent1Payload) -> DiagnosticResult:
+    client =get_client()
+    candidates = [result.primary_hypothesis] + result.differential_hypotheses
+
+    listing ="\n".join(
+        f"{i}. {h.root_cause_component} - {h.failure_mode}"
+        for i, h in enumerate(candidates)
+    )
+    context =(
+        f"Vehicle: {payload.vehicle.get('year')} {payload.vehicle.get('make')} {payload.vehicle.get('model')}\n"
+        f"DTC Codes: {', '.join(payload.dtc_codes)}\n"
+        f"Candidate:\n{listing}"
+    )
+
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": VERIFIER_CONTENT},
+            {"role": "user", "content": context}
+        ],
+        response_format ={"type":"json_object"},
+        max_completion_tokens=2048,
+        temperature=0.0,
+    )
+
+    raw = response.choices[0].message.content
+    if not raw:
+        return result  # verification unavailable; return diagnosis unchanged
+
+    raw = unicodedata.normalize("NFKC", raw)
+    verdicts = VerificationResponse.model_validate_json(raw).verdicts
+
+    for v in verdicts:
+        if 0 <= v.index < len(candidates) and not v.plausible:
+            candidates[v.index].verified = False
+            candidates[v.index].verification_note = v.reason
+
+    return _rebuild(result, candidates)
+
+def _rebuild(result: DiagnosticResult, candidates: list[Hypothesis]) -> DiagnosticResult:
+    verified = [h for h in candidates if h.verified]
+    rejected = [h for h in candidates if not h.verified]
+
+    if not verified:
+        result.status = "unverified"
+        return result
+
+    verified.sort(key=lambda h: h.confidence, reverse=True)
+    result.primary_hypothesis = verified[0]
+    result.differential_hypotheses = verified[1:] + rejected
+    result.status = "diagnosed"
+    return result
 
 def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     client = get_client()
@@ -97,5 +171,10 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
  
     # Convert the JSON string to a dict, then validate it against the Pydantic model
     result_dict = json.loads(raw)
-    return DiagnosticResult.model_validate(result_dict)
+    result = DiagnosticResult.model_validate(result_dict)
 
+    try:
+        return verify_hypotheses(result, payload)
+    except Exception as exc:
+        print(f"Verification stage failed, returning raw result: {exc}")
+        return result
