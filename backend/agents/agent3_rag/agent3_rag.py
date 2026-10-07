@@ -19,8 +19,11 @@ client = AsyncOpenAI(
 async def get_repair_procedure(target_component: str, vehicle_model: str) -> dict:
     print(f"Searching manuals for: {target_component}...")
     
-    # 1. Connect to your local ChromaDB
-    db_client = chromadb.PersistentClient(path="./chroma_db")
+    # 1. Connect to local ChromaDB (agent directory with fallback to root)
+    chroma_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
+    if not os.path.exists(chroma_dir):
+        chroma_dir = os.path.abspath("./chroma_db")
+    db_client = chromadb.PersistentClient(path=chroma_dir)
     collection = db_client.get_collection(name="oem_manuals")
 
     # 2. Execute Vector Search

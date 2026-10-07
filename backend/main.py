@@ -2,25 +2,22 @@ import os
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from agent3_rag import get_repair_procedure
-from models import RepairRequest
-
-from models import (
+# Core shared schemas and database
+from core.models import (
     DiagnosticRequest, 
     Agent1Payload, 
     VehicleDetails, 
     DiagnosticResult,
     SpellcheckRequest,
     DTCCascadeRequest,
-    DTCCascadeAnalysis
+    DTCCascadeAnalysis,
+    RepairRequest,
+    ProcurementRequest, 
+    ProcurementResponse
 )
-from models import ProcurementRequest, ProcurementResponse
-from nhtsa_validator import (
-    verify_vehicle,
-    decode_vin_nhtsa,
-    validate_vin_checksum
-)
-from nlp_extractor import (
+
+# Agent 1 - Ingestion, Validation, IR & Cascade
+from agents.agent1_ingestion import (
     extract_entities, 
     sanitize_input, 
     extract_dtc_codes, 
@@ -31,20 +28,29 @@ from nlp_extractor import (
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
-    nlp
+    nlp,
+    verify_vehicle,
+    decode_vin_nhtsa,
+    validate_vin_checksum
 )
 
-# Safely import Agent 2 diagnostic reasoning engine
+# Agent 2 - Cognitive Diagnostic Reasoning
 try:
     import groq
-    from agent2_logic import deduce_root_cause
+    from agents.agent2_reasoning import deduce_root_cause
 except Exception as e:
     groq = None
     deduce_root_cause = None
 
-# Safely import Agent 4 procurement & pricing engine
+# Agent 3 - Retrieval-Augmented Generation (OEM Manuals)
 try:
-    from agent4_procurement import get_procurement_quote
+    from agents.agent3_rag import get_repair_procedure
+except Exception as e:
+    get_repair_procedure = None
+
+# Agent 4 - Procurement & Pricing
+try:
+    from agents.agent4_procurement import get_procurement_quote
 except Exception as e:
     get_procurement_quote = None
 

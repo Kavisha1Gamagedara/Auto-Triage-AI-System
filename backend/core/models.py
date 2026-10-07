@@ -1,6 +1,5 @@
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, model_validator
-
+from typing import List, Optional, Dict, Any,Literal
+from pydantic import BaseModel, Field, model_validator, computed_field
 
 class DiagnosticRequest(BaseModel):
     """
@@ -210,12 +209,81 @@ class Agent1Payload(BaseModel):
     }
 
 
+class Hypothesis(BaseModel):
+    root_cause_component: str = Field(
+        ..., description="The specific failing component, e.g. 'Mass Airflow (MAF) Sensor'"
+    )
+    failure_mode: str = Field(
+        ..., description="How it fails, e.g. 'Contaminated hot-wire element under-reporting airflow'"
+    )
+    confidence: int = Field(
+        ..., ge=0, le=100,
+        description="Independent confidence 0-100 for THIS hypothesis. Values across hypotheses do NOT sum to 100."
+    )
+    supporting_evidence: List[str] = Field(
+        ..., description="The specific DTC codes and phrases from the user note that support this"
+    )
+    confirming_test: str = Field(
+        ..., description="The cheapest workshop test that confirms or eliminates this hypothesis"
+
+    )
+
+    #Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning.
+    verified: bool =Field(
+        default =True,
+        description ="Set by the verifcation stage. Not produced by the diagnostic stage."
+
+    )
+    verification_note: str =Field(
+        default ="",
+        description ="Why this hypothesis was rejected, it it was."
+    )
+
+
 class DiagnosticResult(BaseModel):
-    """The strictly formatted payload output from Agent 2 to Agents 3 & 4."""
-    root_cause_component: str = Field(description="Exact physical part needing replacement (e.g., 'Mass Air Flow Sensor')")
-    failure_mode: str = Field(description="Mechanical reasoning for why the part failed")
-    severity: str = Field(description="Risk level: Low, Medium, or Critical")
-    safety_warning: str = Field(description="Specific safety hazards for the mechanic")
+
+   #To verify everything got rejected - Agent 2
+    status: Literal["diagnosed","unverified"] = "diagnosed"
+
+    reasoning_steps: List[str] = Field(
+        ..., description="Ordered diagnostic reasoning from symptoms to candidates, BEFORE ranking"
+    )
+    primary_hypothesis: Hypothesis
+    differential_hypotheses: List[Hypothesis] = Field(
+        default_factory=list, max_length=3,
+        description="Alternatives ranked by descending confidence. Distinct components, not restatements."
+    )
+    severity: Literal["low", "moderate", "high", "critical"]
+    safety_warning: str
+
+    @model_validator(mode="after")
+    def primary_must_rank_highest(self):
+        candidates = [h for h in self.differential_hypotheses if h.verified]
+
+       #Ranking the verified candidates
+        if candidates:
+            best = max(candidates, key=lambda h: h.confidence)
+            if best.confidence > self.primary_hypothesis.confidence and self.primary_hypothesis.verified:
+                others = [h for h in self.differential_hypotheses if h is not best]
+                others.append(self.primary_hypothesis)
+                self.primary_hypothesis = best
+                self.differential_hypotheses = sorted(others, key=lambda h: h.confidence, reverse=True)
+            else:
+                self.differential_hypotheses = sorted(
+                    self.differential_hypotheses, key=lambda h: h.confidence, reverse=True
+                )
+        return self
+
+    @computed_field
+    @property
+    def root_cause_component(self) -> str:
+        return self.primary_hypothesis.root_cause_component
+
+    @computed_field
+    @property
+    def failure_mode(self) -> str:
+        return self.primary_hypothesis.failure_mode
+    
 
 
 class RepairRequest(BaseModel):
@@ -287,3 +355,12 @@ class ProcurementResponse(BaseModel):
     safety_warning: str = Field(..., description="Passed through from the request")
     warnings: List[str] = Field(default_factory=list, description="Non-fatal conditions affecting this quote")
     candidates: List[str] = Field(default_factory=list, description="Near-miss part names when resolution failed")
+
+#Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning - Agent 2
+class VerificationVerdict(BaseModel):
+    index: int =Field(...,ge=0, decsription="Psotion of the hypothesis in the list under review")
+    plausible: bool="Whether this component exists on the vehicle and explains the codes"
+    reason: str = Field(...,description="One sentence. Required when plausible is false.")
+
+class VerificationResponse(BaseModel):
+    verdicts: List[VerificationVerdict]

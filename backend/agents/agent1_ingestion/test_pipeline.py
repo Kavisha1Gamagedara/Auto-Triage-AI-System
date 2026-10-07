@@ -1,22 +1,53 @@
 import asyncio
-from models import DiagnosticRequest, Agent1Payload, VehicleDetails
-from nlp_extractor import (
-    extract_entities, 
-    sanitize_input, 
-    extract_dtc_codes, 
-    extract_year, 
-    extract_vin,
-    resolve_dtc_hierarchy, 
-    normalize_mechanic_notes,
-    fuzzy_correct_make,
-    fuzzy_correct_model,
-    classify_dtc_cascades
-)
-from nhtsa_validator import (
-    verify_vehicle, 
-    decode_vin_nhtsa, 
-    validate_vin_checksum
-)
+import sys
+import os
+
+# Ensure backend root is on sys.path
+_backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
+try:
+    from core.models import DiagnosticRequest, Agent1Payload, VehicleDetails
+except ImportError:
+    from models import DiagnosticRequest, Agent1Payload, VehicleDetails
+
+try:
+    from .nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from .nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
+except ImportError:
+    from nlp_extractor import (
+        extract_entities, 
+        sanitize_input, 
+        extract_dtc_codes, 
+        extract_year, 
+        extract_vin,
+        resolve_dtc_hierarchy, 
+        normalize_mechanic_notes,
+        fuzzy_correct_make,
+        fuzzy_correct_model,
+        classify_dtc_cascades
+    )
+    from nhtsa_validator import (
+        verify_vehicle, 
+        decode_vin_nhtsa, 
+        validate_vin_checksum
+    )
 
 
 async def test_extraction_cases():
