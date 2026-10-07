@@ -66,6 +66,17 @@ SYSTEM_CONTENT = SYSTEM_PROMPT.replace(
     "{schema}",json.dumps(DiagnosticResult.model_json_schema(), indent=2)
 ) + CATALOG_BLOCK
 
+#Validating the Parts match is real
+def _check_catalog_names(result: DiagnosticResult) -> DiagnosticResult:
+    if not CATALOG_PARTS:
+        return result
+    valid = set(CATALOG_PARTS)
+    for h in [result.primary_hypothesis] + result.differential_hypotheses:
+        if h.catalog_part_name and h.catalog_part_name not in valid:
+            logger.warning("Hallucinated catalog name discarded: %r", h.catalog_part_name)
+            h.catalog_part_name = None
+    return result
+
 VERIFIER_PROMPT = """You are a vehicle systems expert. You are NOT diagnosing anything.
 
 For each candidate component listed, decide two things about the specified vehicle:
@@ -192,8 +203,10 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
         raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")
  
     # Convert the JSON string to a dict, then validate it against the Pydantic model
+
     result_dict = json.loads(raw)
     result = DiagnosticResult.model_validate(result_dict)
+    result = _check_catalog_names(result)
 
     try:
         return verify_hypotheses(result, payload)
