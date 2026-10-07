@@ -239,6 +239,12 @@ class Hypothesis(BaseModel):
         description ="Why this hypothesis was rejected, it it was."
     )
 
+    #Adding catalog_part_name to support Agent 4 procurement request
+    catalog_part_name: Optional[str] = Field(
+        default=None,
+        description="Exact part name from the supplied catalog list, if one matches this component. Null if no catalog entry fits."
+    )
+
 
 class DiagnosticResult(BaseModel):
 
