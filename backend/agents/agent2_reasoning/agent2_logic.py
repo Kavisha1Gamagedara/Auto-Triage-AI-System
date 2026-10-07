@@ -27,7 +27,7 @@ def _load_catalog_parts() -> list[str]:
         logger.warning("Catalog vocabulary unavailable, falling back to free text: %s", exc)
         return []
 
-CATALOG_PART_NAMES = _load_catalog_parts()
+CATALOG_PARTS = _load_catalog_parts()
 
 def get_client() -> Groq:
     api_key = os.getenv("GROQ_API_KEY")
@@ -56,11 +56,15 @@ Rules:
 Respond with a single JSON object and nothing else, matching this schema exactly:
 {schema}
 """
-
+CATALOG_BLOCK =(
+    "\n\nAvailable catalog part names:\n" + "\n".join(f"- {n}" for n in CATALOG_PARTS)
+    if CATALOG_PARTS else
+    "\n\nNo catalog is available. Set catalog_part_name to null for every hypothesis."
+)
 
 SYSTEM_CONTENT = SYSTEM_PROMPT.replace(
     "{schema}",json.dumps(DiagnosticResult.model_json_schema(), indent=2)
-)
+) + CATALOG_BLOCK
 
 VERIFIER_PROMPT = """You are a vehicle systems expert. You are NOT diagnosing anything.
 
