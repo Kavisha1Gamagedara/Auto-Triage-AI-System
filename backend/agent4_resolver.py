@@ -401,16 +401,27 @@ class PartResolver:
         embedded = None
         if allow_partial:
             embedded, ruled_out = self._alias_ngram(*clause_tokens(raw))
-        if embedded:
+        tokens = rank_tokens(raw)
+        ranked = [(name, score) for name, score in self._bm25_ranked(tokens) if name not in ruled_out]
+
+        # One catalog name can sit inside another: "gasket for the water
+        # pump" contains "water pump" word for word, but every part word in
+        # it belongs to Water Pump Gasket. When ranking finds a different
+        # part that owns the whole query outright, the embedded hit was only
+        # a fragment of that part's name, and ranking answers instead.
+        fragment = (
+            ranked
+            and ranked[0][0] != embedded
+            and ranked[0][1] >= 0.999
+            and self._clear_winner(ranked)
+        )
+        if embedded and not fragment:
             return {
                 "canonical": embedded,
                 "confidence": ALIAS_PARTIAL_CONFIDENCE,
                 "method": "alias_partial",
                 "candidates": [],
             }
-
-        tokens = rank_tokens(raw)
-        ranked = [(name, score) for name, score in self._bm25_ranked(tokens) if name not in ruled_out]
 
         # (b) BM25 - lexical overlap, handles reordering and partial phrasing.
         #

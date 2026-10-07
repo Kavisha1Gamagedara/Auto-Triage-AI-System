@@ -6,8 +6,8 @@ specific vehicle, sourced entirely from a MongoDB parts catalog.
 > **Core rule: the LLM may propose, only the database may price.**
 > No price and no part number in Agent 4's output ever originates from a model.
 
-**Current catalog:** 24,233 documents · 70 part names · 109 make/model pairs ·
-124 generations · 20 makes · 3 quality tiers.
+**Current catalog:** 35,488 documents · 70 part names · 169 make/model pairs ·
+184 generations · 32 makes · 3 quality tiers.
 
 ---
 
@@ -89,9 +89,9 @@ against NHTSA vPIC several steps earlier.
 `failure_mode` is dropped on purpose: feeding symptom prose to the resolver floods
 the lexical match with non-part words and degrades the lookup.
 
-> **Nothing in the codebase currently joins these two branches.** The endpoint works;
-> no orchestrator, route or frontend code assembles the request. See
-> [Current state](#current-state).
+> **The frontend joins these two branches.** `App.jsx` holds Agent 1's payload and
+> Agent 2's diagnosis and assembles the request itself. There is still no
+> backend orchestrator. See [Current state](#current-state).
 
 ### Why `year` must be an integer
 
@@ -176,8 +176,8 @@ hard failure is a malformed payload.
 
 | File | Lines | Owns |
 |---|---|---|
-| `backend/agent4_procurement.py` | 366 | The six-step workflow, LLM fallback, tier maths. Entry: `get_procurement_quote()` (line 176) |
-| `backend/agent4_resolver.py` | 316 | `PartResolver` and its five matching stages. Knows nothing about prices or vehicles |
+| `backend/agent4_procurement.py` | 373 | The six-step workflow, LLM fallback, tier maths. Entry: `get_procurement_quote()` (line 180) |
+| `backend/agent4_resolver.py` | 572 | `PartResolver` and its matching stages. Knows nothing about prices or vehicles |
 | `backend/db.py` | 17 | Reads `.env`, exposes `MongoClient` + `get_db()`. Generic — Agents 1–3 can reuse it |
 | `backend/models.py` | shared | `ProcurementRequest` (156), `QuotedPart` (187), `TierQuote` (196), `ProcurementResponse` (203) |
 | `backend/main.py` | shared | `POST /api/v1/procure` (167), handler `run_procurement()` (172), guarded import (22) |
@@ -188,9 +188,9 @@ hard failure is a malformed payload.
 |---|---|
 | `backend/data/generate_tables.py` | **The source of truth.** Generates all five CSVs from Python lists + integrity checks |
 | `backend/seed_agent4.py` | CSV → MongoDB. Drops, casts integers, splits BOM lists, builds indexes |
-| `backend/test_agent4_resolver.py` | 10 pytest cases for the resolver |
+| `backend/test_agent4_resolver.py` | 15 pytest cases for the resolver |
 | `backend/test_agent4_procurement.py` | 27 pytest cases for the pipeline |
-| `eval/run_eval.py` | Retrieval harness — Precision@1, Recall@3, MRR with ablation flags |
+| `eval/run_eval.py` | Eval harness — production-path outcome per category, plus Precision@1, Recall@3, MRR with ablation flags |
 
 ### The dependency rule
 
@@ -217,8 +217,8 @@ All four satellite collections key on a field of `parts`. Nothing joins to anyth
 
 | Collection | Rows | Key columns | Role | Index |
 |---|---:|---|---|---|
-| `parts` | 23,787 | `part_name, part_category, make, model, generation, year_from, year_to, tier, brand, part_number, price_lkr` | The only source of prices and part numbers | `{make, model, generation, part_name}` |
-| `generations` | 124 | `make, model, generation, year_from, year_to, segment` | Model year → generation code | `{make, model, year_from, year_to}` |
+| `parts` | 34,982 | `part_name, part_category, make, model, generation, year_from, year_to, tier, brand, part_number, price_lkr` | The only source of prices and part numbers | `{make, model, generation, part_name}` |
+| `generations` | 184 | `make, model, generation, year_from, year_to, segment` | Model year → generation code | `{make, model, year_from, year_to}` |
 | `part_aliases` | 273 | `alias, canonical, source` | Trade vocabulary → catalog name | `{alias}` unique |
 | `bom_dependencies` | 35 | `primary_part, requires[], recommends[], source` | Curated companion parts | `{primary_part}` unique |
 | `safety_rules` | 14 | `part_category, block_tiers, reason` | Withholds tiers per category | — |
@@ -229,8 +229,8 @@ is an equality lookup on an indexed field.
 ### Why prices are per generation
 
 A 2013 Corolla (`E170`) and a 2020 Corolla (`E210`) take different brake discs at
-different prices. Storing 23,787 rows rather than 70 is what makes a quote specific
-to the car in the bay. The cost is that a vehicle outside the 109 known make/model
+different prices. Storing 34,982 rows rather than 70 is what makes a quote specific
+to the car in the bay. The cost is that a vehicle outside the 169 known make/model
 pairs cannot be quoted at all.
 
 ### BOM = Bill of Materials
@@ -291,7 +291,7 @@ Six steps, strictly ordered.
 
 ### 1 · Resolve the component
 
-Only `root_cause_component` is resolved — never the failure-mode prose. Five staged
+Only `root_cause_component` is resolved — never the failure-mode prose. Staged
 attempts (see below). **On failure** it returns immediately with `resolved_part: null`,
 a warning and a `candidates` list. No pricing is attempted and nothing is guessed.
 
@@ -367,8 +367,9 @@ only runs when everything above has missed.
 |---|---|---|---|---|
 | 1 | **Exact** | 1.0 | `exact` / `alias_exact` | Whole string is a catalog name or alias |
 | 2 | **Alias n-gram** | 0.9 | `alias_partial` | A known term inside a longer phrase |
-| 3 | **BM25** | ≥ 0.45 | `bm25` | Word overlap, any order |
-| 4 | **Fuzzy** | ≥ 80 | `fuzzy` | Misspellings |
+| 3 | **BM25** | ≥ 0.60, and ≥ 0.10 clear of the runner-up | `bm25` | Word overlap, any order |
+| 4 | **Fuzzy, whole string** | ≥ 80 | `fuzzy` | A misspelt part name on its own |
+| 5 | **Fuzzy, word by word** | same floor as BM25 | `fuzzy` | A misspelt word inside a longer phrase |
 | — | **Honest failure** | 0.0 | `none` | Returns top-3 candidates, never a guess |
 
 ### How each stage works
@@ -377,51 +378,77 @@ only runs when everything above has missed.
 generates `dynamo not charging` / `dynamo not` / `not charging` / `dynamo` / `not` /
 `charging`. Each window is checked against the 283 alias keys + 70 catalog names,
 **longest first**, so `dicky door` beats `door`. Zero approximation — a window either
-is a known term or it isn't. Returns `None` when two different parts are named at the
+is a known term or it isn't. Returns nothing when two different parts are named at the
 same length, rather than guessing.
 
-**BM25.** The classic information-retrieval ranking function. Each of the 70 part
-names is a tiny document; the query is scored against all of them.
+The n-gram stage also decides whether a named part is the one to quote:
 
-```
-query "sensor mass air"  →  Mass Air Flow Sensor  7.307
-                            Air Filter            3.342
-                            Oxygen Sensor         3.342
-                            AC Compressor         0.000
-```
+| Query | Result | Why |
+|---|---|---|
+| `not the alternator, battery is dead` | Battery | `not` sits directly on the alternator |
+| `pads are fine but rotor is warped` | Brake Disc | `fine` follows the pads; `but` starts a new clause |
+| `replaced the alternator already` | no match | The only part named is already done |
+| `dynamo not charging` | Alternator | `not` after the part describes the symptom |
+| `radiator needs replaced` | Radiator | `needs` makes `replaced` the job, not history |
 
-Two ideas make it work. **Rare words count more** (IDF): `mass` appears in 1 name so
-it nearly proves the match; `sensor` appears in 2 so it's ambiguous; `brake` appears
-in 6 so it's nearly worthless alone. And **word order is irrelevant** — `"sensor mass
-air"` scores identically to `"mass air sensor"`.
+Cues only reach within their own clause (split on punctuation and on `but`, `now`,
+`however`, `still`) and within three words of the part. A dismissed part is passed
+down as `ruled_out`, so BM25 and fuzzy cannot bring it back.
 
-Raw BM25 scores are unbounded, so they're normalised by dividing by the score the
-winning name achieves against itself, giving a 0–1 ratio to threshold on.
+**BM25.** The classic information-retrieval ranking function. Every catalog name
+*and every alias* is its own tiny document (341 in total), each remembering which
+part it names; a part scores as its best-matching form. Plain plurals are folded
+(`shocks` → `shock`). Position words are kept here, so `bumper at the rear` covers
+`rear bumper` fully and `front bumper` only half.
 
-**Fuzzy.** `rapidfuzz`'s `token_sort_ratio` — character-level edit distance as a
-0–100 score, with words sorted first so order is neutralised. This is the only stage
-that survives a typo:
+Confidence is **coverage × agreement**, both 0–1:
+
+- **Coverage** — the BM25 score divided by what that form scores against itself.
+  Rare words count more (IDF), and word order is irrelevant. The form's last word
+  must be one of the matched words unless the whole form is present: in
+  `wheel bearing` or `rad hose` the last word is the thing itself, so
+  `wheel alignment` and `rad leaking` do not match on the qualifier alone.
+- **Agreement** — the share of the query's own part vocabulary that the candidate
+  owns. `engine oil change` covers the alias `brake oil` well, but `engine` is a
+  part word Brake Fluid does not own, so the match is marked down and rejected.
+  Words outside the catalog vocabulary (`leaking`, `dirty`) cost nothing.
+
+A match is accepted at ≥ 0.60 **and** at least 0.10 clear of the next part. Two parts
+that score alike (`pads and rotor both worn`) are a tie and are reported with
+candidates.
+
+**A longer name beats the shorter name inside it.** `gasket for the water pump`
+contains `water pump` word for word, so the n-gram stage finds Water Pump. But every
+part word in the query belongs to Water Pump Gasket. When BM25 finds a different part
+that owns the whole query outright (confidence ≥ 0.999, clear of the runner-up), it
+overrides the n-gram hit.
+
+**Fuzzy, whole string.** `rapidfuzz`'s `token_sort_ratio` — character-level edit
+distance as a 0–100 score, with words sorted first so order is neutralised:
 
 ```
 'altenator' → BM25 best score        0.000   (no shared token — helpless)
 'altenator' → fuzzy vs 'alternator'   94.7   (one missing 'r')
 ```
 
-It is also the most expensive (353 string comparisons), which is why it sits last.
+**Fuzzy, word by word.** The whole-string ratio is diluted by every extra word, so
+`raditor leaking` misses where `raditor` alone would hit. This stage replaces each
+query word that is not in the catalog vocabulary (and is at least 4 letters) with the
+closest vocabulary word at ratio ≥ 80, then ranks the corrected words with BM25 under
+the same floor and margin.
 
 ### Strict mode
 
-`resolve(raw, allow_partial=False)` disables the n-gram stage and requires a BM25
-match to be built only from words the part owns. Used **only** for LLM-proposed
-names. See [Design decisions](#3--the-09-vs-07-pricing-collision).
+`resolve(raw, allow_partial=False)` disables the n-gram stage and word-by-word
+correction, and requires a BM25 match to be built only from words the part owns.
+Used **only** for LLM-proposed names. See [Design decisions](#3--the-09-vs-07-pricing-collision).
 
 ### Two deliberate subtleties
 
-**Position words are stripped for ranking, not for exact lookup.** `normalize()`
-drops `front / rear / left / right / side` so "front brake pad" cannot rank Front
-Bumper above Brake Pads. But six catalog names *are* position-qualified (Front
-Bumper, Rear Bumper, Front Door, Front Fender, Rear Hatch, Side Mirror), so exact
-lookups run against the punctuation-stripped form first.
+**Position words are stripped for whole-string fuzzy, not for exact lookup or BM25.**
+`normalize()` drops `front / rear / left / right / side`. But six catalog names *are*
+position-qualified (Front Bumper, Rear Bumper, Front Door, Front Fender, Rear Hatch,
+Side Mirror), so exact lookups run against the punctuation-stripped form first.
 
 **Ambiguous reductions are refused, not resolved.** `front lamp`→Headlight and
 `tail lamp`→Tail Light both reduce to `lamp`; `front buffer` and `rear buffer` both
@@ -461,7 +488,7 @@ deliberate product decision, not an oversight.
 
 ```bash
 pytest backend/test_agent4_resolver.py backend/test_agent4_procurement.py -v
-# 37 passed
+# 42 passed
 ```
 
 No test makes a real LLM call — every test exercising the uncurated path patches
@@ -469,7 +496,7 @@ No test makes a real LLM call — every test exercising the uncurated path patch
 
 | File | Tests | Covers |
 |---|---:|---|
-| `test_agent4_resolver.py` | 10 | Each matching stage, honest failure, the `Rear Bumper` precedence regression, embedded aliases, longest-n-gram-wins, ambiguity refusal |
+| `test_agent4_resolver.py` | 15 | Each matching stage, honest failure, the `Rear Bumper` precedence regression, embedded aliases, longest-n-gram-wins, ambiguity refusal, dismissed parts, typos inside phrases, longer-name override, part-word disagreement |
 | `test_agent4_procurement.py` | 27 | Core rule (adversarially), poisoned-output containment, LLM degradation, strict-mode acceptance and rejection, safety-rule keying, tier arithmetic verified row-by-row against the DB, graceful failure, response contract |
 
 ### Running individual pieces
@@ -480,45 +507,57 @@ No test makes a real LLM call — every test exercising the uncurated path patch
 | `python backend/seed_agent4.py` | Drop and reload MongoDB |
 | `python backend/agent4_resolver.py` | Resolver self-test, one probe per stage |
 | `python backend/agent4_procurement.py` | Five end-to-end quotes with live LLM-call counts |
-| `python eval/run_eval.py` | Retrieval metrics |
+| `python eval/run_eval.py` | Eval on the held-out set (`--testset eval/testset.csv` for the alias-coverage set) |
 
 ---
 
 ## Evaluation
 
-`eval/run_eval.py` scores `eval/testset.csv` (40 queries) for Precision@1, Recall@3
-and MRR, with per-stage ablation.
+`eval/run_eval.py` reports two things:
 
-| Config | Flags | P@1 | R@3 | MRR |
-|---|---|---:|---:|---:|
-| exact only | `--no-bm25 --no-fuzzy --no-alias-ngram` | 0.125 | 0.125 | 0.125 |
-| exact + BM25 + fuzzy | `--no-alias-ngram` | 0.650 | 0.825 | 0.729 |
-| full pipeline | — | **1.000** | **1.000** | **1.000** |
+- **Production path** — what `resolve()` actually answers, which is what gets priced.
+  Each query is *correct*, *wrong* (a different part was accepted) or *unresolved*.
+  A row with an empty `expected` names no catalog part, so staying unresolved is the
+  correct answer for it.
+- **Ranked retrieval** — Precision@1, Recall@3 and MRR over `resolve_ranked()`, which
+  applies no acceptance thresholds. It shows whether the right name is in reach, not
+  whether it would be quoted. The `--no-bm25`, `--no-fuzzy` and `--no-alias-ngram`
+  flags ablate these metrics only.
 
-The harness validates that every `expected` label exists in
-`db.parts.distinct("part_name")` before scoring, since a bad label can never be
-scored correctly and would silently drag the numbers.
+The harness validates that every non-empty `expected` label exists in
+`db.parts.distinct("part_name")` before scoring.
 
-### ⚠ Do not quote the 1.000 as a retrieval result
+### Held-out set — `eval/testset_heldout.csv` (86 queries, the default)
 
-The n-gram stage **alone**, with BM25 and fuzzy both disabled, also scores 1.000.
-Every one of the 40 queries contains a verbatim surface form from `part_aliases.csv`
-or the catalog — 30 from the alias table, 10 from catalog names. Even the apparent
-typo-robustness is pre-enumerated: `water pomp` and `maf` are themselves alias keys.
+| Category | Queries | Correct | Wrong | Unresolved |
+|---|---:|---:|---:|---:|
+| Typos | 23 | 21 | 0 | 2 |
+| Reordered words | 12 | 12 | 0 | 0 |
+| Unseen trade terms | 23 | 7 | 0 | 16 |
+| Negation / already done | 11 | 10 | 0 | 1 |
+| Full sentences | 3 | 3 | 0 | 0 |
+| Not a catalog part | 14 | 14 | 0 | 0 |
+| **All** | **86** | **67** | **0** | **19** |
 
-**The benchmark measures alias-table coverage, not retrieval quality.** The test set
-and the alias table appear to have been authored from the same vocabulary source,
-which makes the evaluation circular. It also can no longer discriminate BM25 from
-fuzzy, since the pre-pass short-circuits both.
+Ranked retrieval on the 70 labelled queries: Precision@1 0.671, Recall@3 0.786,
+MRR 0.726.
 
-**Honest held-out figure: Precision@1 ≈ 0.625** on 8 trade terms deliberately absent
-from the alias table (up from 0.500 before the vocabulary expansion). Treat it as
-indicative only — it is 8 queries.
+Before the resolver rework the same set scored 41 correct, 2 wrong, 43 unresolved.
 
-**To make the number defensible:** build a held-out test set whose trade vocabulary is
-disjoint from `part_aliases.csv`. Then `--no-alias-ngram` measures generalisation and
-the full config measures production behaviour, and the gap between them is the honest
-cost of relying on a curated table.
+**How far to trust it.** The queries were written by hand after reading the alias
+table, before the resolver was changed, and the 0.60 floor was chosen without a
+sweep. It is a fair before/after comparison, not an independent benchmark. The 16
+unresolved trade terms (`trunk lid`, `accumulator`, `lambda reading wrong`) are words
+lexical matching cannot reach; they need alias entries or a semantic stage.
+
+### Alias-coverage set — `eval/testset.csv` (40 queries)
+
+40/40 on the production path and 1.000 on every ranked metric.
+
+**Do not quote this as a retrieval result.** Every one of the 40 queries contains a
+verbatim surface form from `part_aliases.csv` or the catalog, so the n-gram stage
+alone scores 1.000. It measures alias-table coverage and is useful only as a
+regression check.
 
 ---
 
@@ -564,8 +603,8 @@ mechanic writes symptoms around the part name; a model asked for catalog names h
 such excuse.
 
 **Raising the threshold would have changed nothing.** Four vague proposals scored
-exactly **1.000** through BM25, because the normalisation divides by the winning
-name's self-score — any query containing `horn` scores a perfect 1.0 against the
+exactly **1.000** through BM25, because coverage divides by the matched form's
+self-score — any query containing `horn` scores a perfect 1.0 against the
 one-token name `Horn`. `"maybe a horn"` was arithmetically indistinguishable from
 `"Horn"`. No threshold can separate those.
 
@@ -579,10 +618,10 @@ proposal to be built only from words the part owns (its name plus its aliases).
 
 Reordering still passes (`"Coolant Engine"`); padding does not (`"possibly the radiator"`).
 
-**Known residual:** `"Engine Coolant"` scores 0.633 and lands in `unpriced_items`,
-because the catalog name is `Engine Coolant 4L`. Containment passes; the 0.7 floor
-rejects it. That is a conservative, *visible* failure. Lowering `LLM_RESOLVE_ACCEPT`
-to 0.6 would admit it — an open tuning decision, deliberately not made unilaterally.
+**Former residual, now resolved:** `"Engine Coolant"` used to score 0.633 against the
+catalog name `Engine Coolant 4L` and land in `unpriced_items`. Aliases are now BM25
+documents in their own right, so it fully covers the alias `coolant`, passes
+containment, and is priced at 1.0.
 
 ### 4 · BM25 candidates were meaningless on a total miss
 
@@ -590,6 +629,18 @@ When a query shares no token with any name, every BM25 score ties at 0 and "top 
 is just the first three names in index order. `"flux capacitor"` was returning
 `AC Compressor, AC Condenser, Air Filter`. **Fix:** fall back to fuzzy ranking for
 candidates when no BM25 score exceeds zero.
+
+### 4b · Pooling aliases into one BM25 document broke the confidence score
+
+Adding each part's aliases to its BM25 document as one bag of words let BM25 see
+trade vocabulary, but the confidence divides by the document's self-score, and that
+ceiling grew with every alias. `"sensor mass air"` scored 0.156 against Mass Air Flow
+Sensor, and the acceptance floor had to be dropped to 0.20 to pass anything.
+
+**Fix:** one document per surface form, with the part scoring as its best form, and
+the floor back at 0.60. The agreement factor and the last-word rule were added at the
+same time, because single-word aliases as documents would otherwise match any query
+that happens to contain them.
 
 ### 5 · The resolver is a lazy singleton, not built at import
 
@@ -612,12 +663,14 @@ Measured, not estimated.
 1. **Half the catalog has no curated BOM.** 35 of 70 part names reach the LLM path.
    This is now a deliberate product decision, but it means half of all quotes depend
    on a network call and a model's judgement.
-2. **The evaluation is circular** — see [Evaluation](#evaluation). Held-out P@1 ≈ 0.625.
-3. **`alias_partial` has no notion of negation or recency.**
-   `"replaced pads already, now disc is scored"` resolves to **Brake Pads** — the one
-   part already done. `"screen washer arm worn"` resolves to **Control Arm** via the
-   embedded alias `arm`. Both at 0.9. This affects user queries; strict mode only
-   protects the LLM path.
+2. **The held-out evaluation is hand-written by one author** — see [Evaluation](#evaluation).
+   67 of 86 correct with no wrong answers, but 16 of 23 unseen trade terms go unresolved.
+3. **Negation handling is rule-based and shallow.** It covers `not the X`, `X is fine`,
+   `replaced X already` and similar, within a clause and three words of the part.
+   Phrasing outside those rules is not caught. `"screen washer arm worn"` still
+   resolves to **Control Arm** via the embedded alias `arm`, at 0.9, and
+   `"replaced pads already, now disc is scored"` drops the pads but returns no match
+   instead of Brake Disc. This affects user queries; strict mode protects the LLM path.
 4. **Generation boundaries overlap.** Ranges touch rather than abut, so a 2018 Corolla
    matches two generations. Agent 4 picks the newer and warns, but without a VIN it
    cannot know.
@@ -628,21 +681,20 @@ Measured, not estimated.
 6. **It is a parts quote, not a job quote.** No labour hours, shop rate, or tax.
 7. **Fitment stops at the generation.** No trim, engine variant or drivetrain. Two
    E210 Corollas with different engines get an identical MAF quote.
-8. **Coverage is 109 make/model pairs across 20 makes.** Anything else returns a
+8. **Coverage is 169 make/model pairs across 32 makes.** Anything else returns a
    valid response whose only content is a warning.
 9. **Incomplete tiers are easy to misread** — see step 6 above.
-10. **Only 13 of 124 generations are reachable end-to-end** through the NLP intake
-    path, because Agent 1's vocabulary is US-market. See `docs/OTHER-AGENTS.md`.
+10. **Few generations are reachable end-to-end** through the NLP intake path, because
+    Agent 1's vocabulary is US-market. The last count was 13 of 124; it has not been
+    re-measured since the catalog grew to 184. See `docs/OTHER-AGENTS.md`.
 
 ### Improvement backlog
 
 | Priority | Change | Why |
 |---|---|---|
-| High | Decide `LLM_RESOLVE_ACCEPT` 0.7 → 0.6 | Admits legitimate partial names like `"Engine Coolant"` |
-| High | Held-out test set disjoint from `part_aliases.csv` | Turns the eval from a coverage check into a generalisation measure |
-| Med | Put alias surface forms in the BM25 corpus | The architectural fix the n-gram pre-pass approximates; makes the ablation meaningful again |
-| Med | Negation/recency handling in the n-gram pre-pass | Detect "not the X", "already replaced X" and suppress that match |
-| Med | `price_updated`, `currency`, `supplier` on `parts` | Lets the UI flag a stale quote |
+| High | Add the unresolved trade terms to `ALIASES` | 16 of 23 unseen terms in the held-out set go unresolved |
+| High | Held-out queries from real job cards, by someone other than the resolver's author | Makes the eval independent |
+| Med | Real `price_updated`, `currency`, `supplier` values on `parts` | The quote returns these fields, but falls back to fixed defaults when a row lacks them |
 | Med | Resolve the two `REVIEW:` safety rules | Economy catalytic converters and headlamps |
 | Later | `labour_hours` per part → a job quote | The number a customer actually wants |
 | Later | VIN-based generation disambiguation | Agent 1 already talks to vPIC, which decodes VINs |
@@ -657,30 +709,33 @@ Measured, not estimated.
 | `ModuleNotFoundError` for pymongo/rank_bm25 | Wrong virtualenv. `.venv` at the repo root has the Agent 4 dependencies; `backend/venv` contains only pip. |
 | Quote returns nothing for a valid vehicle | Check `year` is an `int`, not a string. String years make the range query return nothing silently. |
 | `uvicorn main:app` fails at import | `main.py:4` imports `agent3_rag`, which needs `chromadb`. Not an Agent 4 problem. |
+| `/api/v1/ingest` returns 500 with a `noun_chunks` error | The spaCy model is missing. Run `python -m spacy download en_core_web_sm`. Not an Agent 4 problem, but it blocks the flow before a quote is requested. |
 | Seed wiped the wrong database | `seed_agent4.py` is destructive against whatever `MONGO_DB` points at. `.env` may point at the shared Atlas cluster, not localhost. |
-| `alias_partial` matched the wrong part | Expected for negated phrasing — see limitation 3. |
+| `alias_partial` matched the wrong part | A short alias inside an unrelated phrase — see limitation 3. |
 
 ---
 
 ## Current state
 
-**Working and verified:** 37 tests pass, generator integrity clean, 24,233 documents
-seeded, all five resolver stages route correctly, route returns 200/422/500 correctly,
-core rule holds adversarially.
+**Working and verified:** 42 tests pass, 35,488 documents seeded, the route runs under
+uvicorn, and the full ingest → diagnose → repair → procure flow runs from the browser.
+
+**Wired:** `App.jsx` calls `/api/v1/procure` after the diagnosis, with Agent 1's
+vehicle and Agent 2's component, severity and safety warning, and renders the quote
+in an "Agent 4 // Parts Quote" panel. A failed quote shows an error in that panel
+without discarding the triage result. The API base URL reads `VITE_API_BASE_URL` and
+falls back to `http://localhost:8000`.
 
 **Not done:**
 
-1. **Nothing assembles the procurement request.** Agent 4 needs Agent 1's vehicle
-   *and* Agent 2's diagnosis in one object. No orchestrator, route or frontend code
-   holds both and calls `/api/v1/procure`.
-2. **The frontend is not wired.** `App.jsx` describes the MongoDB catalog in prose
-   and renders an Agent 4 panel, but contains no call to the endpoint.
-3. **The route has never run under uvicorn.** `main.py` fails to import without
-   `chromadb`. Agent 4's route was verified through stubbed Agent 1/3 modules.
-4. **Two virtualenvs exist** — `.venv` (correct) and `backend/venv` (pip only).
+1. **Only the happy path has been checked in the browser.** The withheld-tier,
+   partial-basket, no-match and error states of the quote panel are coded but unseen.
+2. **There is no backend orchestrator.** The frontend assembles the procurement
+   request; nothing server-side joins Agent 1 and Agent 2.
+3. **Two virtualenvs exist** — `.venv` (correct) and `backend/venv` (pip only).
    Worth deleting the latter.
 
 ---
 
-*Figures current as of the latest regeneration: 24,233 documents, 70 part names,
-109 make/model pairs, 283 resolver alias keys, 37 passing tests.*
+*Figures current as of the latest regeneration: 35,488 documents, 70 part names,
+169 make/model pairs, 283 resolver alias keys, 42 passing tests.*
