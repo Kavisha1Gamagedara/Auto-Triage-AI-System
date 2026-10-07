@@ -23,6 +23,25 @@ except ImportError as e:
     spacy = None
     nlp = None
 
+try:
+    from .extended_automotive_data import (
+        GLOBAL_VEHICLE_CATALOG,
+        EV_HYBRID_ADAS_COMPONENTS,
+        EXTENDED_DTC_TAXONOMY,
+        EXTENDED_DTC_DESCRIPTIONS,
+        EXTENDED_DTC_CASCADE_RULES,
+        is_jdm_chassis_number
+    )
+except ImportError:
+    from extended_automotive_data import (
+        GLOBAL_VEHICLE_CATALOG,
+        EV_HYBRID_ADAS_COMPONENTS,
+        EXTENDED_DTC_TAXONOMY,
+        EXTENDED_DTC_DESCRIPTIONS,
+        EXTENDED_DTC_CASCADE_RULES,
+        is_jdm_chassis_number
+    )
+
 # Automotive manufacturer aliases and standard names
 AUTOMOTIVE_MAKES = {
     "acura": "Acura",
@@ -115,6 +134,12 @@ POPULAR_MODELS = {
     "town ace": "Townace"
 }
 
+# Augment POPULAR_MODELS with Global, JDM and European models
+for _make_k, _models_v in GLOBAL_VEHICLE_CATALOG.items():
+    for _m in _models_v:
+        if _m not in POPULAR_MODELS:
+            POPULAR_MODELS[_m] = _m.title()
+
 # Recognized automotive physical components (Mechanical, Body, Collision, Electrical, Suspension)
 AUTOMOTIVE_COMPONENTS = [
     # Body & Collision
@@ -194,6 +219,11 @@ AUTOMOTIVE_COMPONENTS = [
     "drive shaft",
     "power steering pump"
 ]
+
+# Augment with modern EV, Hybrid and ADAS components
+for _comp in EV_HYBRID_ADAS_COMPONENTS:
+    if _comp not in AUTOMOTIVE_COMPONENTS:
+        AUTOMOTIVE_COMPONENTS.append(_comp)
 
 DAMAGE_ADJECTIVES = {
     "crashed", "damaged", "broken", "cracked", "smashed", "dented", "bent",
@@ -311,6 +341,10 @@ KNOWN_DTC_DESCRIPTIONS = {
     "P0500": "Vehicle Speed Sensor 'A' Malfunction",
     "P0700": "Transmission Control System Malfunction"
 }
+
+# Augment with extended Hybrid, EV and OEM DTC taxonomy and descriptions
+DTC_TAXONOMY.update(EXTENDED_DTC_TAXONOMY)
+KNOWN_DTC_DESCRIPTIONS.update(EXTENDED_DTC_DESCRIPTIONS)
 
 
 def normalize_mechanic_notes(raw_text: str) -> str:
@@ -439,6 +473,16 @@ DTC_CASCADE_CAUSALITY_RULES = [
     (("P0560", "P0561", "P0562", "P0563"), ("U0100", "P0101", "P0171"), "System battery voltage dropping below operational threshold disrupts sensor 5V reference rails and CAN bus communications.")
 ]
 
+# Augment priorities and cascade rules for High Voltage / Hybrid / EV failures
+DTC_CASCADE_PRIORITY.update({
+    "P0A93": 90, "P0C73": 90,
+    "P0AA6": 95, "P3009": 95,
+    "P0A80": 60, "P0A7F": 60, "P3006": 60,
+    "P0A7A": 45, "P0A94": 45,
+    "P3000": 30, "P3190": 30
+})
+DTC_CASCADE_CAUSALITY_RULES.extend(EXTENDED_DTC_CASCADE_RULES)
+
 
 def classify_dtc_cascades(dtc_codes: List[str]) -> Dict[str, Any]:
     """
@@ -556,12 +600,20 @@ def sanitize_input(raw_text: str) -> str:
 
 def extract_vin(text: str) -> Optional[str]:
     """
-    Extracts a standard 17-character ISO 3779 VIN from unstructured text.
+    Extracts a standard 17-character ISO 3779 VIN or Japanese Domestic (JDM) chassis/frame number.
     Standard VINs consist of letters A-Z (excluding I, O, Q) and digits 0-9.
     """
+    # 1. Standard 17-character VIN
     matches = re.findall(r"\b([A-HJ-NPR-Z0-9]{17})\b", text.upper())
     if matches:
         return matches[0]
+
+    # 2. Japanese Chassis / Frame number (e.g. NZE141-1029482, DAA-ZVW30-1234567)
+    jdm_candidates = re.findall(r"\b((?:[A-Z0-9]{2,7}-)?[A-Z0-9]{3,7}-[0-9]{6,8})\b", text.upper())
+    for cand in jdm_candidates:
+        if is_jdm_chassis_number(cand):
+            return cand
+
     return None
 
 
