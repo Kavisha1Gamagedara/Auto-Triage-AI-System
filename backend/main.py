@@ -1,25 +1,56 @@
 import os
+from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from agent3_rag import get_repair_procedure
-from models import RepairRequest
+# Core shared schemas and database
+from core.models import (
+    DiagnosticRequest, 
+    Agent1Payload, 
+    VehicleDetails, 
+    DiagnosticResult,
+    SpellcheckRequest,
+    DTCCascadeRequest,
+    DTCCascadeAnalysis,
+    RepairRequest,
+    ProcurementRequest, 
+    ProcurementResponse
+)
 
-from models import DiagnosticRequest, Agent1Payload, VehicleDetails, DiagnosticResult
-from models import ProcurementRequest, ProcurementResponse
-from nhtsa_validator import verify_vehicle
-from nlp_extractor import extract_entities, sanitize_input, extract_dtc_codes, extract_damaged_parts, nlp
+# Agent 1 - Ingestion, Validation, IR & Cascade
+from agents.agent1_ingestion import (
+    extract_entities, 
+    sanitize_input, 
+    extract_dtc_codes, 
+    extract_damaged_parts, 
+    extract_vin,
+    normalize_mechanic_notes, 
+    resolve_dtc_hierarchy,
+    classify_dtc_cascades,
+    fuzzy_correct_make,
+    fuzzy_correct_model,
+    nlp,
+    verify_vehicle,
+    decode_vin_nhtsa,
+    validate_vin_checksum
+)
 
-# Safely import Agent 2 diagnostic reasoning engine
+# Agent 2 - Cognitive Diagnostic Reasoning
 try:
     import groq
-    from agent2_logic import deduce_root_cause
+    from agents.agent2_reasoning import deduce_root_cause
 except Exception as e:
     groq = None
     deduce_root_cause = None
 
-# Safely import Agent 4 procurement & pricing engine
+# Agent 3 - Retrieval-Augmented Generation (OEM Manuals)
 try:
-    from agent4_procurement import get_procurement_quote
+    from agents.agent3_rag import get_repair_procedure
+except Exception as e:
+    get_repair_procedure = None
+
+# Agent 4 - Procurement & Pricing
+try:
+    from agents.agent4_procurement import get_procurement_quote
 except Exception as e:
     get_procurement_quote = None
 
@@ -81,11 +112,51 @@ async def ingest_diagnostic(request: DiagnosticRequest):
     Both modes validate against the official US DOT NHTSA vPIC database and format
     an Agent-to-Agent (A2A) payload ready for Agent 2.
     """
-    # Check if direct vehicle specs were provided (Manual Spec Entry Mode)
-    if request.make and request.model and request.year:
-        make = request.make.strip()
-        model = request.model.strip()
+    # Initialize extended VIN metadata and fuzzy typo corrections
+    vin = (request.vin or "").strip().upper() if request.vin else None
+    vin_data = None
+    fuzzy_corrections: List[Dict[str, Any]] = []
+
+    # Check Mode 1: Direct VIN Intake Mode
+    if vin:
+        vin_res = await decode_vin_nhtsa(vin)
+        if not vin_res.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"VIN decoding failed for '{vin}': {vin_res.get('error')}"
+            )
+        make = vin_res["make"]
+        model = vin_res["model"]
+        year = vin_res["year"]
+        vin_data = vin_res
+
+        dtc_codes = list(request.dtc_codes or [])
+        damaged_parts = list(request.damaged_parts or [])
+
+        if request.raw_text and request.raw_text.strip():
+            clean_text = sanitize_input(request.raw_text)
+            for code in extract_dtc_codes(clean_text):
+                if code not in dtc_codes:
+                    dtc_codes.append(code)
+            doc = nlp(clean_text) if nlp is not None else clean_text
+            for part in extract_damaged_parts(doc):
+                if part not in damaged_parts:
+                    damaged_parts.append(part)
+
+    # Check Mode 2: Manual Spec Entry Mode (explicit make, model, year)
+    elif request.make and request.model and request.year:
+        raw_make = request.make.strip()
+        raw_model = request.model.strip()
         year = int(request.year)
+
+        # Apply RapidFuzz approximate string matching to tolerate typos in user input
+        make, make_corr = fuzzy_correct_make(raw_make)
+        model, model_corr = fuzzy_correct_model(raw_model)
+
+        if make_corr:
+            fuzzy_corrections.append(make_corr)
+        if model_corr:
+            fuzzy_corrections.append(model_corr)
         
         # Combine provided DTC codes and any found in raw_text
         dtc_codes = list(request.dtc_codes or [])
@@ -104,17 +175,37 @@ async def ingest_diagnostic(request: DiagnosticRequest):
                 if part not in damaged_parts:
                     damaged_parts.append(part)
     else:
-        # Smart NLP Intake Mode
+        # Mode 3: Smart NLP Intake Mode (extracts VIN, specs, DTCs from text)
         sanitized_text = sanitize_input(request.raw_text or "")
         extracted = extract_entities(sanitized_text)
-        make = extracted["make"]
-        model = extracted["model"]
-        year = extracted["year"]
+        
+        # If a 17-character VIN was discovered in the complaint notes, decode via NHTSA
+        if extracted.get("vin"):
+            vin = extracted["vin"]
+            vin_res = await decode_vin_nhtsa(vin)
+            if vin_res.get("success"):
+                make = vin_res["make"]
+                model = vin_res["model"]
+                year = vin_res["year"]
+                vin_data = vin_res
+            else:
+                make = extracted["make"]
+                model = extracted["model"]
+                year = extracted["year"]
+        else:
+            make = extracted["make"]
+            model = extracted["model"]
+            year = extracted["year"]
+
         dtc_codes = extracted["dtc_codes"]
         damaged_parts = extracted["damaged_parts"]
+        fuzzy_corrections = extracted.get("fuzzy_corrections", [])
 
-    # Validate against external official NHTSA vPIC database
-    is_valid = await verify_vehicle(make=make, model=model, year=year)
+    # Validate against external official NHTSA vPIC database (unless already validated via VIN)
+    if vin_data:
+        is_valid = True
+    else:
+        is_valid = await verify_vehicle(make=make, model=model, year=year)
 
     if not is_valid:
         raise HTTPException(
@@ -122,19 +213,97 @@ async def ingest_diagnostic(request: DiagnosticRequest):
             detail=f"Vehicle configuration '{year} {make} {model}' was not found in the official US DOT NHTSA vPIC database."
         )
 
+    # Compute Information Retrieval normalized query & DTC taxonomic hierarchy
+    raw_user_note = request.raw_text or ""
+    canonical_query = normalize_mechanic_notes(raw_user_note)
+    dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+    dtc_cascade = classify_dtc_cascades(dtc_codes)
+
+    # Build detailed vehicle specifications
+    vehicle_details = VehicleDetails(
+        make=make,
+        model=model,
+        year=year,
+        is_verified=True,
+        vin=vin,
+        engine=vin_data.get("engine_displacement_l") if vin_data else None,
+        fuel_type=vin_data.get("fuel_type") if vin_data else None,
+        drive_type=vin_data.get("drive_type") if vin_data else None,
+        body_class=vin_data.get("body_class") if vin_data else None,
+        vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None),
+        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None
+    )
+
     # Assemble and return verified A2A payload for Agent 2
     return Agent1Payload(
         session_id=request.session_id,
-        vehicle_details=VehicleDetails(
-            make=make,
-            model=model,
-            year=year,
-            is_verified=True
-        ),
+        vehicle_details=vehicle_details,
         dtc_codes=dtc_codes,
         damaged_parts=damaged_parts,
-        user_note=request.raw_text or ""
+        user_note=raw_user_note,
+        canonical_query=canonical_query,
+        dtc_hierarchy=dtc_hierarchy,
+        dtc_cascade=dtc_cascade,
+        fuzzy_corrections=fuzzy_corrections
     )
+
+
+@app.post(
+    "/api/v1/spellcheck-vehicle",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def spellcheck_vehicle(data: SpellcheckRequest):
+    """
+    Dedicated Information Retrieval endpoint for approximate string matching & spell-checking of vehicle names.
+    Calculates Levenshtein edit distance and RapidFuzz ratio similarity.
+    """
+    raw_make = (data.make or "").strip()
+    raw_model = (data.model or "").strip()
+    make, make_corr = fuzzy_correct_make(raw_make)
+    model, model_corr = fuzzy_correct_model(raw_model)
+    return {
+        "original_make": raw_make,
+        "corrected_make": make,
+        "make_correction": make_corr,
+        "original_model": raw_model,
+        "corrected_model": model,
+        "model_correction": model_corr
+    }
+
+
+@app.get(
+    "/api/v1/vin/{vin}",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def decode_vin_endpoint(vin: str):
+    """
+    Dedicated endpoint to decode and validate a 17-character ISO 3779 VIN:
+    - Runs offline MOD-11 checksum validation
+    - Queries official US DOT NHTSA vPIC API for full specifications
+    """
+    clean_vin = vin.strip().upper()
+    checksum = validate_vin_checksum(clean_vin)
+    decode_result = await decode_vin_nhtsa(clean_vin)
+    return {
+        "vin": clean_vin,
+        "checksum": checksum,
+        "decode": decode_result
+    }
+
+
+@app.post(
+    "/api/v1/dtc-cascade",
+    response_model=DTCCascadeAnalysis,
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def analyze_dtc_cascade(data: DTCCascadeRequest):
+    """
+    Dedicated endpoint for multi-DTC cascade and causal correlation analysis:
+    - Isolates primary upstream root-cause trigger code
+    - Detects downstream consequential symptoms (e.g. misfires from vacuum leak or bad MAF)
+    - Maps causal propagation chains and provides master mechanic explanation
+    """
+    return classify_dtc_cascades(data.dtc_codes)
 
 
 @app.post(

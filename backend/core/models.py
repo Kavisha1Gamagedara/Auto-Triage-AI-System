@@ -1,17 +1,20 @@
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, model_validator
-
+from typing import List, Optional, Dict, Any,Literal
+from pydantic import BaseModel, Field, model_validator, computed_field
 
 class DiagnosticRequest(BaseModel):
     """
     Payload received by Agent 1 from the technician or customer interface.
-    Supports Dual-Mode:
-    1. Smart NLP Mode: 'raw_text' provided for automatic spaCy extraction.
+    Supports Multi-Mode Intake:
+    1. Smart NLP Mode: 'raw_text' provided for automatic spaCy & VIN extraction.
     2. Manual Spec Entry Mode: 'make', 'model', 'year' provided directly.
+    3. Direct VIN Intake Mode: 17-character VIN provided directly.
     """
     session_id: str = Field(..., description="Unique session identifier for triage tracking")
     raw_text: Optional[str] = Field(None, description="Unstructured mechanic notes or customer complaint")
     
+    # Optional direct VIN Mode
+    vin: Optional[str] = Field(None, min_length=17, max_length=17, description="17-character vehicle identification number (ISO 3779)")
+
     # Optional direct fields for Manual Spec Entry Mode
     make: Optional[str] = Field(None, description="Direct vehicle make (e.g., Honda, Toyota)")
     model: Optional[str] = Field(None, description="Direct vehicle model (e.g., Civic, Camry)")
@@ -23,19 +26,21 @@ class DiagnosticRequest(BaseModel):
     def validate_input_mode(self):
         has_text = bool(self.raw_text and self.raw_text.strip())
         has_specs = bool(self.make and self.model and self.year)
+        has_vin = bool(self.vin and self.vin.strip())
 
-        if not has_text and not has_specs:
-            raise ValueError("Either 'raw_text' (for Smart NLP Mode) or ('make', 'model', 'year') (for Manual Spec Entry Mode) must be provided.")
+        if not has_text and not has_specs and not has_vin:
+            raise ValueError("Provide 'vin' (for Direct VIN Mode), 'raw_text' (for Smart NLP Mode), or ('make', 'model', 'year') (for Manual Spec Entry Mode).")
         return self
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "session_id": "sess_abc123",
-                "raw_text": "2019 Honda Civic with crashed bumper and code P0171",
+                "vin": "1HGCR2F85HA000000",
+                "raw_text": "2017 Honda Accord with code P0171 and check engine light",
                 "make": "Honda",
-                "model": "Civic",
-                "year": 2019,
+                "model": "Accord",
+                "year": 2017,
                 "dtc_codes": ["P0171"],
                 "damaged_parts": ["bumper"]
             }
@@ -43,18 +48,76 @@ class DiagnosticRequest(BaseModel):
     }
 
 
+class SpellcheckRequest(BaseModel):
+    """Payload for vehicle make and model approximate string matching / spell-checking."""
+    make: Optional[str] = Field(default="", description="Raw make string, e.g. 'Toyta'")
+    model: Optional[str] = Field(default="", description="Raw model string, e.g. 'Commry'")
+
+
+class DTCCascadeRequest(BaseModel):
+    """Payload for multi-DTC cascade and causal correlation analysis."""
+    dtc_codes: List[str] = Field(..., description="List of OBD-II Diagnostic Trouble Codes to analyze")
+
+
+
 class VehicleDetails(BaseModel):
-    """Normalized vehicle specifications verified against NHTSA vPIC."""
+    """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
     model: str = Field(..., description="Vehicle model name (e.g., Civic)")
     year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
     is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC")
+    
+    # Extended VIN Decoded Telemetry (Additive)
+    vin: Optional[str] = Field(default=None, description="17-character ISO 3779 VIN if provided/extracted")
+    engine: Optional[str] = Field(default=None, description="Engine displacement (e.g., '2.4L')")
+    fuel_type: Optional[str] = Field(default=None, description="Primary fuel type (e.g., 'Gasoline')")
+    drive_type: Optional[str] = Field(default=None, description="Drive type (e.g., 'FWD', 'AWD', '4x2')")
+    body_class: Optional[str] = Field(default=None, description="Body class (e.g., 'Sedan/Saloon')")
+    vin_checksum_valid: Optional[bool] = Field(default=None, description="Whether the 9th check digit passed MOD-11 validation")
+    fuzzy_corrections: Optional[List[Dict[str, Any]]] = Field(default=None, description="Fuzzy string corrections applied")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
+
+
+class DTCCodeHierarchy(BaseModel):
+    """Taxonomic representation of an OBD-II trouble code for faceted search."""
+    exact_code: str = Field(..., description="Granular trouble code, e.g. P0301")
+    family_code: str = Field(..., description="Parent code family fallback, e.g. P0300")
+    family_name: str = Field(..., description="Functional subsystem, e.g. Ignition / Misfire")
+    system: str = Field(..., description="High-level vehicle system, e.g. Powertrain")
+    description: str = Field(..., description="Human-readable standard fault description")
+
+
+class FuzzyCorrection(BaseModel):
+    """Details of approximate string matching / spell-checking correction applied to vehicle name."""
+    field: str = Field(..., description="Field corrected ('make' or 'model')")
+    raw: str = Field(..., description="Original raw token from user or complaint text")
+    corrected: str = Field(..., description="Canonical corrected string sent to NHTSA")
+    similarity: float = Field(..., description="RapidFuzz ratio similarity score (0-100)")
+    levenshtein_distance: int = Field(..., description="Levenshtein edit distance")
+
+
+class DTCCascadeChain(BaseModel):
+    """Causal relationship link between two co-occurring DTC trouble codes."""
+    root_code: str = Field(..., description="The upstream causal trigger DTC code")
+    consequential_code: str = Field(..., description="The downstream consequential symptom DTC code")
+    mechanism: str = Field(..., description="Physical/electrical mechanism explaining the causality")
+
+
+class DTCCascadeAnalysis(BaseModel):
+    """Multi-DTC causal hierarchy and cascade classification."""
+    has_cascade: bool = Field(default=False, description="Whether a causal cascade relationship was detected among codes")
+    primary_code: Optional[str] = Field(default=None, description="The identified root-cause trigger DTC code")
+    primary_description: Optional[str] = Field(default=None, description="Description of the primary root code")
+    primary_subsystem: Optional[str] = Field(default=None, description="Vehicle subsystem where fault originated")
+    cascade_codes: List[str] = Field(default_factory=list, description="Consequential secondary DTC codes")
+    isolated_codes: List[str] = Field(default_factory=list, description="Unrelated secondary DTC codes")
+    cascade_chains: List[DTCCascadeChain] = Field(default_factory=list, description="List of causal propagation links")
+    diagnostic_summary: Optional[str] = Field(default="", description="Master mechanic plain-language explanation of cascade")
 
 
 class Agent1Payload(BaseModel):
@@ -68,6 +131,16 @@ class Agent1Payload(BaseModel):
     dtc_codes: List[str] = Field(default_factory=list, description="Extracted Diagnostic Trouble Codes (OBD-II)")
     damaged_parts: List[str] = Field(default_factory=list, description="Identified damaged physical parts")
     user_note: Optional[str] = Field(default="", description="Customer complaint or mechanic notes")
+    
+    # Normalized IR Query & Hierarchical Codes (Additive, 100% backward-compatible)
+    canonical_query: Optional[str] = Field(default="", description="Normalized, stopword-stripped canonical symptom query")
+    dtc_hierarchy: List[DTCCodeHierarchy] = Field(default_factory=list, description="Resolved hierarchical code families for faceted fallback")
+    
+    # Fuzzy Typo Correction Telemetry (Additive)
+    fuzzy_corrections: List[FuzzyCorrection] = Field(default_factory=list, description="Fuzzy string matching corrections applied to typos in make/model")
+
+    # Multi-DTC Cascade & Correlation Analysis (Additive)
+    dtc_cascade: Optional[DTCCascadeAnalysis] = Field(default=None, description="Multi-DTC causal hierarchy and cascade classification")
 
     @model_validator(mode="before")
     @classmethod
@@ -136,12 +209,81 @@ class Agent1Payload(BaseModel):
     }
 
 
+class Hypothesis(BaseModel):
+    root_cause_component: str = Field(
+        ..., description="The specific failing component, e.g. 'Mass Airflow (MAF) Sensor'"
+    )
+    failure_mode: str = Field(
+        ..., description="How it fails, e.g. 'Contaminated hot-wire element under-reporting airflow'"
+    )
+    confidence: int = Field(
+        ..., ge=0, le=100,
+        description="Independent confidence 0-100 for THIS hypothesis. Values across hypotheses do NOT sum to 100."
+    )
+    supporting_evidence: List[str] = Field(
+        ..., description="The specific DTC codes and phrases from the user note that support this"
+    )
+    confirming_test: str = Field(
+        ..., description="The cheapest workshop test that confirms or eliminates this hypothesis"
+
+    )
+
+    #Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning.
+    verified: bool =Field(
+        default =True,
+        description ="Set by the verifcation stage. Not produced by the diagnostic stage."
+
+    )
+    verification_note: str =Field(
+        default ="",
+        description ="Why this hypothesis was rejected, it it was."
+    )
+
+
 class DiagnosticResult(BaseModel):
-    """The strictly formatted payload output from Agent 2 to Agents 3 & 4."""
-    root_cause_component: str = Field(description="Exact physical part needing replacement (e.g., 'Mass Air Flow Sensor')")
-    failure_mode: str = Field(description="Mechanical reasoning for why the part failed")
-    severity: str = Field(description="Risk level: Low, Medium, or Critical")
-    safety_warning: str = Field(description="Specific safety hazards for the mechanic")
+
+   #To verify everything got rejected - Agent 2
+    status: Literal["diagnosed","unverified"] = "diagnosed"
+
+    reasoning_steps: List[str] = Field(
+        ..., description="Ordered diagnostic reasoning from symptoms to candidates, BEFORE ranking"
+    )
+    primary_hypothesis: Hypothesis
+    differential_hypotheses: List[Hypothesis] = Field(
+        default_factory=list, max_length=3,
+        description="Alternatives ranked by descending confidence. Distinct components, not restatements."
+    )
+    severity: Literal["low", "moderate", "high", "critical"]
+    safety_warning: str
+
+    @model_validator(mode="after")
+    def primary_must_rank_highest(self):
+        candidates = [h for h in self.differential_hypotheses if h.verified]
+
+       #Ranking the verified candidates
+        if candidates:
+            best = max(candidates, key=lambda h: h.confidence)
+            if best.confidence > self.primary_hypothesis.confidence and self.primary_hypothesis.verified:
+                others = [h for h in self.differential_hypotheses if h is not best]
+                others.append(self.primary_hypothesis)
+                self.primary_hypothesis = best
+                self.differential_hypotheses = sorted(others, key=lambda h: h.confidence, reverse=True)
+            else:
+                self.differential_hypotheses = sorted(
+                    self.differential_hypotheses, key=lambda h: h.confidence, reverse=True
+                )
+        return self
+
+    @computed_field
+    @property
+    def root_cause_component(self) -> str:
+        return self.primary_hypothesis.root_cause_component
+
+    @computed_field
+    @property
+    def failure_mode(self) -> str:
+        return self.primary_hypothesis.failure_mode
+    
 
 
 class RepairRequest(BaseModel):
@@ -216,3 +358,12 @@ class ProcurementResponse(BaseModel):
     safety_warning: str = Field(..., description="Passed through from the request")
     warnings: List[str] = Field(default_factory=list, description="Non-fatal conditions affecting this quote")
     candidates: List[str] = Field(default_factory=list, description="Near-miss part names when resolution failed")
+
+#Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning - Agent 2
+class VerificationVerdict(BaseModel):
+    index: int =Field(...,ge=0, decsription="Psotion of the hypothesis in the list under review")
+    plausible: bool="Whether this component exists on the vehicle and explains the codes"
+    reason: str = Field(...,description="One sentence. Required when plausible is false.")
+
+class VerificationResponse(BaseModel):
+    verdicts: List[VerificationVerdict]
