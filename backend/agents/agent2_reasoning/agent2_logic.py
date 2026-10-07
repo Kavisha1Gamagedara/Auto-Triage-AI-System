@@ -194,10 +194,8 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     #so downstream agents and Windows consoles never choke on curly quotes or em-dashes.
     raw = unicodedata.normalize("NFKC",raw)
     
-    # Debug output - remove once everything works
-    print("MODEL:", GROQ_MODEL)
-    print("RAW LLM OUTPUT:", repr(raw))
-    print("FINISH REASON:", choice.finish_reason)
+    logger.debug("Model: %s, finish_reason: %s", GROQ_MODEL, choice.finish_reason)
+    logger.debug("Raw LLM output: %r", raw)
  
     if not raw:
         raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")

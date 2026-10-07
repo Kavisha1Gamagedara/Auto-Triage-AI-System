@@ -59,6 +59,8 @@ def main():
         flag = "HIT " if matched else "MISS"
         print(f"{i}. [{flag}] {h.root_cause_component}")
         print(f"        catalog: {h.catalog_part_name}")
+        for d in result.differential_hypotheses:
+            print(f"      alt: {d.root_cause_component} -> {d.catalog_part_name}")
 
     print(f"\nCatalog hit rate: {hits}/{len(CASES)} ({hits / len(CASES):.0%})")
 

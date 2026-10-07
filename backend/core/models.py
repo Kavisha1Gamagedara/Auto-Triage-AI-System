@@ -245,6 +245,10 @@ class Hypothesis(BaseModel):
         description="Exact part name from the supplied catalog list, if one matches this component. Null if no catalog entry fits."
     )
 
+    reason: str = Field(
+       default="",
+       description="Why this hypothesis was rejected. Required when plausible is false; omit otherwise."
+   )
 
 class DiagnosticResult(BaseModel):
 
@@ -369,7 +373,10 @@ class ProcurementResponse(BaseModel):
 class VerificationVerdict(BaseModel):
     index: int =Field(...,ge=0, decsription="Psotion of the hypothesis in the list under review")
     plausible: bool="Whether this component exists on the vehicle and explains the codes"
-    reason: str = Field(...,description="One sentence. Required when plausible is false.")
+    reason: str = Field(
+        default="",
+        description ="Why this hypothesis was rejected.Required when plausible is false;omit otherwise."
+    )
 
 class VerificationResponse(BaseModel):
     verdicts: List[VerificationVerdict]
