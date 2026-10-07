@@ -79,17 +79,17 @@ def _check_catalog_names(result: DiagnosticResult) -> DiagnosticResult:
 
 VERIFIER_PROMPT = """You are a vehicle systems expert. You are NOT diagnosing anything.
 
-For each candidate component listed, decide two things about the specified vehicle:
-1. Does this component physically exist on this year/make/model, given its drivetrain and engine type?
-2. Could a fault in it plausibly set the listed DTC codes?
+For each candidate component listed, work through these in order:
+1. What drivetrain does this vehicle use? State it explicitly: internal combustion, hybrid, plug-in hybrid, or battery electric. If the model name is one you recognise as electric-only or hybrid-only, say so.
+2. Which systems does that drivetrain rule out entirely? A battery electric vehicle has no fuel tank, no EVAP system, no exhaust, no spark ignition, no engine oil system, and no transmission in the conventional sense.
+3. Only then, for each candidate: does this component physically exist on this vehicle, and could a fault in it set the listed DTC codes?
 
 Mark plausible=false only when you are confident the component does not exist on this vehicle
 or cannot set these codes. Uncertainty is not grounds for rejection.
 
-Common failures to catch: distributor caps on coil-on-plug engines, spark plugs or oxygen
-sensors on battery electric vehicles, carburettor parts on fuel-injected engines, timing belts
-on timing-chain engines.
-
+Common failures to catch: distributor caps on coil-on-plug engines; spark plugs, oxygen sensors,
+catalytic converters, fuel pumps, fuel injectors, EVAP components or engine thermostats on battery
+electric vehicles; carburettor parts on fuel-injected engines; timing belts on timing-chain engines.
 Use only plain ASCII. Respond with a single JSON object matching this schema:
 {schema}
 """
