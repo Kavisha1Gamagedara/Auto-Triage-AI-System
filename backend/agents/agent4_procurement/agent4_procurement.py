@@ -324,6 +324,9 @@ def get_procurement_quote(
                     "brand": best["brand"],
                     "part_number": best["part_number"],
                     "price_lkr": int(best["price_lkr"]),
+                    "price_updated": best.get("price_updated", "2024-01-01"),
+                    "currency": best.get("currency", "LKR"),
+                    "supplier": best.get("supplier", "Unknown"),
                     "role": item["role"],
                 }
             )

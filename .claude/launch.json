@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "C:/Projects/Auto-Triage-AI-System/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-X", "utf8", "-m", "uvicorn", "main:app", "--app-dir", "C:/Projects/Auto-Triage-AI-System/backend", "--port", "8010"],
+      "port": 8010
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5183", "--strictPort", "--mode", "altport"],
+      "port": 5183
+    }
+  ]
+}

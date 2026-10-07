@@ -1,0 +1,87 @@
+query,expected,category
+front brak pads,Brake Pads,typo
+alternater not charging,Alternator,typo
+raditor leaking,Radiator,typo
+mass air sensor dirty,Mass Air Flow Sensor,reorder
+oxygen probe fault,Oxygen Sensor,paraphrase
+water leaking pomp,Water Pump,reorder
+rear mufflr,Muffler,typo
+gas pump weak,Fuel Pump,paraphrase
+engine starter weak,Starter Motor,paraphrase
+interior cabin filter,Cabin Filter,reorder
+serpentine drive belt,Drive Belt,reorder
+wheel control bracket,Control Arm,paraphrase
+thermostate stuck open,Thermostat,typo
+cluch slipping,Clutch Kit,typo
+wheel bearng humming,Wheel Bearing,typo
+radiater hose burst,Radiator Hose,typo
+igniton coil dead,Ignition Coil,typo
+catalitic converter rattling,Catalytic Converter,typo
+shok absorber leaking oil,Shock Absorber,typo
+windscren chipped,Windscreen,typo
+fuel injecter clogged,Fuel Injector,typo
+timming belt snapped,Timing Belt,typo
+baterry dead,Battery,typo
+throtle body dirty,Throttle Body,typo
+stearing rack leaking,Steering Rack,typo
+hedlight bulb blown,Headlight Bulb,typo
+seet belt jammed,Seat Belt,typo
+tie rodd end loose,Tie Rod End,typo
+calliper seized,Brake Caliper,typo
+spark plg fouled,Spark Plug,typo
+wiper blad streaking,Wiper Blade,typo
+sensor oxygen reading lean,Oxygen Sensor,reorder
+pump for power steering whining,Power Steering Pump,reorder
+cylinder master brake leaking,Brake Master Cylinder,reorder
+belt timing worn,Timing Belt,reorder
+bearing of the wheel noisy,Wheel Bearing,reorder
+gasket for the water pump,Water Pump Gasket,reorder
+hose radiator split,Radiator Hose,reorder
+bulb for headlight,Headlight Bulb,reorder
+rad leaking,Radiator,paraphrase
+accumulator flat,Battery,paraphrase
+trunk lid will not close,Rear Hatch,paraphrase
+starter not cranking,Starter Motor,paraphrase
+stabilizer bar link knocking,Stabiliser Link,paraphrase
+front mud guard bent,Front Fender,paraphrase
+lambda reading wrong,Oxygen Sensor,paraphrase
+anti freeze low,Engine Coolant 4L,paraphrase
+side glass mirror broken,Side Mirror,paraphrase
+air conditioning compressor noisy,AC Compressor,paraphrase
+a/c condenser leaking,AC Condenser,paraphrase
+axle gaiter torn,CV Boot,paraphrase
+shocks leaking,Shock Absorber,paraphrase
+discs warped,Brake Disc,paraphrase
+cat stolen,Catalytic Converter,paraphrase
+injectors leaking,Fuel Injector,paraphrase
+engine mounts collapsed,Engine Mount,paraphrase
+wipers smearing,Wiper Blade,paraphrase
+handbrake wire snapped,Handbrake Cable,paraphrase
+"replaced pads already, now disc is scored",Brake Disc,negation
+"not the alternator, battery is dead",Battery,negation
+pads are fine but rotor is warped,Brake Disc,negation
+"new battery fitted last week, alternator not charging",Alternator,negation
+"already changed the thermostat, radiator still leaking",Radiator,negation
+new brake pads needed,Brake Pads,negation
+starter motor not turning over,Starter Motor,negation
+radiator needs replaced,Radiator,negation
+wiper blades need to be changed,Wiper Blade,negation
+replaced the alternator already,,negation
+battery is ok,,negation
+"customer says grinding noise from front, brake pads look worn",Brake Pads,sentence
+"car overheating, suspect water pump",Water Pump,sentence
+"check engine light, o2 sensor code",Oxygen Sensor,sentence
+flux capacitor,,non_part
+head gasket blown,,non_part
+turbocharger whistling,,non_part
+car pulls to the left when braking,,non_part
+engine oil change,,non_part
+tyre puncture,,non_part
+customer wants a full service,,non_part
+gearbox oil leak,,non_part
+sunroof stuck,,non_part
+radio not working,,non_part
+door lock actuator,,non_part
+steering wheel vibration,,non_part
+fuel gauge reading empty,,non_part
+window regulator broken,,non_part

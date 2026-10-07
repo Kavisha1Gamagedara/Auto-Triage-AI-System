@@ -183,6 +183,80 @@ VEHICLES = [
 
     # --- Chinese EVs, the fastest-growing segment in Colombo ----------------
     ("BYD", "Atto 3",           "SC2E",    2022, 2025, "ev",        1.60),
+    ("BYD", "Dolphin",          "EA1",     2021, 2025, "ev",        1.40),
+    ("BYD", "Seal",             "EV",      2022, 2025, "ev",        1.80),
+    ("MG", "ZS EV",             "ZS",      2018, 2024, "ev",        1.35),
+    ("MG", "HS",                "AS23",    2020, 2025, "suv",       1.45),
+    ("DFSK", "Glory 580",       "F50",     2016, 2024, "suv",       1.25),
+    ("Renault", "Kwid",         "BBA",     2015, 2024, "hatchback", 0.50),
+    ("Haval", "H6",             "Gen3",    2020, 2025, "suv",       1.40),
+    ("Peugeot", "3008",         "P84",     2016, 2023, "suv",       1.75),
+    ("Audi", "Q3",              "F3",      2018, 2025, "suv",       1.95),
+    ("BMW", "5 Series",         "G30",     2017, 2024, "luxury",    2.60),
+    
+    # --- Additional 50 Popular Global & Regional Vehicles ---
+    ("Toyota", "Camry",          "XV70",    2017, 2024, "sedan",     1.20),
+    ("Toyota", "RAV4",           "XA50",    2018, 2025, "suv",       1.40),
+    ("Toyota", "Highlander",     "XU70",    2019, 2025, "suv",       1.60),
+    ("Toyota", "Tacoma",         "N300",    2015, 2023, "pickup",    1.45),
+    ("Toyota", "Sienna",         "XL40",    2020, 2025, "van",       1.50),
+    ("Toyota", "Yaris Cross",    "XP210",   2020, 2025, "crossover", 1.10),
+    ("Toyota", "Crown",          "S220",    2018, 2022, "luxury",    1.90),
+    
+    ("Honda", "Accord",          "CV",      2017, 2022, "sedan",     1.25),
+    ("Honda", "HR-V",            "RV",      2021, 2025, "crossover", 1.20),
+    ("Honda", "Pilot",           "YF6",     2015, 2022, "suv",       1.65),
+    ("Honda", "Odyssey",         "RL6",     2018, 2024, "van",       1.55),
+    
+    ("Subaru", "Outback",        "BT",      2020, 2025, "crossover", 1.45),
+    ("Subaru", "Forester",       "SK",      2018, 2024, "suv",       1.40),
+    ("Subaru", "Crosstrek",      "GT",      2017, 2023, "crossover", 1.30),
+    ("Subaru", "Impreza",        "GK",      2016, 2023, "hatchback", 1.10),
+
+    ("Ford", "F-150",            "P552",    2015, 2020, "pickup",    1.60),
+    ("Ford", "Focus",            "Mk4",     2018, 2025, "hatchback", 1.05),
+    ("Ford", "Escape",           "CX482",   2019, 2025, "suv",       1.35),
+    ("Ford", "Explorer",         "U625",    2020, 2025, "suv",       1.70),
+    ("Ford", "Mustang",          "S550",    2015, 2023, "sports",    1.80),
+    
+    ("Chevrolet", "Silverado",   "T1XX",    2019, 2025, "pickup",    1.65),
+    ("Chevrolet", "Equinox",     "D2XX",    2017, 2024, "suv",       1.35),
+    ("Chevrolet", "Malibu",      "V300",    2016, 2024, "sedan",     1.15),
+    ("Chevrolet", "Tahoe",       "T1XX",    2021, 2025, "suv",       1.90),
+
+    ("Volkswagen", "Golf",       "Mk8",     2019, 2025, "hatchback", 1.20),
+    ("Volkswagen", "Passat",     "B8",      2014, 2023, "sedan",     1.35),
+    ("Volkswagen", "Tiguan",     "AD1",     2016, 2024, "suv",       1.50),
+    ("Volkswagen", "Polo",       "AW",      2017, 2025, "hatchback", 1.00),
+    ("Volkswagen", "Jetta",      "A7",      2018, 2025, "sedan",     1.15),
+
+    ("Mazda", "Mazda3",          "BP",      2019, 2025, "hatchback", 1.25),
+    ("Mazda", "CX-30",           "DM",      2019, 2025, "crossover", 1.35),
+    ("Mazda", "CX-9",            "TC",      2016, 2023, "suv",       1.65),
+
+    ("Hyundai", "Sonata",        "DN8",     2019, 2025, "sedan",     1.20),
+    ("Hyundai", "Kona",          "OS",      2017, 2023, "crossover", 1.25),
+    ("Hyundai", "Palisade",      "LX2",     2018, 2025, "suv",       1.75),
+    ("Hyundai", "Ioniq 5",       "NE",      2021, 2025, "ev",        1.70),
+
+    ("Kia", "Seltos",            "SP2",     2019, 2025, "suv",       1.25),
+    ("Kia", "Telluride",         "ON",      2019, 2025, "suv",       1.75),
+    ("Kia", "EV6",               "CV",      2021, 2025, "ev",        1.75),
+
+    ("Lexus", "RX",              "AL20",    2015, 2022, "suv",       2.20),
+    ("Lexus", "NX",              "AZ10",    2014, 2021, "suv",       2.00),
+    ("Lexus", "ES",              "XZ10",    2018, 2025, "luxury",    2.10),
+    ("Lexus", "IS",              "XE30",    2013, 2025, "luxury",    2.00),
+
+    ("Volvo", "XC90",            "SPA",     2015, 2025, "suv",       2.40),
+    ("Volvo", "XC60",            "SPA",     2017, 2025, "suv",       2.20),
+    ("Volvo", "XC40",            "CMA",     2017, 2025, "suv",       1.90),
+
+    ("Porsche", "Macan",         "95B",     2014, 2025, "suv",       2.80),
+    ("Porsche", "Cayenne",       "PO536",   2018, 2025, "suv",       3.10),
+
+    ("Tesla", "Model 3",         "Highland",2023, 2025, "ev",        2.00),
+    ("Tesla", "Model Y",         "Austin",  2020, 2025, "ev",        2.10),
 ]
 
 # ---------------------------------------------------------------------------
@@ -405,6 +479,11 @@ def build_parts_and_generations():
                     brand = stable_pick(ECONOMY_BRANDS, make, gen, part_name)
 
                 price = round_price(base * factor * mult)
+                
+                import hashlib, datetime
+                h = int(hashlib.md5(f"{gen}{part_name}{tier}".encode()).hexdigest(), 16)
+                base_date = datetime.date(2024, 1, 1)
+                suppliers = ["Global Auto Parts", "Lanka Motors", "OEM Direct", "City Spares", "National Auto"]
 
                 parts_rows.append({
                     "part_name": part_name,
@@ -418,6 +497,9 @@ def build_parts_and_generations():
                     "brand": brand,
                     "part_number": part_number(gen, part_name, suffix),
                     "price_lkr": price,
+                    "price_updated": (base_date + datetime.timedelta(days=(h % 180))).strftime("%Y-%m-%d"),
+                    "currency": "LKR",
+                    "supplier": suppliers[h % len(suppliers)],
                 })
 
     return parts_rows, gen_rows
@@ -875,7 +957,8 @@ def main():
     n_parts = write_csv(os.path.join(OUT, "parts.csv"),
                         ["part_name", "part_category", "make", "model",
                          "generation", "year_from", "year_to", "tier",
-                         "brand", "part_number", "price_lkr"],
+                         "brand", "part_number", "price_lkr",
+                         "price_updated", "currency", "supplier"],
                         parts_rows)
     n_gens = write_csv(os.path.join(OUT, "generations.csv"),
                        ["make", "model", "generation", "year_from",

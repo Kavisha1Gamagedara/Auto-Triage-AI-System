@@ -16,16 +16,42 @@ import string
 from rank_bm25 import BM25Okapi
 from rapidfuzz import fuzz, process
 
-# Words that carry no part identity. Dropped before ranking so that "front
-# brake pad" cannot rank Front Bumper and Front Fender over Brake Pads.
-STOPWORDS = {
+# Words that carry no part identity at all.
+FILLER_WORDS = {
     "a", "an", "the", "my", "for", "of", "car", "need", "replace",
     "broken", "cracked", "damaged", "faulty", "shattered", "bad",
-    "front", "rear", "left", "right", "side",
 }
 
-BM25_ACCEPT = 0.45
+# Position words identify a part only when the catalog name carries one
+# (Front Bumper vs Rear Bumper). BM25 keeps them; normalize() drops them.
+POSITION_WORDS = {"front", "rear", "left", "right", "side"}
+
+# Dropped by normalize() so that "front brake pad" cannot rank Front Bumper
+# and Front Fender over Brake Pads.
+STOPWORDS = FILLER_WORDS | POSITION_WORDS
+
+BM25_ACCEPT = 0.60
+# The best part must also beat the runner-up by this much. Two parts that
+# score alike ("pads and rotor both worn") are a tie, and a tie is reported
+# with candidates rather than broken by index order.
+BM25_MARGIN = 0.10
 FUZZY_ACCEPT = 80
+# A query word shorter than this is never spelling-corrected: three letters
+# sit within one edit of too many unrelated part words.
+MIN_CORRECTABLE = 4
+
+# Context that takes a named part out of the running. "not" counts only when
+# it sits directly on the part ("not the alternator"); after the part it is
+# describing the symptom ("dynamo not charging").
+_ARTICLES = {"the", "a", "an", "its"}
+_DONE_BEFORE = {"replaced", "changed", "already"}
+_DONE_AFTER = {"replaced", "changed", "fitted", "installed", "already", "fine", "ok", "okay", "good"}
+# These four describe finished work only when nobody is asking for it:
+# "pads replaced last week" is done, "pads need to be replaced" is the job.
+_WORK_VERBS = {"replaced", "changed", "fitted", "installed"}
+_REQUEST_WORDS = {"need", "needs", "needed", "to", "must", "should", "want", "wants", "please"}
+_CLAUSE_STARTERS = {"but", "now", "however", "still"}
+_CONTEXT_WINDOW = 3
 
 # Confidence for a surface form found inside a longer query. Below an exact
 # whole-string match, because the surrounding words might change the intent,
@@ -34,6 +60,7 @@ FUZZY_ACCEPT = 80
 ALIAS_PARTIAL_CONFIDENCE = 0.9
 
 _PUNCT = re.compile(f"[{re.escape(string.punctuation)}]")
+_CLAUSE_BREAK = re.compile(r"[,;.!?]")
 
 
 def squash(raw: str) -> str:
@@ -54,6 +81,38 @@ def normalize(raw: str) -> str:
     words actively hurt precision.
     """
     return " ".join(word for word in squash(raw).split() if word not in STOPWORDS)
+
+
+def _stem(token: str) -> str:
+    """Fold a plain plural onto its singular: "shocks" -> "shock"."""
+    if len(token) > 3 and token.endswith("s") and not token.endswith("ss"):
+        return token[:-1]
+    return token
+
+
+def rank_tokens(raw: str) -> list[str]:
+    """Distinct stemmed tokens for BM25, with filler dropped and position kept."""
+    return list(dict.fromkeys(_stem(t) for t in squash(raw).split() if t not in FILLER_WORDS))
+
+
+def clause_tokens(raw: str) -> tuple[list[str], list[int]]:
+    """squash(raw).split(), plus the index of the clause each token sits in.
+
+    Negation and "already done" cues only reach as far as their own clause:
+    in "replaced pads already, now disc is scored" the "already" belongs to
+    the pads and must not rule out the disc.
+    """
+    tokens: list[str] = []
+    clause_of: list[int] = []
+    clause = 0
+    for part in _CLAUSE_BREAK.split(raw):
+        for token in squash(part).split():
+            if token in _CLAUSE_STARTERS:
+                clause += 1
+            tokens.append(token)
+            clause_of.append(clause)
+        clause += 1
+    return tokens, clause_of
 
 
 class PartResolver:
@@ -92,8 +151,34 @@ class PartResolver:
         self.names: list[str] = db.parts.distinct("part_name")
         self._names_by_squash = {squash(n): n for n in self.names}
 
-        self._corpus = [n.lower().split() for n in self.names]
-        self.bm25 = BM25Okapi(self._corpus)
+        # One BM25 document per surface form - every catalog name and every
+        # alias - each remembering which part it names. A part scores as its
+        # best-matching form.
+        #
+        # Pooling a name and all its aliases into one bag of words does not
+        # work with the coverage score below: the bag's ceiling grows with
+        # every alias, so a query that matches the catalog name word for word
+        # still covers only a sliver of it ("sensor mass air" scored 0.156
+        # against Mass Air Flow Sensor).
+        self._forms: list[list[str]] = []
+        self._form_canonical: list[str] = []
+        self._rank_vocab: dict[str, set[str]] = {n: set() for n in self.names}
+        seen_forms = set()
+        surfaces = [(n, n) for n in self.names] + list(self.aliases.items())
+        for surface, canonical in surfaces:
+            tokens = rank_tokens(surface)
+            self._rank_vocab.setdefault(canonical, set()).update(tokens)
+            key = (canonical, " ".join(sorted(tokens)))
+            if not tokens or key in seen_forms:
+                continue
+            seen_forms.add(key)
+            self._forms.append(tokens)
+            self._form_canonical.append(canonical)
+        self.bm25 = BM25Okapi(self._forms)
+        # What each form scores against itself: its ceiling in this index.
+        self._form_ceiling = [
+            float(self.bm25.get_scores(doc)[i]) for i, doc in enumerate(self._forms)
+        ]
 
         # Fuzzy matching searches catalog names and alias surface forms
         # together, mapped back to a canonical afterwards.
@@ -127,49 +212,147 @@ class PartResolver:
         self._surface.update(self.aliases)
         self._max_ngram = max((len(s.split()) for s in self._surface), default=1)
 
-    def _alias_ngram(self, tokens: list[str]) -> str | None:
+    def _ruled_out(self, tokens: list[str], clause_of: list[int], start: int, end: int) -> bool:
+        """True when the part named at tokens[start:end] is not the one to quote.
+
+        Covers a part that is explicitly excluded ("not the alternator") and
+        one that has already been dealt with ("replaced pads already", "pads
+        are fine").
+        """
+        n = len(tokens)
+        before = [
+            tokens[i] for i in range(max(0, start - _CONTEXT_WINDOW), start)
+            if clause_of[i] == clause_of[start]
+        ]
+        after = [
+            tokens[i] for i in range(end, min(n, end + _CONTEXT_WINDOW))
+            if clause_of[i] == clause_of[end - 1]
+        ]
+
+        attached = [t for t in before if t not in _ARTICLES]
+        if attached and attached[-1] == "not":
+            return True
+
+        cues = (set(before) & _DONE_BEFORE) | (set(after) & _DONE_AFTER)
+        if not cues:
+            return False
+        clause = {tokens[i] for i in range(n) if clause_of[i] == clause_of[start]}
+        if cues <= _WORK_VERBS and clause & _REQUEST_WORDS:
+            return False
+        return True
+
+    def _alias_ngram(self, tokens: list[str], clause_of: list[int]) -> tuple[str | None, set[str]]:
         """Find a known surface form inside a longer query.
 
         A mechanic writes the symptom as well as the part: "dynamo not
         charging", "shockers gone". The trade term is an exact alias, but the
-        whole string is not, and BM25 cannot see alias vocabulary because its
-        corpus holds canonical names only. This scans contiguous token runs,
-        longest first, so "dicky door" wins over "door".
+        whole string is not. This scans contiguous token runs, longest first,
+        so "dicky door" wins over "door".
 
-        Returns None when two different parts are named at the same length -
-        the query is genuinely ambiguous and ranking should decide, not this.
+        Returns (canonical, ruled_out). canonical is None when nothing is
+        named, or when two different parts are named at the same length - the
+        query is genuinely ambiguous and ranking should decide, not this.
+        ruled_out holds parts the query names only to dismiss, so that the
+        ranking stages cannot bring them back.
         """
         n = len(tokens)
-        for size in range(min(n, self._max_ngram), 0, -1):
-            hits = {
-                self._surface[phrase]
-                for start in range(n - size + 1)
-                if (phrase := " ".join(tokens[start : start + size])) in self._surface
-            }
-            if len(hits) == 1:
-                return next(iter(hits))
-            if len(hits) > 1:
-                return None
-        return None
+        ruled_out: set[str] = set()
+        # Tokens inside a dismissed mention. "replaced the brake pads" must
+        # not then match the shorter "pads" on its own.
+        dead = [False] * n
 
-    def _bm25_ranked(self, query: str) -> list[tuple[str, float]]:
-        """Return (name, normalized_score) for all names, best first."""
-        tokens = query.split()
+        for size in range(min(n, self._max_ngram), 0, -1):
+            hits = set()
+            for start in range(n - size + 1):
+                end = start + size
+                if any(dead[start:end]):
+                    continue
+                canonical = self._surface.get(" ".join(tokens[start:end]))
+                if canonical is None:
+                    continue
+                if self._ruled_out(tokens, clause_of, start, end):
+                    ruled_out.add(canonical)
+                    dead[start:end] = [True] * size
+                else:
+                    hits.add(canonical)
+
+            if len(hits) == 1:
+                return next(iter(hits)), ruled_out
+            if len(hits) > 1:
+                return None, ruled_out
+        return None, ruled_out
+
+    def _bm25_ranked(self, tokens: list[str]) -> list[tuple[str, float]]:
+        """Return (name, confidence) for all names, best first.
+
+        Confidence is coverage x agreement, both 0-1:
+
+        coverage  - how much of the part's best-matching surface form the
+                    query supplies, as BM25 score over that form's ceiling.
+                    The form's last word must be among the matched words
+                    unless the whole form is present: in "wheel bearing" or
+                    "rad hose" the last word is the thing itself, and a query
+                    that only shares the qualifier ("wheel alignment", "rad
+                    leaking") is about something else.
+        agreement - how much of the query's own part vocabulary this part
+                    accounts for. "engine oil change" covers the alias "brake
+                    oil" well, but "engine" is a part word Brake Fluid does
+                    not own, so the match is marked down. Words outside the
+                    catalog vocabulary ("leaking", "dirty") cost nothing, and
+                    neither do position words.
+        """
+        best = {name: 0.0 for name in self.names}
         if not tokens:
-            return []
+            return list(best.items())
+
+        idf = self.bm25.idf
+        weight = {t: max(float(idf[t]), 1e-6) for t in tokens if t in idf and t not in POSITION_WORDS}
+        total = sum(weight.values())
+        query = set(tokens)
 
         scores = self.bm25.get_scores(tokens)
-        order = sorted(range(len(self.names)), key=lambda i: scores[i], reverse=True)
+        for i, score in enumerate(scores):
+            ceiling = self._form_ceiling[i]
+            if score <= 0 or ceiling <= 0:
+                continue
+            coverage = min(float(score) / ceiling, 1.0)
+            form = self._forms[i]
+            if coverage < 0.999 and form[-1] not in query:
+                continue
+            canonical = self._form_canonical[i]
+            owned = sum(w for t, w in weight.items() if t in self._rank_vocab[canonical])
+            agreement = owned / total if total > 0 else 1.0
+            best[canonical] = max(best.get(canonical, 0.0), coverage * agreement)
 
-        ranked = []
-        for i in order:
-            # Normalize against the score the winning name scores on itself,
-            # which is that name's ceiling for this index. Without this the
-            # raw BM25 score has no fixed range to threshold against.
-            self_score = self.bm25.get_scores(self._corpus[i])[i]
-            confidence = float(scores[i]) / float(self_score) if self_score > 0 else 0.0
-            ranked.append((self.names[i], min(confidence, 1.0)))
-        return ranked
+        return sorted(best.items(), key=lambda item: item[1], reverse=True)
+
+    def _correct_spelling(self, tokens: list[str]) -> list[str] | None:
+        """Swap misspelt words for the catalog word they are closest to.
+
+        Returns None when nothing needed correcting. Whole-string fuzzy
+        matching is diluted by every extra word, so "raditor leaking" misses
+        where "raditor" alone would hit; correcting word by word and then
+        ranking as usual absorbs the typo and ignores the symptom.
+        """
+        vocabulary = list(self.bm25.idf)
+        corrected = []
+        changed = False
+        for token in tokens:
+            if token not in self.bm25.idf and len(token) >= MIN_CORRECTABLE:
+                match = process.extractOne(token, vocabulary, scorer=fuzz.ratio, score_cutoff=FUZZY_ACCEPT)
+                if match:
+                    corrected.append(match[0])
+                    changed = True
+                    continue
+            corrected.append(token)
+        return list(dict.fromkeys(corrected)) if changed else None
+
+    @staticmethod
+    def _clear_winner(ranked: list[tuple[str, float]]) -> bool:
+        """True when the top part passes the floor and stands clear of the next."""
+        if not ranked or ranked[0][1] < BM25_ACCEPT:
+            return False
+        return len(ranked) < 2 or ranked[0][1] - ranked[1][1] >= BM25_MARGIN
 
     def resolve(self, raw: str, *, allow_partial: bool = True) -> dict:
         """Resolve a free-text part string, stopping at the first stage that hits.
@@ -214,8 +397,25 @@ class PartResolver:
         # catalog part names has no such excuse: if its proposal needs a part
         # name extracted from surrounding words, the proposal is vague, and a
         # vague proposal must not become a priced line item.
-        embedded = self._alias_ngram(exact_key.split()) if allow_partial else None
-        if embedded:
+        ruled_out: set[str] = set()
+        embedded = None
+        if allow_partial:
+            embedded, ruled_out = self._alias_ngram(*clause_tokens(raw))
+        tokens = rank_tokens(raw)
+        ranked = [(name, score) for name, score in self._bm25_ranked(tokens) if name not in ruled_out]
+
+        # One catalog name can sit inside another: "gasket for the water
+        # pump" contains "water pump" word for word, but every part word in
+        # it belongs to Water Pump Gasket. When ranking finds a different
+        # part that owns the whole query outright, the embedded hit was only
+        # a fragment of that part's name, and ranking answers instead.
+        fragment = (
+            ranked
+            and ranked[0][0] != embedded
+            and ranked[0][1] >= 0.999
+            and self._clear_winner(ranked)
+        )
+        if embedded and not fragment:
             return {
                 "canonical": embedded,
                 "confidence": ALIAS_PARTIAL_CONFIDENCE,
@@ -223,18 +423,15 @@ class PartResolver:
                 "candidates": [],
             }
 
-        ranked = self._bm25_ranked(norm)
-
         # (b) BM25 - lexical overlap, handles reordering and partial phrasing.
         #
         # In strict mode the query must also be built only from words the
-        # matched part actually owns. The normalised score divides by the
-        # winning name's score against itself, so a one-token name like Horn
-        # scores a perfect 1.0 for any query containing "horn" - "maybe a
-        # horn" was indistinguishable from "Horn". No threshold can separate
-        # those; containment can. Reordering still passes ("Coolant Engine"),
-        # padding does not ("possibly the radiator").
-        if ranked and ranked[0][1] >= BM25_ACCEPT and (
+        # matched part actually owns. A one-token form like "horn" is fully
+        # covered by any query containing it, so "maybe a horn" scores the
+        # same as "Horn". No threshold can separate those; containment can.
+        # Reordering still passes ("Coolant Engine"), padding does not
+        # ("possibly the radiator").
+        if self._clear_winner(ranked) and (
             allow_partial
             or set(norm.split()) <= self._vocab_for.get(ranked[0][0], set())
         ):
@@ -242,19 +439,39 @@ class PartResolver:
                 "canonical": ranked[0][0],
                 "confidence": float(ranked[0][1]),
                 "method": "bm25",
-                "candidates": [name for name, _ in ranked[1:3]],
+                "candidates": [name for name, score in ranked[1:3] if score > 0],
             }
 
         # (c) FUZZY - character-level, this is the stage that absorbs typos.
         if norm:
-            match = process.extractOne(norm, self._fuzzy_choices, scorer=fuzz.token_sort_ratio)
-            if match and match[1] >= FUZZY_ACCEPT:
-                matched = match[0]
+            for matched, score, _ in process.extract(
+                norm, self._fuzzy_choices, scorer=fuzz.token_sort_ratio, limit=5
+            ):
+                if score < FUZZY_ACCEPT:
+                    break
+                if self._fuzzy_canonical[matched] in ruled_out:
+                    continue
                 return {
                     "canonical": self._fuzzy_canonical[matched],
-                    "confidence": float(match[1]) / 100.0,
+                    "confidence": float(score) / 100.0,
                     "method": "fuzzy",
                     "candidates": [],
+                }
+
+        # (c2) FUZZY, word by word - a typo inside a longer phrase. Human
+        # input only: a model asked for catalog names has no reason to
+        # misspell them.
+        corrected = self._correct_spelling(tokens) if allow_partial else None
+        if corrected:
+            respelt = [
+                (name, score) for name, score in self._bm25_ranked(corrected) if name not in ruled_out
+            ]
+            if self._clear_winner(respelt):
+                return {
+                    "canonical": respelt[0][0],
+                    "confidence": float(respelt[0][1]),
+                    "method": "fuzzy",
+                    "candidates": [name for name, score in respelt[1:3] if score > 0],
                 }
 
         # FAIL - report the near misses rather than guessing.
@@ -314,13 +531,13 @@ class PartResolver:
         # Same position as in resolve(): a surface form embedded in a longer
         # query outranks anything the statistical stages propose.
         if use_alias_ngram:
-            add(self._alias_ngram(exact_key.split()))
+            add(self._alias_ngram(*clause_tokens(raw))[0])
 
         if use_bm25:
             # Only names BM25 actually scored. A zero score means no shared
             # token, and admitting those would fill the list with noise and
             # starve the fuzzy stage below of its slots.
-            for name, score in self._bm25_ranked(norm)[:k]:
+            for name, score in self._bm25_ranked(rank_tokens(raw))[:k]:
                 if score > 0:
                     add(name)
 

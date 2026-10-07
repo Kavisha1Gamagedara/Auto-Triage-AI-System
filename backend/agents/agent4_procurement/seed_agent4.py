@@ -71,6 +71,9 @@ def build_parts(rows: list[dict]) -> list[dict]:
                 "brand": row["brand"],
                 "part_number": row["part_number"],
                 "price_lkr": to_int(row["price_lkr"], "price_lkr", "parts", i),
+                "price_updated": row["price_updated"],
+                "currency": row["currency"],
+                "supplier": row["supplier"],
             }
         )
     return docs

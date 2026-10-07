@@ -134,3 +134,40 @@ def test_rear_bumper_does_not_resolve_to_front_bumper(resolver):
     # The companion case must keep working: 'rear buffer' is a genuine alias.
     assert resolver.resolve("rear buffer")["canonical"] == "Rear Bumper"
     assert resolver.resolve("front buffer")["canonical"] == "Front Bumper"
+
+
+def test_longer_name_beats_the_shorter_name_inside_it(resolver):
+    """'water pump' is inside the query, but the part asked for is its gasket."""
+    assert resolver.resolve("gasket for the water pump")["canonical"] == "Water Pump Gasket"
+    assert resolver.resolve("hose radiator split")["canonical"] == "Radiator Hose"
+
+    # The shorter name still wins when nothing else in the query claims it.
+    assert resolver.resolve("water pump leaking")["canonical"] == "Water Pump"
+
+
+def test_dismissed_part_is_not_resolved(resolver):
+    """A part named only to rule it out must not be the one quoted."""
+    assert resolver.resolve("not the alternator, battery is dead")["canonical"] == "Battery"
+    assert resolver.resolve("pads are fine but rotor is warped")["canonical"] == "Brake Disc"
+    assert resolver.resolve("replaced the alternator already")["canonical"] is None
+
+
+def test_symptom_and_request_wording_does_not_dismiss_a_part(resolver):
+    """'not' after the part is the symptom; 'needs replaced' is the job."""
+    assert resolver.resolve("ac compressor not cooling")["canonical"] == "AC Compressor"
+    assert resolver.resolve("new brake pads needed")["canonical"] == "Brake Pads"
+    assert resolver.resolve("radiator needs replaced")["canonical"] == "Radiator"
+
+
+def test_typo_inside_a_longer_phrase(resolver):
+    """Whole-string fuzzy is diluted by the symptom; word-level correction is not."""
+    result = resolver.resolve("raditor leaking")
+
+    assert result["canonical"] == "Radiator"
+    assert result["method"] == "fuzzy"
+
+
+def test_part_words_the_candidate_does_not_own_block_the_match(resolver):
+    """'oil' reaches the alias 'brake oil', but 'engine' is not Brake Fluid's word."""
+    assert resolver.resolve("engine oil change")["canonical"] is None
+    assert resolver.resolve("steering wheel vibration")["canonical"] is None
