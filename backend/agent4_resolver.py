@@ -24,7 +24,7 @@ STOPWORDS = {
     "front", "rear", "left", "right", "side",
 }
 
-BM25_ACCEPT = 0.45
+BM25_ACCEPT = 0.20
 FUZZY_ACCEPT = 80
 
 # Confidence for a surface form found inside a longer query. Below an exact
@@ -92,7 +92,14 @@ class PartResolver:
         self.names: list[str] = db.parts.distinct("part_name")
         self._names_by_squash = {squash(n): n for n in self.names}
 
-        self._corpus = [n.lower().split() for n in self.names]
+        self._corpus = []
+        for name in self.names:
+            # Combine the catalog name and all its aliases into a single bag of words
+            tokens = name.lower().split()
+            for alias_key, canonical in self.aliases.items():
+                if canonical == name:
+                    tokens.extend(alias_key.split())
+            self._corpus.append(tokens)
         self.bm25 = BM25Okapi(self._corpus)
 
         # Fuzzy matching searches catalog names and alias surface forms
@@ -140,12 +147,21 @@ class PartResolver:
         the query is genuinely ambiguous and ranking should decide, not this.
         """
         n = len(tokens)
+        negation_words = {"not", "replaced", "already", "new", "fine", "ok", "good", "done"}
+        
         for size in range(min(n, self._max_ngram), 0, -1):
-            hits = {
-                self._surface[phrase]
-                for start in range(n - size + 1)
-                if (phrase := " ".join(tokens[start : start + size])) in self._surface
-            }
+            hits = set()
+            for start in range(n - size + 1):
+                phrase = " ".join(tokens[start : start + size])
+                if phrase in self._surface:
+                    # Check for negation/recency words in surrounding context (3 words before, 3 words after)
+                    context_start = max(0, start - 3)
+                    context_end = min(n, start + size + 3)
+                    context = set(tokens[context_start:start] + tokens[start + size:context_end])
+                    
+                    if not (context & negation_words):
+                        hits.add(self._surface[phrase])
+                        
             if len(hits) == 1:
                 return next(iter(hits))
             if len(hits) > 1:

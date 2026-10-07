@@ -190,6 +190,9 @@ class QuotedPart(BaseModel):
     brand: str = Field(..., description="Supplying brand")
     part_number: str = Field(..., description="Catalog part number")
     price_lkr: int = Field(..., description="Price in LKR, from the catalog")
+    price_updated: str = Field(..., description="Date the price was last updated (YYYY-MM-DD)")
+    currency: str = Field(..., description="Currency of the price")
+    supplier: str = Field(..., description="Supplier of the part")
     role: str = Field(..., description="primary, required, or recommended")
 
 

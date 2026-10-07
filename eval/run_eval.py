@@ -26,7 +26,7 @@ if BACKEND not in sys.path:
 from agent4_resolver import PartResolver  # noqa: E402
 from db import get_db  # noqa: E402
 
-TESTSET = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testset.csv")
+TESTSET = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testset_heldout.csv")
 
 K = 3
 
