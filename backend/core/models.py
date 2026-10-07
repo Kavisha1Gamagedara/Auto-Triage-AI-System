@@ -379,4 +379,8 @@ class VerificationVerdict(BaseModel):
     )
 
 class VerificationResponse(BaseModel):
+    drivetrain: str = Field(
+        default="",
+        description="The vehicle's drivetrain type, determined before evaluating any component."
+    )
     verdicts: List[VerificationVerdict]
