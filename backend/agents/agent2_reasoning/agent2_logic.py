@@ -1,6 +1,7 @@
 import json
 import unicodedata
 import os
+import logging
 from dotenv import load_dotenv
 from groq import Groq
 try:
@@ -11,6 +12,22 @@ except ImportError:
 load_dotenv()
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+logger = logging.getLogger(__name__)
+
+#New module level code for DB Connection Loss
+def _load_catalog_parts() -> list[str]:
+    """Agent 4's part vocabulary. Fetched once; empty list disables constraining."""
+    try:
+        from core.db import get_db
+        names = sorted(get_db().parts.distinct("part_name"))
+        logger.info("Loaded %d catalog part names for constrained vocabulary", len(names))
+        return names
+    except Exception as exc:
+        logger.warning("Catalog vocabulary unavailable, falling back to free text: %s", exc)
+        return []
+
+CATALOG_PART_NAMES = _load_catalog_parts()
 
 def get_client() -> Groq:
     api_key = os.getenv("GROQ_API_KEY")
@@ -178,3 +195,4 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     except Exception as exc:
         print(f"Verification stage failed, returning raw result: {exc}")
         return result
+
