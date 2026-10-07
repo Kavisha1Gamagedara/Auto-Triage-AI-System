@@ -51,6 +51,7 @@ Rules:
 - "confirming_test" must be the cheapest test that separates this hypothesis from the others.
 - If evidence is thin, express that through low confidence values rather than inventing certainty.
 - Use only plain ASCII characters. No typographic dashes, curly quotes, or emoji.
+- "catalog_part_name" must be chosen EXACTLY from the catalog list provided below, copied character for character. If no catalog entry genuinely matches the failing component, set it to null. Never force an approximate match: a null is more useful downstream than a wrong part name.
 
 Respond with a single JSON object and nothing else, matching this schema exactly:
 {schema}
