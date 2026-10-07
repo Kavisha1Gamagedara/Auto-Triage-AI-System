@@ -26,7 +26,7 @@ import heroDarkCar from './assets/hero_dark_car.jpg';
 import cinematicSportsCar from './assets/cinematic_sports_car.jpg';
 import mechanicDiagnostics from './assets/mechanic_diagnostics.jpg';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const PRESETS = [
   {
@@ -66,6 +66,14 @@ const FAQ_ITEMS = [
   }
 ];
 
+const TIER_ORDER = ['OEM_Genuine', 'Certified_Aftermarket', 'Economy'];
+
+const TIER_LABELS = {
+  OEM_Genuine: 'OEM Genuine',
+  Certified_Aftermarket: 'Certified Aftermarket',
+  Economy: 'Economy'
+};
+
 function generateSessionId() {
   return `sess_${Math.random().toString(36).substring(2, 8)}_${Date.now().toString(36).substring(4)}`;
 }
@@ -76,6 +84,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [triageResult, setTriageResult] = useState(null);
   const [repairPlan, setRepairPlan] = useState(null);
+  const [procurement, setProcurement] = useState(null);
+  const [procurementError, setProcurementError] = useState(null);
   const [error, setError] = useState(null);
   const [serverStatus, setServerStatus] = useState('checking'); // 'online' | 'offline' | 'checking'
   const [copied, setCopied] = useState(false);
@@ -117,6 +127,9 @@ export default function App() {
   const handleNewSession = () => {
     setSessionId(generateSessionId());
     setTriageResult(null);
+    setRepairPlan(null);
+    setProcurement(null);
+    setProcurementError(null);
     setError(null);
   };
 
@@ -147,6 +160,9 @@ export default function App() {
 
     setLoading(true);
     setError(null);
+    setRepairPlan(null);
+    setProcurement(null);
+    setProcurementError(null);
 
     try {
       let payload = {};
@@ -228,6 +244,33 @@ export default function App() {
       const repairData = await repairRes.json();
       if (repairRes.ok && repairData.status === "success") {
         setRepairPlan(repairData.repair_plan);
+      }
+
+      // --- 3. CALL AGENT 4 (Agent 1's vehicle + Agent 2's diagnosis) ---
+      // A failed quote must not discard the triage result, so it is caught here.
+      try {
+        const procureRes = await fetch(`${API_BASE_URL}/api/v1/procure`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            root_cause_component: diagData.root_cause_component,
+            make: data.vehicle_details.make,
+            model: data.vehicle_details.model,
+            year: Number(data.vehicle_details.year), // must be an integer for the generation lookup
+            severity: diagData.severity,
+            safety_warning: diagData.safety_warning
+          })
+        });
+
+        const procureData = await procureRes.json();
+        if (!procureRes.ok) {
+          const detail = typeof procureData.detail === 'string' ? procureData.detail : 'Agent 4 procurement failed.';
+          throw new Error(detail);
+        }
+        setProcurement(procureData);
+      } catch (procureErr) {
+        setProcurementError(procureErr.message || 'Agent 4 procurement is unreachable.');
       }
       // ---------------------------------------------------
     } catch (err) {
@@ -683,6 +726,99 @@ export default function App() {
                       <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid #3b1669', fontSize: '0.75rem', color: '#a855f7' }}>
                         Source Citation: {repairPlan.citation}
                       </div>
+                    </div>
+                  )}
+
+                  {/* AGENT 4 PARTS QUOTE BOX */}
+                  {(procurement || procurementError) && (
+                    <div className="telemetry-vehicle-box" style={{ marginTop: '16px', borderLeft: '4px solid #f59e0b' }}>
+                      <div style={{ color: '#fbbf24', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
+                        Agent 4 // Parts Quote
+                      </div>
+
+                      {procurementError && (
+                        <div style={{ fontSize: '0.85rem', color: '#ff999d' }}>{procurementError}</div>
+                      )}
+
+                      {procurement && (
+                        <>
+                          <div style={{ fontSize: '0.9rem', color: 'var(--text-white)' }}>
+                            {procurement.resolved_part ? (
+                              <>
+                                Resolved part: <strong>{procurement.resolved_part}</strong>{' '}
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                  ({procurement.match_method}, {Math.round(procurement.match_confidence * 100)}%)
+                                </span>
+                              </>
+                            ) : (
+                              <>No catalog part matched. Nothing was priced.</>
+                            )}
+                          </div>
+
+                          {procurement.candidates.length > 0 && (
+                            <div style={{ marginTop: 8, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                              Closest catalog parts: {procurement.candidates.join(', ')}
+                            </div>
+                          )}
+
+                          {TIER_ORDER.filter((tier) => procurement.tiers[tier] && procurement.tiers[tier].parts.length > 0).map((tier) => {
+                            const quote = procurement.tiers[tier];
+                            return (
+                              <div key={tier} style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid #4a3410' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                                  <strong style={{ color: '#fde68a', fontSize: '0.88rem' }}>{TIER_LABELS[tier]}</strong>
+                                  <strong style={{ color: 'var(--text-white)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+                                    LKR {quote.tier_total_lkr.toLocaleString()}
+                                  </strong>
+                                </div>
+
+                                {!quote.complete && (
+                                  <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: 4 }}>
+                                    Partial basket: some items are not stocked at this tier, so the total is not the full job.
+                                  </div>
+                                )}
+
+                                <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0', fontSize: '0.82rem', color: 'var(--text-gray)' }}>
+                                  {quote.parts.map((part) => (
+                                    <li key={part.part_number} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                                      <span>
+                                        {part.part_name}{' '}
+                                        <span style={{ color: 'var(--text-muted)' }}>
+                                          ({part.role}) {part.brand} · {part.part_number}
+                                        </span>
+                                      </span>
+                                      <span style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                                        {part.price_lkr.toLocaleString()}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })}
+
+                          {procurement.suppressed_tiers.length > 0 && (
+                            <div style={{ marginTop: 12, fontSize: '0.82rem', color: '#ff999d' }}>
+                              <strong>Withheld for safety:</strong>{' '}
+                              {procurement.suppressed_tiers.map((tier) => TIER_LABELS[tier] || tier).join(', ')}
+                            </div>
+                          )}
+
+                          {procurement.unpriced_items.length > 0 && (
+                            <div style={{ marginTop: 12, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                              <strong>Suggested but not in catalog (unpriced):</strong> {procurement.unpriced_items.join(', ')}
+                            </div>
+                          )}
+
+                          {procurement.warnings.length > 0 && (
+                            <ul style={{ margin: '12px 0 0', paddingLeft: 18, fontSize: '0.78rem', color: '#fbbf24' }}>
+                              {procurement.warnings.map((warning, idx) => (
+                                <li key={idx} style={{ marginBottom: 4 }}>{warning}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
 
