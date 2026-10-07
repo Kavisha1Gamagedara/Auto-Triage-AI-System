@@ -23,6 +23,17 @@ from .nhtsa_validator import (
     validate_vin_checksum
 )
 
+from .extended_automotive_data import (
+    GLOBAL_VEHICLE_CATALOG,
+    EV_HYBRID_ADAS_COMPONENTS,
+    EXTENDED_DTC_TAXONOMY,
+    EXTENDED_DTC_DESCRIPTIONS,
+    EXTENDED_DTC_CASCADE_RULES,
+    is_jdm_chassis_number,
+    is_recognized_global_vehicle,
+    validate_chassis_or_vin
+)
+
 __all__ = [
     "extract_entities",
     "sanitize_input",
@@ -38,5 +49,13 @@ __all__ = [
     "nlp",
     "verify_vehicle",
     "decode_vin_nhtsa",
-    "validate_vin_checksum"
+    "validate_vin_checksum",
+    "GLOBAL_VEHICLE_CATALOG",
+    "EV_HYBRID_ADAS_COMPONENTS",
+    "EXTENDED_DTC_TAXONOMY",
+    "EXTENDED_DTC_DESCRIPTIONS",
+    "EXTENDED_DTC_CASCADE_RULES",
+    "is_jdm_chassis_number",
+    "is_recognized_global_vehicle",
+    "validate_chassis_or_vin"
 ]

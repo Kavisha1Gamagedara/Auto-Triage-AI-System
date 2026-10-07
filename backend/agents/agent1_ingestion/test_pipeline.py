@@ -30,6 +30,11 @@ try:
         decode_vin_nhtsa, 
         validate_vin_checksum
     )
+    from .extended_automotive_data import (
+        is_recognized_global_vehicle,
+        is_jdm_chassis_number,
+        validate_chassis_or_vin
+    )
 except ImportError:
     from nlp_extractor import (
         extract_entities, 
@@ -47,6 +52,11 @@ except ImportError:
         verify_vehicle, 
         decode_vin_nhtsa, 
         validate_vin_checksum
+    )
+    from extended_automotive_data import (
+        is_recognized_global_vehicle,
+        is_jdm_chassis_number,
+        validate_chassis_or_vin
     )
 
 
@@ -344,6 +354,78 @@ async def test_dtc_cascade_classification():
     print("\nMulti-DTC Cascade & Causal Correlation Classifier Tests: ALL PASSED!")
 
 
+async def test_extended_automotive_data():
+    print("\n=== [7] Testing Global/JDM Vehicle Support, JDM Chassis & EV/Hybrid Cascades ===")
+
+    # 1. Global / JDM vehicle catalog verification
+    assert is_recognized_global_vehicle("Toyota", "Premio") is True
+    assert is_recognized_global_vehicle("Toyota", "Townace") is True
+    assert is_recognized_global_vehicle("Suzuki", "Wagon R") is True
+    assert is_recognized_global_vehicle("Nissan", "Leaf") is True
+    assert is_recognized_global_vehicle("Ford", "GalaxyCruiser9000") is False
+    print("  -> Global Vehicle Catalog Lookups: PASSED")
+
+    # 2. Vehicle Verification fallback for JDM car
+    premio_valid = await verify_vehicle("Toyota", "Premio", 2012)
+    assert premio_valid is True, "Expected 2012 Toyota Premio to verify via Global Catalog fallback"
+    wagon_r_valid = await verify_vehicle("Suzuki", "Wagon R", 2016)
+    assert wagon_r_valid is True, "Expected 2016 Suzuki Wagon R to verify via Global Catalog fallback"
+    print("  -> JDM Vehicle Verification Fallback: PASSED")
+
+    # 3. JDM Chassis / Frame number format validation
+    chassis_sample = "NZE141-1029482"
+    assert is_jdm_chassis_number(chassis_sample) is True
+    assert is_jdm_chassis_number("DBA-ZRT260-3021948") is True
+    assert is_jdm_chassis_number("INVALID_CHASSIS") is False
+
+    chk = validate_vin_checksum(chassis_sample)
+    assert chk["is_valid"] is True
+    assert chk.get("is_jdm_chassis") is True
+    print("  -> JDM Chassis Format Validation: PASSED")
+
+    # 4. JDM Chassis decoding
+    dec = await decode_vin_nhtsa(chassis_sample)
+    assert dec["success"] is True
+    assert dec["make"] == "Toyota"
+    assert "Axio" in dec["model"]
+    print("  -> JDM Chassis Decoding: PASSED")
+
+    # 5. Modern EV, Hybrid & ADAS entity extraction
+    hybrid_note = "2018 Toyota Prius showing code P0A93 with broken inverter coolant pump and damaged radar sensor"
+    extracted = extract_entities(hybrid_note)
+    assert extracted["make"] == "Toyota"
+    assert extracted["model"] == "Prius"
+    assert "P0A93" in extracted["dtc_codes"]
+    assert any("inverter" in p for p in extracted["damaged_parts"]), f"Expected inverter part in {extracted['damaged_parts']}"
+    assert any("radar" in p for p in extracted["damaged_parts"]), f"Expected radar sensor in {extracted['damaged_parts']}"
+    print("  -> EV/Hybrid & ADAS Entity Extraction: PASSED")
+
+    # 6. Hybrid DTC Taxonomy & Descriptions
+    tax_res = resolve_dtc_hierarchy(["P0A80", "P3000", "P0A93"])
+    codes_map = {item["exact_code"]: item for item in tax_res}
+    assert codes_map["P0A80"]["system"] == "High Voltage Powertrain"
+    assert "Replace Hybrid Battery" in codes_map["P0A80"]["description"]
+    assert codes_map["P3000"]["system"] == "High Voltage Powertrain"
+    print("  -> Hybrid/EV DTC Taxonomy & Description Mapping: PASSED")
+
+    # 7. Hybrid Multi-DTC Causal Cascade
+    # Inverter pump P0A93 triggers Inverter overheat P0A7A
+    inv_cascade = classify_dtc_cascades(["P0A93", "P0A7A"])
+    assert inv_cascade["has_cascade"] is True
+    assert inv_cascade["primary_code"] == "P0A93"
+    assert "P0A7A" in inv_cascade["cascade_codes"]
+    print("  -> Hybrid Inverter Thermal Cascade Analysis: PASSED")
+
+    # High Voltage isolation leak P0AA6 triggers battery derate P3000
+    iso_cascade = classify_dtc_cascades(["P0AA6", "P3000"])
+    assert iso_cascade["has_cascade"] is True
+    assert iso_cascade["primary_code"] == "P0AA6"
+    assert "P3000" in iso_cascade["cascade_codes"]
+    print("  -> High Voltage Isolation Fault Cascade Analysis: PASSED")
+
+    print("\nGlobal/JDM, Chassis & Hybrid/EV Upgrades: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
@@ -351,6 +433,7 @@ async def main():
     await test_vin_decoding()
     await test_fuzzy_vehicle_matching()
     await test_dtc_cascade_classification()
+    await test_extended_automotive_data()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
