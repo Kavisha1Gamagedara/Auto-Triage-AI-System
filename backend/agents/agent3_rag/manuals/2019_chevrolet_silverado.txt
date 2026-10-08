@@ -1,0 +1,23 @@
+[Vehicle: 2019 Chevrolet Silverado]
+[Source: Haynes repair guide for Chevrolet Silverado 1500 spark plugs; YouCanic 5.3L GM V8 spark plug video; gm-trucks.com forum thread - NOT GM service information]
+Component: Spark Plug
+Replacement Procedure (5.3L V8, general outline):
+1. Disconnect the negative battery terminal before working on the ignition system.
+2. Disconnect each ignition coil electrical connector, unbolt the coil if required, and pull it out.
+3. Clean the plug well with compressed air, then remove the old plug with a spark plug socket and extension without damaging the cylinder head threads.
+4. Check the gap (about 0.040 in for the ACDelco iridium plug cited by one guide). Do not grease the threads unless the service manual says to.
+5. Hand-start the new plug and tighten with a torque wrench.
+6. Reinstall the coils and connectors.
+Torque: NOT VERIFIED. A forum post for a 2016 Silverado 5.3L reports 15 to 16 lb-ft; no GM figure for the 2019 truck was found. Confirm in GM service information before use.
+
+---
+[Vehicle: 2019 Chevrolet Silverado]
+[Source: Jet Performance install write-up for 2019-2024 Silverado/Sierra 1500 V8 (gm-efi.com) - NOT GM service information]
+Component: Mass Air Flow (MAF) Sensor
+Replacement Procedure (V8):
+1. Disconnect the negative battery cable (10mm socket).
+2. Release the MAF connector: slide the red locking tab to unlocked, press the button on the connector body and pull it off the sensor.
+3. Remove the two Allen screws holding the sensor to the inlet ducting. Check the fastener type on your truck.
+4. Slip the sensor out of the ducting. Do not touch the sensing element.
+5. Install the new sensor by reversing the removal steps.
+Torque: NOT VERIFIED. No torque value was found for the MAF screws; tighten only snug as they thread into plastic ducting. Confirm in GM service information.

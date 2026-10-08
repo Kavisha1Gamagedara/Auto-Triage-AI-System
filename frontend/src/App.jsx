@@ -714,15 +714,20 @@ export default function App() {
               vehicle_make: data1.vehicle_details?.make || 'Toyota',
               vehicle_model: data1.vehicle_details?.model || 'Corolla',
               vehicle_year: data1.vehicle_details?.year || 2019,
-              issue_summary: deducedRootCause
+              issue_summary: deducedRootCause,
+              dtc_codes: data1.dtc_codes || []
             })
           });
           const repairData = await repairRes.json();
           if (repairRes.ok && repairData.status === "success") {
             setRepairPlan(repairData.repair_plan);
+          } else {
+            // Show the failure instead of hiding the box, so "no manual" and "Agent 3 broke" are distinguishable
+            setRepairPlan({ steps: [], error: repairData.message || repairData.detail || `Agent 3 request failed (HTTP ${repairRes.status})` });
           }
         } catch (repairErr) {
           console.warn('Agent 3 repair retrieval error:', repairErr);
+          setRepairPlan({ steps: [], error: `Agent 3 request failed: ${repairErr.message}` });
         }
       }
 
@@ -2227,6 +2232,11 @@ export default function App() {
                               ))}
                             </ol>
                           </div>
+                          {(!repairPlan.steps || repairPlan.steps.length === 0) && (
+                            <div style={{ fontSize: '0.85rem', color: '#e9d5ff' }}>
+                              No matching manual found{repairPlan.error ? ` (${repairPlan.error})` : ''}.
+                            </div>
+                          )}
 
                           {repairPlan.torque_specs && (
                             <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 6, padding: '12px 14px' }}>
@@ -2342,36 +2352,6 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* Collapsible A2A Handshake JSON Payload */}
-                  <div className="raw-json-accordion" style={{ marginTop: 8 }}>
-                    <button
-                      type="button"
-                      className="raw-json-toggle-btn"
-                      onClick={() => setShowRawJson(!showRawJson)}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Terminal size={13} color="var(--red-primary)" />
-                        {showRawJson ? 'Hide A2A Contract JSON' : 'Inspect Verified A2A Contract JSON (Multi-Agent Telemetry)'}
-                      </span>
-                      <span>{showRawJson ? '▲' : '▼'}</span>
-                    </button>
-                    {showRawJson && (
-                      <div className="raw-json-body">
-                        <pre className="a2a-code">
-                          {JSON.stringify({ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }, null, 2)}
-                        </pre>
-                        <button
-                          type="button"
-                          onClick={handleCopyPayload}
-                          className="icon-btn"
-                          style={{ fontSize: '0.72rem', gap: 4, marginTop: 8 }}
-                        >
-                          {copied ? <><Check size={12} color="var(--emerald)" /><span style={{ color: 'var(--emerald)' }}>Copied</span></> : <><Copy size={12} /><span>Copy JSON</span></>}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

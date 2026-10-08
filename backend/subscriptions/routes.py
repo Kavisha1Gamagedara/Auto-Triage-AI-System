@@ -12,7 +12,8 @@ from .schemas import (
     CheckoutResponse,
     AdminUpdateUserSubscription,
     AdminMetrics,
-    TierUpdatePayload
+    TierUpdatePayload,
+    TierCreatePayload
 )
 from .store import store, verify_token, generate_token
 
@@ -192,4 +193,37 @@ async def admin_update_tier(
         return updated
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/admin/tiers", tags=["Admin Management"], status_code=status.HTTP_201_CREATED)
+async def admin_create_tier(
+    payload: TierCreatePayload,
+    admin: dict = Depends(require_admin_user)
+):
+    """
+    Admin exclusive: Create a brand new subscription tier with custom price,
+    quota limits, cadence, features, and styling.
+    """
+    try:
+        data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+        new_tier = store.create_tier(data)
+        return new_tier
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete("/admin/tiers/{tier_id}", tags=["Admin Management"])
+async def admin_delete_tier(
+    tier_id: str,
+    admin: dict = Depends(require_admin_user)
+):
+    """
+    Admin exclusive: Delete a custom tier (cannot delete standard core tiers).
+    """
+    try:
+        store.delete_tier(tier_id)
+        return {"status": "success", "message": f"Tier '{tier_id}' deleted successfully."}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 

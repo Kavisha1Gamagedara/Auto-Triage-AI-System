@@ -1,0 +1,12 @@
+[Vehicle: 2017 Ford F-150]
+[Source: Owner forum and aftermarket spark plug guides for the 3.5L EcoBoost (f150gen14.com spark plug thread; seatcoversolutions.com F-150 spark plug guide) - NOT Ford service information]
+Component: Spark Plug
+Replacement Procedure (3.5L EcoBoost, general outline):
+1. Let the engine cool completely.
+2. Remove the engine cover and any intake parts that block access to the coil packs.
+3. Disconnect each ignition coil connector and remove the coil.
+4. Remove the old plug with a spark plug socket and extension. Note the electrode orientation of the old plug.
+5. Check the new plug gap (pre-gapped cold plugs are listed at 0.031 in / 0.8 mm; confirm against the underhood emissions sticker).
+6. Hand-start the new plug and tighten with a calibrated torque wrench.
+7. Refit the coils, connectors and covers.
+Torque: NOT VERIFIED. An owner of a newer F-150 with the 3.5L family reports 18 lb-ft (about 24 N.m). No source for the 2017 truck was found. Confirm in the Ford workshop manual before use.

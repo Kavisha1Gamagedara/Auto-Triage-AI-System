@@ -1,0 +1,176 @@
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0171 - System Too Lean" (samarins.com/diagnose/p0171.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0171, P0174]
+Component: P0171 System Too Lean (Bank 1) Diagnosis
+Diagnostic Procedure (lean condition, intake air leak, vacuum leak, MAF sensor, fuel pressure; P0174 is the same fault on Bank 2):
+1. Do not just clear the code. A lean mixture raises combustion temperature, so fix the cause before driving long distances.
+2. Visual checks: confirm the air filter box is closed and latched, inspect the intake air boot/duct for cracks or tears, and look for disconnected or cracked vacuum lines and PCV hoses.
+3. With a scan tool, read short-term (STFT) and long-term (LTFT) fuel trims at idle and at higher RPM. Normal is close to 0%; the code typically sets when trims exceed about +25%.
+4. Interpret the pattern: STFT high at idle (above about +15 to 20%) that falls at higher RPM points to a vacuum/intake leak. STFT near 0% at idle that rises at higher RPM points to a MAF sensor fault, low fuel pressure or a clogged catalytic converter.
+5. Targeted tests: check MAF live data with the scan tool, test fuel pressure against the manufacturer's specification, and check the PCV system, purge valve and oxygen sensor.
+6. Repair the confirmed fault. A dirty MAF sensor can be cleaned as a temporary measure but usually needs replacement. Clear the code and confirm fuel trims return near 0%.
+Torque: Not applicable to this diagnostic procedure. Fuel pressure specification NOT VERIFIED; look up the value in the vehicle's service information.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0172 - System Too Rich" (samarins.com/diagnose/p0172.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0172, P0175]
+Component: P0172 System Too Rich (Bank 1) Diagnosis
+Diagnostic Procedure (rich condition, fuel dilution of oil, injectors, PCV, purge valve; P0175 is the same fault on Bank 2):
+1. Check service bulletins and do a basic under-hood inspection. Check the engine oil level, since overfilling can set this code. If the oil smells strongly of fuel it may be diluted; clearing the code, resetting learned values and changing the oil may help.
+2. Inspect the air filter and the air induction system.
+3. Read freeze-frame data with a scan tool, and follow the factory procedure for the code.
+4. Test the PCV system and the purge valve (a purge valve stuck open can cause a rich condition).
+5. Run an injector balance test to find a faulty or leaking injector.
+6. Check fuel trims at idle and at higher RPM. Normal is close to 0%. Long-term trim more negative than about -10 to -12% indicates a rich mixture; the code sets around -10 to -14%.
+7. Other causes to rule out: faulty air/fuel ratio sensor, faulty MAF sensor, faulty ECT sensor, excessive fuel pressure from a faulty regulator, an internally leaking high-pressure fuel pump, contaminated fuel, and incorrect aftermarket intake parts.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0101" (samarins.com/diagnose/p0101.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0101]
+Component: P0101 Mass Air Flow (MAF) Circuit Range/Performance Diagnosis
+Diagnostic Procedure (MAF sensor signal outside the expected range):
+1. Inspect the MAF sensor and clean it if dirty; debris can block its measuring element.
+2. If the problem began right after an air filter change, check the filter installation and the sensor.
+3. Check any metal mesh intake screen ahead of the air filter for clogging.
+4. Inspect the intake boot for cracks and tears, and check for other vacuum leaks (stuck-open PCV valve, leaking intake gaskets).
+5. Check the MAF connector for loose pins or corrosion, and verify the sensor's reference voltage and ground.
+6. Use a scan tool to view live MAF data at about 1000, 2000 and 3000 RPM and compare it with specifications or a known-good sensor.
+7. If nothing else is found, check for a clogged catalytic converter or restricted exhaust (exhaust back pressure or engine vacuum test).
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0102" (samarins.com/diagnose/p0102.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0102]
+Component: P0102 Mass Air Flow (MAF) Circuit Low Input Diagnosis
+Diagnostic Procedure (MAF signal lower than the engine computer expects):
+1. Check the intake snorkel for cracks, tears, loose clamps or poor connection.
+2. Check the MAF connector and wiring for loose terminals, corrosion or damage.
+3. Inspect the air filter and replace it if dirty, torn or not fitted correctly. Check for a snow screen or restriction ahead of the filter.
+4. Check the MAF element for contamination or blockage; it can be cleaned carefully.
+5. Check for relevant service bulletins for the vehicle.
+6. Check the MAF reference voltage and ground at the connector. A bad ground or blown fuse can also cause the code.
+7. Compare MAF readings on a scan tool at different RPMs against a known-good sensor or another car of the same model, and check long and short fuel trims.
+8. If aftermarket intake parts are fitted, reinstall the OEM parts, clear the code and see whether it returns.
+9. If nothing else is found, the MAF sensor is often replaced, preferably with an OEM part. The code clears itself after driving once the fault is fixed.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Public consumer guides to P0113 (e.g. edmunds.com/obd-dtc/p0113.html, yourmechanic.com article on DTC P0113), paraphrased; NOT OEM service information]
+[DTC: P0113]
+Component: P0113 Intake Air Temperature (IAT) Sensor Circuit High Input Diagnosis
+Diagnostic Procedure (IAT signal higher than expected):
+1. Confirm the code is active with a scan tool. If it is not active, the fault is intermittent and needs an intermittent-fault approach.
+2. Inspect the IAT sensor and connector for damage, corrosion and oil contamination of the sensor tip.
+3. With the ignition off and the sensor disconnected, check the signal circuit for a short to voltage.
+4. Check the signal wire for opens and the sensor ground for an open or high resistance, using the vehicle's wiring diagram.
+5. Measure the sensor resistance at known temperatures and compare it with the manufacturer's specification (specification NOT VERIFIED here; use the service manual).
+6. Consider the engine computer last, only after the sensor, wiring and ground check out.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0128" (samarins.com/diagnose/p0128.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0128]
+Component: P0128 Coolant Thermostat (Below Regulating Temperature) Diagnosis
+Diagnostic Procedure (engine too slow to reach operating temperature):
+1. Basic checks: confirm coolant level is adequate, the ECT sensor connector is clean and fully seated, and look for relevant service bulletins.
+2. Verify the ECT sensor with a scan tool: a cold engine should read close to outside air temperature, and after about 10 minutes of driving it should read roughly 180 to 220 F (82 to 105 C). Alternatively measure sensor resistance and compare with the service manual chart.
+3. Assess the thermostat. It is hard to test because it may stick only intermittently; when P0128 is present the thermostat is usually replaced.
+4. Check whether a PCM software update is available; on some vehicles reprogramming resolves the code.
+5. Other possible causes: a thermostat seal letting coolant bypass, a radiator fan that does not shut off, a faulty IAT sensor.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0300 - Random Misfire" (samarins.com/diagnose/p0300.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0300, P0301, P0302, P0303, P0304, P0305, P0306, P0307, P0308]
+Component: P0300 Random/Multiple Cylinder Misfire Diagnosis
+Diagnostic Procedure (misfire; single-cylinder codes P0301 to P0308 are not covered by the cited source, but the general causes below still apply):
+1. Address any accompanying codes first (for example P0171, P0101, P0102, P0420, P0401).
+2. Check short-term and long-term fuel trims with a scan tool to see whether the mixture is running lean; a bad MAF sensor is a common cause.
+3. Check for vacuum leaks and a torn intake snorkel or boot.
+4. If a clogged catalytic converter is suspected, check exhaust back pressure; a typical sign is a car that idles fine but bogs down when revved.
+5. If the misfire occurs only at idle, check whether the EGR valve or purge valve is stuck open.
+6. Inspect valvetrain components such as camshaft lobes, lifters, rocker arms and the timing chain for wear, and verify valve timing if the problem began after a timing belt or chain replacement.
+7. Clean carbon from intake valves if buildup is present (manual cleaning is more effective than fuel induction sprays); replace clogged injectors.
+8. Other causes: low fuel pressure, a faulty crankshaft or camshaft position sensor.
+Warning: misfires send unburned fuel into the exhaust and can overheat and damage the catalytic converter; follow the owner's manual guidance on driving with this code.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0420" (samarins.com/diagnose/p0420.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0420, P0430]
+Component: P0420 Catalyst System Efficiency Below Threshold Diagnosis
+Diagnostic Procedure (catalytic converter efficiency; P0430 is the same fault on Bank 2):
+1. Check for service bulletins; some manufacturers recommend a PCM software update or a driving pattern to de-sulfate the converter before replacement.
+2. Repair any exhaust leaks near the converter before testing it.
+3. Clear the code and drive test: after warm-up, drive steadily at about 40 to 70 mph for 10 to 20 minutes, then check with a scan tool that the catalyst readiness monitor shows COMPLETED and no converter codes are present or pending.
+4. Compare O2 sensor signals with the converter fully warm and the engine at about 1,500 to 2,000 RPM: a good converter keeps the rear sensor steady while the front sensor switches. If the rear sensor mirrors the front sensor, the converter has failed.
+5. Check temperatures with an infrared thermometer: a working converter makes the outlet pipe hotter than the inlet.
+6. Before installing a new converter, fix the underlying cause (oil burning, misfires, leaking injectors, coolant in the combustion chamber, lean mixture), or the new converter may fail again.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Samarins.com "Code P0442" and "Code P0455" (samarins.com/diagnose/p0442.html, p0455.html), paraphrased; generic OBD-II guidance, NOT OEM service information]
+[DTC: P0440, P0442, P0455, P0456]
+Component: P0442 / P0455 EVAP System Leak Diagnosis
+Diagnostic Procedure (evaporative emission system leak; P0442 small leak, P0455 large leak):
+1. Check the fuel cap: make sure it is closed tightly, inspect the seal for cracks or damage, and check the filler neck sealing surface for rust. Replace the cap if the seal is damaged. The light may take a few drive cycles to reset.
+2. Test the vent valve (canister close valve) separately. It is normally open and closes when powered; apply battery voltage and listen for a click.
+3. Test the purge valve separately. It is normally closed; a purge valve stuck open can cause a large-leak code.
+4. Inspect hoses, EVAP lines and the charcoal canister for cracks, damage or disconnections; also check the capless filler unit if fitted. Small cracks are very hard to find without equipment.
+5. If nothing obvious is found, have the system smoke-tested with a scan tool that can operate EVAP components and monitor tank pressure.
+6. After repair, the Check Engine light may take a few days of driving to reset because the EVAP self-test runs only under certain conditions.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Public consumer guides to P0500 (e.g. edmunds.com/obd-dtc/p0500.html, yourmechanic.com article on P0500), paraphrased; NOT OEM service information]
+[DTC: P0500]
+Component: P0500 Vehicle Speed Sensor Malfunction Diagnosis
+Diagnostic Procedure (no usable vehicle speed signal):
+1. Scan and record all codes and the freeze-frame data; look for related ABS or transmission codes.
+2. Check the speedometer: on some models a dead or erratic speedometer points to the speed sensor or its wiring, while a working speedometer points to the instrument cluster (model-specific clue only).
+3. Clear the codes and road test to see whether P0500 returns.
+4. Inspect the speed sensor, its drive gear or reluctor wheel, and its connector and wiring for damage, wear or corrosion.
+5. Use a scan tool to confirm a speed signal while driving, and check voltage at the sensor with a multimeter. Check wiring for opens and shorts. Wheel speed sensors and the ABS module can also feed the speed signal.
+6. Repair or replace only the confirmed faulty part, then confirm the code does not return. Consider the PCM only after the sensor, wiring and cluster have been ruled out.
+Warning: driving is possible but not recommended; get ABS or transmission symptoms checked promptly.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Public consumer guides to P0700 (e.g. edmunds.com/obd-dtc/p0700.html, mechanicbase.com "What Does The P0700 Code Mean"), paraphrased; NOT OEM service information]
+[DTC: P0700]
+Component: P0700 Transmission Control System Malfunction Diagnosis
+Diagnostic Procedure (the TCM has requested the check engine light; P0700 does not name the failed part):
+1. Read the stored transmission (TCM) codes with a scan tool, not just P0700. Companion codes (often P07xx or P17xx) point to the actual fault.
+2. Check the transmission fluid level and condition; low, wrong or contaminated fluid can cause control and solenoid faults.
+3. Inspect wiring and connectors between the TCM, sensors and solenoids for damage and corrosion.
+4. Check battery voltage and grounds; low voltage and poor grounds can produce false faults.
+5. Test the sensors and solenoids that the TCM codes point to. Avoid replacing parts without reading the companion codes first.
+6. Clear the codes after repair and confirm the fault does not return.
+Warning: symptoms can include harsh shifting, gear slipping, limp mode and overheating; driving with this code is not advised.
+Torque: Not applicable to this diagnostic procedure.
+
+---
+[Vehicle: Generic OBD-II]
+[Source: Public consumer guides to U0100 (e.g. repairpal.com U0100 page, getjerry.com "What Does Engine Code U0100 Mean"), paraphrased; NOT OEM service information]
+[DTC: U0100]
+Component: U0100 Lost Communication with ECM/PCM Diagnosis
+Diagnostic Procedure (a module stopped receiving messages from the engine computer):
+1. Check the battery and charging system: confirm the battery is good and fully charged, and inspect terminals for looseness or corrosion. Voltage drops during cranking or running point to charging problems.
+2. Inspect the ECM/PCM connectors for corrosion, damage or pushed-out pins.
+3. Check the fuses and relays that feed the ECM, and verify power and ground at the module.
+4. Test the CAN bus wiring between the ECM and other modules. A common bench check is resistance between CAN high and CAN low with the ignition off, typically about 60 ohms; confirm against the factory wiring diagram.
+5. Scan all modules (not just the engine) for other codes that give clues.
+6. Clear codes and retest; intermittent communication codes can be caused by a weak battery.
+7. Replace the ECM/PCM last, only after power, ground, battery and wiring checks come back clean.
+Torque: Not applicable to this diagnostic procedure.

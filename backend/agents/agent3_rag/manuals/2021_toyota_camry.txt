@@ -1,0 +1,13 @@
+[Vehicle: 2021 Toyota Camry]
+[Source: Public DIY video/guides for the Toyota A25A 2.5L engine (e.g. youcanic.com A25A/M20A spark plug guide); torque is a community-reported value - NOT an OEM figure]
+Component: Spark Plug
+Replacement Procedure (2.5L A25A-FKS):
+1. Let the engine cool and confirm the correct plug part number for the vehicle by VIN.
+2. Remove the engine cover.
+3. Disconnect each ignition coil connector (press the clip and pull) and remove the coil bolt with a 10mm socket, then pull the coil.
+4. Clean debris from each spark plug well, for example with compressed air, before removing the plug.
+5. Remove the old plug with a thin-wall spark plug socket and extension.
+6. Hand-thread the new plug. Do not adjust the gap on iridium plugs; the gap is preset.
+7. Tighten with a torque wrench, refit the coil and its bolt, and reconnect the connector. Work one cylinder at a time.
+8. Reinstall the engine cover and check for misfires.
+Torque: NOT VERIFIED against Toyota repair information. A DIY video reports 15 ft-lb (about 20 N.m) for the plugs and 5.5 ft-lb (about 7.5 N.m) for the 8mm coil bolts. Confirm in Toyota TIS before use.

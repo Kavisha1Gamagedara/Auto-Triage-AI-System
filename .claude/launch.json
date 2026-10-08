@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "backend",
-      "runtimeExecutable": "C:/Projects/Auto-Triage-AI-System/.venv/Scripts/python.exe",
-      "runtimeArgs": ["-X", "utf8", "-m", "uvicorn", "main:app", "--app-dir", "C:/Projects/Auto-Triage-AI-System/backend", "--port", "8010"],
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-X", "utf8", "-m", "uvicorn", "main:app", "--app-dir", "backend", "--port", "8010"],
       "port": 8010
     },
     {
