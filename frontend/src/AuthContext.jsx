@@ -8,6 +8,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('autotriage_token') || null);
   const [loading, setLoading] = useState(true);
+  const [tiers, setTiers] = useState([]);
+
+  // Fetch live subscription tier pricing & limits
+  const fetchTiers = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/subscriptions/tiers`);
+      if (res.ok) {
+        const data = await res.json();
+        setTiers(data);
+        return data;
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Could not fetch subscription tiers:', err);
+    }
+    return [];
+  }, []);
 
   // Refresh current user profile and quota from backend
   const refreshUser = useCallback(async (activeToken = token) => {
@@ -43,7 +59,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     refreshUser();
-  }, [refreshUser]);
+    fetchTiers();
+  }, [refreshUser, fetchTiers]);
 
   // Login handler
   const login = async (email, password) => {
@@ -159,6 +176,24 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // Admin: Update tier pricing & quota limits
+  const adminUpdateTier = async (tierId, updates) => {
+    if (!token) throw new Error('Admin authorization required.');
+    const res = await fetch(`${API_BASE_URL}/api/v1/admin/tiers/${tierId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(updates)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to update subscription tier.');
+    await fetchTiers();
+    await refreshUser();
+    return data;
+  };
+
   const value = {
     user,
     token,
@@ -166,6 +201,9 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(user),
     isAdmin: user?.role === 'admin',
     quota: user?.quota || null,
+    tiers,
+    fetchTiers,
+    adminUpdateTier,
     login,
     register,
     logout,

@@ -166,3 +166,14 @@ class AdminMetrics(BaseModel):
     tier_distribution: Dict[str, int]
     monthly_recurring_revenue_lkr: int
     total_diagnoses_today: int
+
+
+class TierUpdatePayload(BaseModel):
+    price_lkr: Optional[int] = Field(None, ge=0)
+    limit: Optional[int] = Field(None, ge=1)
+    period: Optional[str] = None
+    description: Optional[str] = None
+    badge: Optional[str] = None
+    name: Optional[str] = None
+    is_unlimited: Optional[bool] = None
+

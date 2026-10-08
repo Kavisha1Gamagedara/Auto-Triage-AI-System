@@ -99,12 +99,26 @@ export default function SubscriptionTiersModal({
   onSelectTierToUpgrade, 
   onOpenAuth 
 }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, tiers } = useAuth();
 
   if (!isOpen) return null;
 
   const currentTierId = user?.tier || 'basic';
   const quota = user?.quota;
+
+  const effectiveTiers = TIERS_DATA.map(t => {
+    const live = tiers?.find(lt => lt.id === t.id);
+    if (!live) return t;
+    return {
+      ...t,
+      name: live.name || t.name,
+      price_lkr: live.price_lkr,
+      price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
+      limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
+      badge: live.badge || t.badge,
+      description: live.description || t.description
+    };
+  });
 
   const handleTierAction = (tier) => {
     if (!isAuthenticated) {
@@ -160,7 +174,7 @@ export default function SubscriptionTiersModal({
 
         {/* 4-Tier Grid */}
         <div className="tiers-cards-grid">
-          {TIERS_DATA.map(tier => {
+          {effectiveTiers.map(tier => {
             const isCurrent = isAuthenticated && currentTierId === tier.id;
             const isUpgrade = !isCurrent && tier.id !== 'basic';
 

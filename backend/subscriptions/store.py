@@ -4,6 +4,7 @@ import uuid
 import hmac
 import hashlib
 import base64
+import copy
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List, Tuple
 
@@ -59,6 +60,7 @@ class SubscriptionStore:
     def __init__(self):
         self.users: Dict[str, Dict[str, Any]] = {}
         self.transactions: List[Dict[str, Any]] = []
+        self.tiers: Dict[str, Dict[str, Any]] = copy.deepcopy(SUBSCRIPTION_TIERS)
         self._load()
         self._seed_default_accounts()
 
@@ -70,6 +72,13 @@ class SubscriptionStore:
                     data = json.load(f)
                     self.users = data.get("users", {})
                     self.transactions = data.get("transactions", [])
+                    loaded_tiers = data.get("tiers")
+                    if loaded_tiers and isinstance(loaded_tiers, dict):
+                        for k, v in loaded_tiers.items():
+                            if k in self.tiers:
+                                self.tiers[k].update(v)
+                            else:
+                                self.tiers[k] = v
             except Exception as e:
                 print(f"[SubscriptionStore] Error loading local file: {e}")
                 self.users = {}
@@ -83,10 +92,30 @@ class SubscriptionStore:
                 json.dump({
                     "users": self.users,
                     "transactions": self.transactions,
+                    "tiers": self.tiers,
                     "last_updated": datetime.now(timezone.utc).isoformat()
                 }, f, indent=2)
         except Exception as e:
             print(f"[SubscriptionStore] Failed to save database: {e}")
+
+    def get_tiers(self) -> List[Dict[str, Any]]:
+        """Returns current list of active subscription tiers."""
+        return list(self.tiers.values())
+
+    def get_tier(self, tier_id: str) -> Optional[Dict[str, Any]]:
+        """Gets tier configuration by id."""
+        return self.tiers.get(tier_id)
+
+    def update_tier(self, tier_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Admin override: Updates pricing, quota limits, and details for a tier."""
+        if tier_id not in self.tiers:
+            raise ValueError(f"Subscription tier '{tier_id}' does not exist.")
+        tier = self.tiers[tier_id]
+        for field in ["price_lkr", "limit", "period", "description", "badge", "name", "is_unlimited"]:
+            if field in updates and updates[field] is not None:
+                tier[field] = updates[field]
+        self._save()
+        return tier
 
     def _seed_default_accounts(self):
         """Seeds initial accounts for quick demo and testing if not existing."""
@@ -233,10 +262,10 @@ class SubscriptionStore:
             )
 
         tier_id = user.get("tier", "basic")
-        tier_cfg = SUBSCRIPTION_TIERS.get(tier_id, SUBSCRIPTION_TIERS["basic"])
-        is_unlimited = tier_cfg["is_unlimited"] or user.get("role") == "admin"
-        limit = tier_cfg["limit"]
-        period = tier_cfg["period"]
+        tier_cfg = self.tiers.get(tier_id, self.tiers.get("basic", SUBSCRIPTION_TIERS["basic"]))
+        is_unlimited = tier_cfg.get("is_unlimited", False) or user.get("role") == "admin"
+        limit = tier_cfg.get("limit", 2)
+        period = tier_cfg.get("period", "daily")
 
         now = datetime.now(timezone.utc)
         today_key = now.strftime("%Y-%m-%d")
@@ -299,10 +328,10 @@ class SubscriptionStore:
         if not user:
             raise ValueError("User not found.")
 
-        if tier not in SUBSCRIPTION_TIERS or tier == "basic":
+        if tier not in self.tiers or tier == "basic":
             raise ValueError(f"Invalid subscription upgrade target tier: {tier}")
 
-        tier_info = SUBSCRIPTION_TIERS[tier]
+        tier_info = self.tiers[tier]
         amount_lkr = tier_info["price_lkr"]
         now = datetime.now(timezone.utc)
         now_iso = now.isoformat()
@@ -374,7 +403,7 @@ class SubscriptionStore:
         if not user:
             raise ValueError("Target user not found.")
 
-        if new_tier not in SUBSCRIPTION_TIERS:
+        if new_tier not in self.tiers:
             raise ValueError(f"Unknown tier: {new_tier}")
 
         user["tier"] = new_tier
@@ -429,8 +458,8 @@ class SubscriptionStore:
         for u in self.users.values():
             t = u.get("tier", "basic")
             tier_dist[t] = tier_dist.get(t, 0) + 1
-            if t in SUBSCRIPTION_TIERS:
-                mrr += SUBSCRIPTION_TIERS[t]["price_lkr"]
+            if t in self.tiers:
+                mrr += self.tiers[t]["price_lkr"]
             total_today += u.get("daily_usage", {}).get(today_key, 0)
 
         return {

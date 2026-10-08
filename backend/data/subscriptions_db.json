@@ -11,7 +11,7 @@
       "password_hash": "b77c1b300a816ab072700455aa10a55514da70d99c5192db8cd85d7569778d10",
       "salt": "324dc8e4caee4cc2",
       "created_at": "2026-10-08T06:12:10.618131+00:00",
-      "last_active": "2026-10-08T07:22:50.670710+00:00",
+      "last_active": "2026-10-08T09:17:23.677836+00:00",
       "subscription_status": "active",
       "subscription_expires": null,
       "daily_usage": {},
@@ -123,5 +123,78 @@
       "gateway": "Developer Mock Sandbox Payment Gateway"
     }
   ],
-  "last_updated": "2026-10-08T09:12:26.589745+00:00"
+  "tiers": {
+    "basic": {
+      "id": "basic",
+      "name": "Basic Free",
+      "price_lkr": 0,
+      "limit": 2,
+      "period": "daily",
+      "description": "Essential entry diagnostics for independent technicians.",
+      "features": [
+        "2 Autonomous Diagnoses per Day",
+        "Agent 1 NHTSA vPIC Ground Truth Check",
+        "Agent 2 Physics of Failure Root Cause",
+        "Standard Multi-Agent Particle Pipeline",
+        "SAE DTC Cascade Diagnostics"
+      ],
+      "badge": "FREE TIER",
+      "is_unlimited": false
+    },
+    "plus": {
+      "id": "plus",
+      "name": "Plus Tier",
+      "price_lkr": 30000,
+      "limit": 300,
+      "period": "monthly",
+      "description": "High-volume diagnostics for busy repair bays & independent garages.",
+      "features": [
+        "300 Autonomous Diagnoses per Month",
+        "Priority Groq Llama-3 70B Reasoning Core",
+        "Agent 3 OEM Workshop Manual Dense Vector RAG",
+        "Interactive Holographic Particle Flow",
+        "Exportable Executive Repair Dossiers",
+        "Monthly Quota Rollover Support"
+      ],
+      "badge": "MOST POPULAR",
+      "is_unlimited": false
+    },
+    "pro": {
+      "id": "pro",
+      "name": "Pro Tier",
+      "price_lkr": 50000,
+      "limit": 600,
+      "period": "monthly",
+      "description": "Comprehensive multi-agent pipeline with OEM torque specs & BOM procurement.",
+      "features": [
+        "600 Autonomous Diagnoses per Month",
+        "Agent 4 Automated BOM Catalog & Parts Resolver",
+        "3-Tier Multi-Distributor Quoting (OEM / Aftermarket / Economy)",
+        "ChromaDB Dense Semantic Manual Chunk Retrieval",
+        "Sub-50ms Execution SLA & Full Telemetry Drawer",
+        "Multi-Vehicle Workshop Queue"
+      ],
+      "badge": "PROFESSIONAL",
+      "is_unlimited": false
+    },
+    "ultra": {
+      "id": "ultra",
+      "name": "Ultra Tier",
+      "price_lkr": 100000,
+      "limit": 999999,
+      "period": "monthly",
+      "description": "Unrestricted enterprise throughput, priority LLM reasoning & zero quota caps.",
+      "features": [
+        "Unlimited Autonomous Diagnoses per Month",
+        "Zero Daily or Monthly Quota Limits (Infinite Runs)",
+        "Dedicated Low-Latency Inference Pipeline",
+        "Full Multi-Agent LangGraph Asynchronous DAG Engine",
+        "Enterprise Multi-Mechanic Team Seat Management",
+        "24/7 Priority Automotive Engineering Support"
+      ],
+      "badge": "ENTERPRISE",
+      "is_unlimited": true
+    }
+  },
+  "last_updated": "2026-10-08T09:32:46.831142+00:00"
 }

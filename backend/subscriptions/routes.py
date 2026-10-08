@@ -11,7 +11,8 @@ from .schemas import (
     CheckoutSimulateRequest,
     CheckoutResponse,
     AdminUpdateUserSubscription,
-    AdminMetrics
+    AdminMetrics,
+    TierUpdatePayload
 )
 from .store import store, verify_token, generate_token
 
@@ -108,7 +109,7 @@ async def get_me(current_user: dict = Depends(require_authenticated_user)):
 @router.get("/subscriptions/tiers", tags=["Subscriptions"])
 async def list_tiers():
     """Returns the 4 canonical subscription tiers with prices in LKR and limits."""
-    return list(SUBSCRIPTION_TIERS.values())
+    return store.get_tiers()
 
 
 @router.get("/subscriptions/quota", response_model=QuotaInfo, tags=["Subscriptions"])
@@ -173,3 +174,22 @@ async def admin_update_subscription(
 async def admin_metrics(admin: dict = Depends(require_admin_user)):
     """Admin dashboard stats: total users, active paid subs, MRR in LKR, diagnoses today."""
     return store.get_admin_metrics()
+
+
+@router.put("/admin/tiers/{tier_id}", tags=["Admin Management"])
+async def admin_update_tier(
+    tier_id: str,
+    payload: TierUpdatePayload,
+    admin: dict = Depends(require_admin_user)
+):
+    """
+    Admin exclusive: Update subscription price in LKR, diagnostic quota limits, 
+    cadence, and details for any tier.
+    """
+    try:
+        data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else payload.dict(exclude_unset=True)
+        updated = store.update_tier(tier_id, data)
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
