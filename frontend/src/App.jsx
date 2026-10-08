@@ -714,15 +714,20 @@ export default function App() {
               vehicle_make: data1.vehicle_details?.make || 'Toyota',
               vehicle_model: data1.vehicle_details?.model || 'Corolla',
               vehicle_year: data1.vehicle_details?.year || 2019,
-              issue_summary: deducedRootCause
+              issue_summary: deducedRootCause,
+              dtc_codes: data1.dtc_codes || []
             })
           });
           const repairData = await repairRes.json();
           if (repairRes.ok && repairData.status === "success") {
             setRepairPlan(repairData.repair_plan);
+          } else {
+            // Show the failure instead of hiding the box, so "no manual" and "Agent 3 broke" are distinguishable
+            setRepairPlan({ steps: [], error: repairData.message || repairData.detail || `Agent 3 request failed (HTTP ${repairRes.status})` });
           }
         } catch (repairErr) {
           console.warn('Agent 3 repair retrieval error:', repairErr);
+          setRepairPlan({ steps: [], error: `Agent 3 request failed: ${repairErr.message}` });
         }
       }
 
@@ -2227,6 +2232,11 @@ export default function App() {
                               ))}
                             </ol>
                           </div>
+                          {(!repairPlan.steps || repairPlan.steps.length === 0) && (
+                            <div style={{ fontSize: '0.85rem', color: '#e9d5ff' }}>
+                              No matching manual found{repairPlan.error ? ` (${repairPlan.error})` : ''}.
+                            </div>
+                          )}
 
                           {repairPlan.torque_specs && (
                             <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 6, padding: '12px 14px' }}>

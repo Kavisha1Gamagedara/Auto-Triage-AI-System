@@ -1,0 +1,11 @@
+[Vehicle: 2019 Honda Accord]
+[Source: Public DIY guides for the 1.5L turbo Accord (e.g. fatboysoffroad.com 2019 Honda Accord spark plug guide; owner forum report) - NOT Honda service information]
+Component: Spark Plug
+Replacement Procedure (1.5L turbo, general outline):
+1. Let the engine cool and disconnect the battery.
+2. Disconnect each ignition coil connector and remove the coil.
+3. Remove the old plug. A 9/16 inch hex socket is reported to fit the 1.5T plugs.
+4. Confirm the new plug (NGK, pre-gapped at 0.030 in) and hand-start it to avoid cross-threading.
+5. Tighten with a torque wrench; threads must be clean and dry.
+6. Reinstall the coils, make sure they are fully seated, reconnect the battery and check engine operation.
+Torque: NOT VERIFIED against the Honda service manual. An owner of a 2021 Accord reports 22 N.m (16 lbf.ft) for the plugs and 12 N.m (9 lbf.ft) for the coil bolts. Confirm in Honda service information before use.

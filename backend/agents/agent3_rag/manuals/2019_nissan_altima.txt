@@ -1,0 +1,24 @@
+[Vehicle: 2019 Nissan Altima]
+[Source: Nissan maintenance schedule (maintenance-schedules.nissanusa.com) for interval; ALLDATA excerpt quoted in a forum post for a different model year - NOT Nissan service information]
+Component: Spark Plug
+Replacement Procedure (2.5L, general outline):
+1. Let the engine cool and remove the plastic engine cover.
+2. Remove the ignition coils.
+3. Use a spark plug socket with an extension to remove the old plugs.
+4. Do not re-gap platinum or iridium plugs. Hand-start the new plug.
+5. Tighten with a torque wrench, then refit the coils and cover.
+Interval: Nissan lists spark plug replacement at 105,000 miles for the 2.5L.
+Torque: NOT VERIFIED. A 2014 ALLDATA excerpt in a forum post lists 19.6 to 29.4 N.m (15 to 21 ft-lb) for an older Altima. Confirm in the Nissan service manual for the QR25 engine before use.
+
+---
+[Vehicle: 2019 Nissan Altima]
+[Source: Go-Parts article on 2013-2019 Nissan Altima MAF sensor (go-parts.com/garage/ps-2013-2019-nissan-altima-mass-air-flow-sensor) - NOT Nissan service information]
+Component: Mass Air Flow (MAF) Sensor
+Replacement Procedure:
+1. Turn the ignition off and disconnect the negative battery terminal.
+2. Disconnect the single electrical connector on the MAF sensor.
+3. Remove the two Phillips head screws holding the probe-style sensor to the intake duct.
+4. Pull the sensor straight out of the duct. Do not touch the sensing element.
+5. Install the new sensor, secure the two screws snugly, and reconnect the connector.
+6. Clear codes and road test. Confirm the part number for your engine (2.5L or 3.5L).
+Torque: NOT VERIFIED. No torque value was found; tighten snug only, since overtightening can crack the plastic housing. Confirm in the Nissan service manual.

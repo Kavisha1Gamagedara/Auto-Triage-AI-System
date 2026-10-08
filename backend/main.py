@@ -414,8 +414,9 @@ async def generate_repair_plan(request: RepairRequest):
         
         # Call Agent 3 by explicitly passing BOTH required arguments
         repair_data = await get_repair_procedure(
-            target_component=request.issue_summary, 
-            vehicle_model=full_vehicle_name
+            target_component=request.issue_summary,
+            vehicle_model=full_vehicle_name,
+            dtc_codes=request.dtc_codes
         )
         
         return {"status": "success", "repair_plan": repair_data}

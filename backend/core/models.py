@@ -293,6 +293,7 @@ class RepairRequest(BaseModel):
     vehicle_model: str = Field(..., description="Vehicle model name")
     vehicle_year: int = Field(..., description="Vehicle manufacturing year")
     issue_summary: str = Field(..., description="The root cause or failure mode identified by Agent 2")
+    dtc_codes: List[str] = Field(default_factory=list, description="OBD-II codes from Agent 1, used to find the matching diagnostic manual")
 
 
 class ProcurementRequest(BaseModel):

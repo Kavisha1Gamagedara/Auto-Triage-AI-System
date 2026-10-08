@@ -1,0 +1,11 @@
+[Vehicle: 2019 Toyota RAV4]
+[Source: Public DIY guides for the Toyota 2.5L A25A-FKS (e.g. fatboysoffroad.com Toyota RAV4 spark plug guide) - NOT Toyota repair information]
+Component: Spark Plug
+Replacement Procedure (2.5L, general outline):
+1. Let the engine cool. Confirm the engine code (non-hybrid A25A-FKS, hybrid A25A-FXS).
+2. Remove the engine cover and the four ignition coils (10mm bolts), working one cylinder at a time.
+3. Clean each plug well, then remove the old plug with a 14mm thin-wall spark plug socket and a long extension.
+4. Hand-start the new plug. Do not adjust the gap on pre-gapped iridium plugs.
+5. Tighten with a torque wrench, refit the coil, then move to the next cylinder.
+6. If the engine misfires afterward, recheck coil connectors, plug seating and OBD-II codes.
+Torque: NOT VERIFIED against Toyota repair information. A third-party guide reports 20 N.m (about 15 ft-lb). Confirm in Toyota TIS before use.
