@@ -31,16 +31,36 @@ import {
   Sun,
   Moon,
   Workflow,
-  ArrowUpRight
+  ArrowUpRight,
+  Crown,
+  User,
+  LogIn,
+  LogOut,
+  CreditCard,
+  Building2,
+  Clock
 } from 'lucide-react';
 
 import './App.css';
 import WorkflowDashboard from './WorkflowDashboard.jsx';
+import AdminDashboardPage from './AdminDashboardPage.jsx';
 import HypercarHeadlightCanvas from './HypercarHeadlightCanvas.jsx';
 import HolographicAgentPipelineGraph from './HolographicAgentPipelineGraph.jsx';
 import cinematicSportsCar from './assets/cinematic_sports_car.jpg';
 import heroDarkCar from './assets/hero_dark_car.jpg';
 import mechanicDiagnostics from './assets/mechanic_diagnostics.jpg';
+import Telemetry3DAnimation from './Telemetry3DAnimation.jsx';
+import telemetry3dEngine from './assets/telemetry_3d_engine.jpg';
+import telemetry3dGearshift from './assets/telemetry_3d_gearshift.jpg';
+import telemetry3dGauge from './assets/telemetry_3d_gauge.jpg';
+
+// RBAC & Subscription Modals
+import { useAuth } from './AuthContext';
+import AuthModal from './AuthModal.jsx';
+import SubscriptionTiersModal from './SubscriptionTiersModal.jsx';
+import DeveloperPaymentGatewayModal from './DeveloperPaymentGatewayModal.jsx';
+import AdminDashboardModal from './AdminDashboardModal.jsx';
+import QuotaExceededModal from './QuotaExceededModal.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -159,20 +179,52 @@ const SIMULATED_DIAGNOSES = {
 
 const FAQ_ITEMS = [
   {
-    q: 'How does Agent 1 prevent vehicle hallucinations?',
-    a: 'Agent 1 cross-references every extracted Make, Model, and Year in real time against the official U.S. Department of Transportation (NHTSA vPIC) database via an asynchronous REST API. If the vehicle configuration is fictitious or never manufactured, it is rejected with an HTTP 400 validation error.'
+    category: 'System',
+    categoryKey: 'system',
+    q: 'How does Auto-Triage diagnose vehicle problems from OBD-II trouble codes?',
+    a: 'Simply input your vehicle details (Make, Model, Year, or 17-digit VIN) alongside diagnostic trouble codes (e.g., P0171, P0300) or reported engine symptoms. Auto-Triage performs cognitive physics-of-failure reasoning to isolate the single root-cause mechanical part that actually failed—bypassing misleading downstream symptoms—and immediately provides OEM factory disassembly steps and exact bolt torque tolerances.'
   },
   {
-    q: 'What is the Agent-to-Agent (A2A) payload format?',
-    a: 'Agent 1 produces a strongly-typed Pydantic contract (Agent1Payload) containing the session ID, verified vehicle parameters (Make, Model, Year, is_verified=True), discovered OBD-II DTC codes, and damaged physical parts. This clean schema is consumed directly by Agent 2 for cognitive reasoning.'
+    category: 'System',
+    categoryKey: 'system',
+    q: 'Can I search using only my vehicle\'s 17-digit VIN number?',
+    a: 'Yes! Auto-Triage features automated VIN decoding synchronized in real time with federal U.S. Department of Transportation (NHTSA vPIC) databases. Submitting your 17-digit VIN immediately decodes the authentic chassis, trim, and year specifications, ensuring 100% road-legal vehicle specifications and eliminating diagnostic errors.'
   },
   {
-    q: 'How does the LangGraph Fork-Join architecture operate?',
-    a: 'The workflow initiates at Agent 1 (Ingestion & Validation). Once verified, data transitions to Agent 2 (Diagnostic Reasoning) which deduces the root-cause failure. At this point, the pipeline forks into two parallel branches: Agent 3 performs dense vector retrieval (ChromaDB) over OEM workshop manuals, while Agent 4 queries a MongoDB parts catalog for pricing. Both branches join to assemble the final diagnostic report.'
+    category: 'System',
+    categoryKey: 'system',
+    q: 'What makes, models, and diagnostic trouble codes are supported?',
+    a: 'Auto-Triage universally supports all standard OBD-II passenger cars, SUVs, and light trucks across Asian, European, and American manufacturers (including Toyota, Honda, Ford, BMW, Mercedes-Benz, Nissan, and more). It analyzes Powertrain (P-codes), Chassis (C-codes), Body (B-codes), and Network Communication (U-codes).'
   },
   {
-    q: 'Do we need a database for vehicle verification?',
-    a: 'No local database is required for vehicle models or production years. The NHTSA vPIC database is an authoritative, public REST API maintained by the federal government and queried dynamically on demand.'
+    category: 'System',
+    categoryKey: 'system',
+    q: 'Are the repair procedures authentic manufacturer specifications?',
+    a: 'Yes. Every diagnosis extracts verified OEM factory repair procedures, exact bolt torque specifications (in Nm and ft-lbs), required specialty mechanic tools, and technician safety alerts (such as high-voltage hybrid battery precautions and high-pressure fuel spray depressurization protocols).'
+  },
+  {
+    category: 'Pricing',
+    categoryKey: 'pricing',
+    q: 'How does 3-Tier Parts Pricing work, and what currency is quoted?',
+    a: 'For every diagnosed component failure, Auto-Triage automatically delivers transparent price comparisons across three distinct quality tiers: OEM Genuine (factory original), Certified Aftermarket (reputable certified brands), and Economy (budget-friendly options). All part quotes are delivered in Sri Lankan Rupees (LKR) with live supplier catalog verification.'
+  },
+  {
+    category: 'Pricing',
+    categoryKey: 'pricing',
+    q: 'What are Safety Suppression Locks on hazardous parts?',
+    a: 'Driver and technician safety is our absolute priority. When a failure involves safety-critical vehicle assemblies (such as electronic brake control modules, steering linkages, or high-pressure diesel injection systems), Auto-Triage automatically withholds and locks uncertified economy parts to prevent catastrophic failures, advising technicians to source certified components only.'
+  },
+  {
+    category: 'Pricing',
+    categoryKey: 'pricing',
+    q: 'What subscription plans are available, and how do diagnostic quotas work?',
+    a: 'We offer flexible subscription plans tailored for individual vehicle owners, independent mechanics, and automotive workshops: Free Starter (3 diagnostic sessions per month), Pro Mechanic (50 diagnostic sessions per month with full OEM disassembly manuals, torque specs, and parts catalogs), and Workshop Fleet (unlimited diagnostic sessions, multi-vehicle batch analysis, and priority support). Click "Plans & Pricing" in the navigation bar to review or upgrade anytime.'
+  },
+  {
+    category: 'Pricing',
+    categoryKey: 'pricing',
+    q: 'Can I cancel, upgrade, or downgrade my subscription at any time?',
+    a: 'Yes, absolutely. All subscriptions are billed on a flexible monthly schedule with zero long-term commitments. You can upgrade instantly to unlock higher diagnostic quotas through our secure payment gateway or cancel anytime directly from your account settings.'
   }
 ];
 
@@ -202,6 +254,18 @@ export default function App() {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
+  const { user, isAuthenticated, isAdmin, quota, logout, refreshUser, token } = useAuth();
+
+  // Subscription, Auth & Admin Modals State
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState('login');
+  const [tiersModalOpen, setTiersModalOpen] = useState(false);
+  const [gatewayModalOpen, setGatewayModalOpen] = useState(false);
+  const [selectedUpgradeTier, setSelectedUpgradeTier] = useState(null);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [quotaExceededModalOpen, setQuotaExceededModalOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const [activePage, setActivePage] = useState('triage'); // 'triage' | 'workflow'
 
   const [sessionId, setSessionId] = useState(generateSessionId());
@@ -219,6 +283,7 @@ export default function App() {
   const [serverStatus, setServerStatus] = useState('checking'); // 'online' | 'offline' | 'checking'
   const [copied, setCopied] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+  const [faqCategoryFilter, setFaqCategoryFilter] = useState('all');
 
   const [intakeMode, setIntakeMode] = useState('smart'); // 'smart' | 'manual' | 'vin'
   const [manualMake, setManualMake] = useState('Honda');
@@ -453,6 +518,19 @@ export default function App() {
     if (e && e.preventDefault) e.preventDefault();
     if (loading) return;
 
+    // 1. Role-Based Check: Guest users cannot run diagnosis until logged in
+    if (!isAuthenticated) {
+      setAuthModalTab('login');
+      setAuthModalOpen(true);
+      return;
+    }
+
+    // 2. Subscription Quota Check: Must have remaining tries
+    if (quota && !quota.can_diagnose) {
+      setQuotaExceededModalOpen(true);
+      return;
+    }
+
     setLoading(true);
     setPipelineStage('agent1');
     setError(null);
@@ -536,6 +614,7 @@ export default function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(payload)
       });
@@ -545,8 +624,22 @@ export default function App() {
       const a1Latency = Math.max(12, Math.round(t1End - t1Start));
 
       if (!response.ok) {
-        throw new Error(data1.detail || 'Vehicle validation failed against NHTSA vPIC database.');
+        if (response.status === 401) {
+          setAuthModalTab('login');
+          setAuthModalOpen(true);
+          setLoading(false);
+          return;
+        }
+        if (response.status === 403 && data1.detail?.code === 'QUOTA_EXCEEDED') {
+          setQuotaExceededModalOpen(true);
+          setLoading(false);
+          return;
+        }
+        throw new Error(data1.detail?.message || data1.detail || 'Vehicle validation failed against NHTSA vPIC database.');
       }
+
+      // Refresh user's quota count
+      refreshUser();
 
       setTriageResult(data1);
       setAgentLatencies(prev => ({ ...prev, 1: a1Latency }));
@@ -727,7 +820,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Central Nav Links (Reference Pill Style: Work | About | Playground | Resource) */}
+          {/* Central Nav Links */}
           <nav className="floating-nav-links">
             <button 
               type="button"
@@ -737,14 +830,17 @@ export default function App() {
             >
               Diagnostic Hub
             </button>
-            <button 
-              type="button"
-              className={`floating-nav-link ${activePage === 'workflow' ? 'active' : ''}`}
-              onClick={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              id="nav-btn-workflow"
-            >
-              4-Agent Engine
-            </button>
+            {isAdmin && (
+              <button 
+                type="button"
+                className={`floating-nav-link ${activePage === 'admin' ? 'active' : ''}`}
+                onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                id="nav-btn-admin-tab"
+              >
+                <Crown size={12} color="#FFB800" style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                Admin HQ
+              </button>
+            )}
             <a 
               href="#showcase" 
               className="floating-nav-link"
@@ -759,15 +855,24 @@ export default function App() {
             >
               DTC Matrix
             </a>
+            <button 
+              type="button"
+              className="floating-nav-link"
+              onClick={() => setTiersModalOpen(true)}
+              id="nav-btn-pricing"
+            >
+              Plans & Pricing
+            </button>
           </nav>
 
-          {/* Right Action Group: Status + Theme Toggle + Prominent Capsule CTA */}
+          {/* Right Action Group */}
           <div className="floating-nav-actions">
-            <div className="floating-status-pill" title={`Gateway Server: ${serverStatus.toUpperCase()}`}>
-              <span className={`status-dot-sm ${serverStatus}`} />
-              <span className="status-label-text">{serverStatus.toUpperCase()}</span>
+            {/* System Online Pulse Dot */}
+            <div className="floating-status-dot-wrap" title={`Gateway Server: ${serverStatus.toUpperCase()} (Port 8000)`}>
+              <span className={`status-dot-pulse ${serverStatus}`} />
             </div>
 
+            {/* Theme Toggle Button */}
             <button 
               type="button" 
               onClick={toggleTheme} 
@@ -775,25 +880,179 @@ export default function App() {
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               id="theme-toggle-btn"
             >
-              {theme === 'dark' ? <Sun size={13} color="#FFB800" /> : <Moon size={13} color="#6366F1" />}
+              {theme === 'dark' ? <Sun size={14} color="#FFB800" /> : <Moon size={14} color="#6366F1" />}
             </button>
 
-            {activePage === 'triage' ? (
-              <a 
-                href="#console" 
-                onClick={(e) => handleNavAnchor(e, 'console')} 
+            <div className="nav-action-divider" />
+
+            {/* ADMIN ONLY BADGE (Switches to Dedicated Admin Page) */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className={`nav-admin-badge-btn ${activePage === 'admin' ? 'active' : ''}`}
+                title="Open Dedicated Admin Dashboard"
+                id="nav-btn-admin-badge"
+              >
+                <Crown size={12} color="#FFB800" />
+                <span>Admin HQ</span>
+              </button>
+            )}
+
+            {/* AUTHENTICATED USER */}
+            {isAuthenticated ? (
+              <div className="nav-user-profile-wrapper">
+                {/* Quota & Tier Pill */}
+                <button
+                  type="button"
+                  onClick={() => setTiersModalOpen(true)}
+                  className={`nav-tier-quota-pill ${quota && quota.remaining === 0 ? 'exhausted' : ''}`}
+                  title={`${user?.name} • ${user?.tier?.toUpperCase()} Plan • Click to manage capacity`}
+                >
+                  <span className={`tier-badge-micro ${user?.tier}`}>{user?.tier?.toUpperCase()}</span>
+                  <span className="quota-text-micro">
+                    {quota?.is_unlimited ? '∞ Unlimited' : `${quota?.remaining}/${quota?.limit}`}
+                  </span>
+                </button>
+
+                {/* User Menu Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setUserDropdownOpen(prev => !prev)}
+                  className="nav-user-avatar-btn"
+                  title={`${user?.name} (${user?.email})`}
+                >
+                  <div className="avatar-circle">
+                    {user?.name ? user.name[0].toUpperCase() : 'M'}
+                  </div>
+                  <ChevronDown size={11} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div className="nav-user-dropdown-menu">
+                    <div className="dropdown-user-header">
+                      <strong>{user?.name}</strong>
+                      <span className="dropdown-email">{user?.email}</span>
+                      <div className="dropdown-workshop-tag">
+                        <Building2 size={11} />
+                        <span>{user?.workshop_name || 'Independent Workshop'}</span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider" />
+
+                    <div className="dropdown-quota-summary">
+                      <div className="quota-row">
+                        <span>Active Plan:</span>
+                        <strong className={`tier-text ${user?.tier}`}>{user?.tier?.toUpperCase()}</strong>
+                      </div>
+                      <div className="quota-row">
+                        <span>Capacity:</span>
+                        <strong>{quota?.is_unlimited ? 'Unlimited' : `${quota?.remaining} of ${quota?.limit}`}</strong>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className="dropdown-item-btn"
+                      onClick={() => { setUserDropdownOpen(false); setTiersModalOpen(true); }}
+                    >
+                      <Sparkles size={13} color="var(--accent-primary)" />
+                      <span>Subscription Tiers & Pricing</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dropdown-item-btn"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setSelectedUpgradeTier({ id: 'plus', name: 'Plus Tier', price_lkr: 30000, price_display: '30,000 LKR', limit_display: '300 tries/mo' });
+                        setGatewayModalOpen(true);
+                      }}
+                    >
+                      <CreditCard size={13} color="#10B981" />
+                      <span>Developer Payment Sandbox</span>
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="dropdown-item-btn"
+                        onClick={() => { 
+                          setUserDropdownOpen(false); 
+                          setActivePage('admin'); 
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                        <Crown size={13} color="#FFB800" />
+                        <span>Admin HQ Dashboard</span>
+                      </button>
+                    )}
+
+                    <div className="dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className="dropdown-item-btn logout"
+                      onClick={() => { setUserDropdownOpen(false); logout(); }}
+                    >
+                      <LogOut size={13} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* GUEST STATE: SIGN IN / REGISTER */
+              <div className="nav-guest-actions">
+                <button
+                  type="button"
+                  onClick={() => { setAuthModalTab('login'); setAuthModalOpen(true); }}
+                  className="nav-ghost-signin-btn"
+                  title="Sign In to Mechanic Account"
+                >
+                  <LogIn size={13} />
+                  <span>Sign In</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthModalTab('register'); setAuthModalOpen(true); }}
+                  className="nav-ghost-register-btn"
+                  title="Register Free (2 Free Diagnoses / Day)"
+                >
+                  <span>Register Free</span>
+                </button>
+              </div>
+            )}
+
+            {/* PRIMARY CTA */}
+            {activePage === 'admin' ? (
+              <button 
+                type="button" 
+                onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
                 className="floating-pill-cta"
               >
-                Launch Triage
-              </a>
-            ) : (
+                <span>Launch Triage</span>
+              </button>
+            ) : activePage === 'workflow' ? (
               <button 
                 type="button" 
                 onClick={() => { setActivePage('triage'); }} 
                 className="floating-pill-cta"
               >
-                Open Console
+                <span>Diagnostic Console</span>
               </button>
+            ) : (
+              <a 
+                href="#console" 
+                onClick={(e) => handleNavAnchor(e, 'console')} 
+                className="floating-pill-cta"
+              >
+                <span>Launch Triage</span>
+              </a>
             )}
           </div>
         </div>
@@ -802,6 +1061,11 @@ export default function App() {
       {/* Conditional Page Rendering */}
       {activePage === 'workflow' ? (
         <WorkflowDashboard onSwitchToConsole={() => setActivePage('triage')} />
+      ) : activePage === 'admin' ? (
+        <AdminDashboardPage 
+          onSwitchToConsole={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onSwitchToWorkflow={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        />
       ) : (
         <>
           {/* 1. CINEMATIC 3D HYPERCAR ATMOSPHERIC HERO BACKGROUND & DIAGNOSTIC STAGE */}
@@ -814,52 +1078,262 @@ export default function App() {
             />
           </section>
 
-          {/* 2. ENGINEERING TELEMETRY STATS SECTION */}
+          {/* 2. HOW AUTO-TRIAGE WORKS - 4-STEP AUTONOMOUS REPAIR PIPELINE */}
           <section className="evolution-section">
             <div className="evolution-container">
               <div className="evolution-header-box">
                 <div>
-                  <div className="section-tag" style={{ marginBottom: 8 }}>// System Telemetry & Performance</div>
-                  <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(1.8rem, 3.2vw, 2.6rem)', fontWeight: 900, textTransform: 'uppercase' }}>
-                    Automotive Engineering Telemetry
+                  <h2 className="pipeline-main-heading">
+                    4-Step Autonomous <span className="gradient-text-orange">Diagnostic Pipeline</span>
                   </h2>
                 </div>
                 <p className="evolution-lead-text">
-                  Automated multi-agent diagnostic orchestration verifying vehicle entities against federal records, isolating electrical DTC trouble codes, and preventing cascading mechanical failures.
+                  From initial vehicle intake to verified parts delivery in four effortless steps. Discover how Auto-Triage eliminates diagnostic guesswork, protects vehicle roadworthiness, and delivers transparent repair pricing.
                 </p>
               </div>
 
-              <div className="evolution-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-                <div className="evolution-stat-card">
-                  <div className="stat-huge-number">120+</div>
-                  <div className="stat-main-label">System Tested VINs</div>
-                  <p className="stat-sub-text">
-                    NHTSA vPIC verified makes, models, domestic and international chassis platforms.
-                  </p>
+              {/* HORIZONTAL WORKFLOW STEP CONNECTOR BAR */}
+              <div className="pipeline-progress-flow">
+                <div className="progress-flow-step step-1">
+                  <span className="step-circle">01</span>
+                  <span className="step-label">Vehicle Intake</span>
+                </div>
+                <div className="progress-flow-connector" />
+                <div className="progress-flow-step step-2">
+                  <span className="step-circle">02</span>
+                  <span className="step-label">AI Diagnostics</span>
+                </div>
+                <div className="progress-flow-connector" />
+                <div className="progress-flow-step step-3">
+                  <span className="step-circle">03</span>
+                  <span className="step-label">OEM Repair Guides</span>
+                </div>
+                <div className="progress-flow-connector" />
+                <div className="progress-flow-step step-4">
+                  <span className="step-circle">04</span>
+                  <span className="step-label">3-Tier Quotes (LKR)</span>
+                </div>
+              </div>
+
+              <div className="evolution-stats-grid">
+                {/* STEP 1: INTAKE & VERIFICATION */}
+                <div className="evolution-stat-card telemetry-card-3d card-intake">
+                  <div className="pipeline-card-top-bar">
+                    <div className="pipeline-step-pill pill-cyan">
+                      <span className="step-num">01</span>
+                      <span className="step-name">INTAKE & VERIFICATION</span>
+                    </div>
+                    <span className="pipeline-phase-tag">PHASE 1/4</span>
+                  </div>
+
+                  <div className="telemetry-3d-visual-wrap">
+                    <div className="telemetry-3d-halo halo-cyan" />
+                    <Telemetry3DAnimation type="intake" />
+                    <div className="visual-hud-tag"><span className="pulse-dot-cyan" /> 3D SCANNER</div>
+                    <div className="visual-hud-hint">LIVE CHASSIS</div>
+                  </div>
+
+                  <div className="telemetry-card-content">
+                    <h3 className="pipeline-card-title">Chassis Intake & Road Legality</h3>
+                    <p className="pipeline-card-desc">
+                      Cross-references official US DOT and NHTSA records instantly to eliminate fictitious vehicles and verify authentic chassis parameters.
+                    </p>
+
+                    <div className="pipeline-metric-banner banner-cyan">
+                      <div className="pipeline-metric-badge">100%</div>
+                      <div className="pipeline-metric-info">
+                        <span className="pipeline-metric-title">NHTSA Ground Truth</span>
+                        <span className="pipeline-metric-sub">Zero vehicle hallucination</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-features-list">
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>17-digit VIN checksum & entity decode</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Real-time federal vPIC registry sync</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Rejects invalid makes & phantom cars</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-card-footer-box">
+                      <span className="pipeline-status-live">
+                        <span className="pulse-dot-green" /> LIVE SERVICE
+                      </span>
+                      <span>ISO 3779 Checksum Validated</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="evolution-stat-card">
-                  <div className="stat-huge-number">10+</div>
-                  <div className="stat-main-label">Industry Standards</div>
-                  <p className="stat-sub-text">
-                    SAE J1979, ISO 15765-4, OBD-II DTC cascades, and US DOT compliance rules.
-                  </p>
+                {/* STEP 2: AI DIAGNOSTICS */}
+                <div className="evolution-stat-card telemetry-card-3d card-diagnosis">
+                  <div className="pipeline-card-top-bar">
+                    <div className="pipeline-step-pill pill-orange">
+                      <span className="step-num">02</span>
+                      <span className="step-name">AI DIAGNOSTICS</span>
+                    </div>
+                    <span className="pipeline-phase-tag">PHASE 2/4</span>
+                  </div>
+
+                  <div className="telemetry-3d-visual-wrap">
+                    <div className="telemetry-3d-halo halo-fire" />
+                    <Telemetry3DAnimation type="diagnosis" />
+                    <div className="visual-hud-tag"><span className="pulse-dot-orange" /> NEURAL CORE</div>
+                    <div className="visual-hud-hint">CAUSAL REASONING</div>
+                  </div>
+
+                  <div className="telemetry-card-content">
+                    <h3 className="pipeline-card-title">Root-Cause Diagnostic Engine</h3>
+                    <p className="pipeline-card-desc">
+                      Evaluates complex OBD-II trouble codes and symptoms through causal physics-of-failure reasoning to isolate the real broken component.
+                    </p>
+
+                    <div className="pipeline-metric-banner banner-orange">
+                      <div className="pipeline-metric-badge">ROOT CAUSE</div>
+                      <div className="pipeline-metric-info">
+                        <span className="pipeline-metric-title">Physics-of-Failure AI</span>
+                        <span className="pipeline-metric-sub">Isolates single failed component</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-features-list">
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Multi-DTC cascade conflict isolation</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Cognitive root-cause failure breakdown</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>High-voltage & fuel spray safety alerts</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-card-footer-box">
+                      <span className="pipeline-status-live">
+                        <span className="pulse-dot-green" /> ACTIVE ENGINE
+                      </span>
+                      <span>SAE J2012 Protocol Standard</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="evolution-stat-card">
-                  <div className="stat-huge-number">39</div>
-                  <div className="stat-main-label">AI Part Families</div>
-                  <p className="stat-sub-text">
-                    Multi-tiered BOM catalog dependency graphs with real-time pricing and safety locks.
-                  </p>
+                {/* STEP 3: OEM REPAIR GUIDES */}
+                <div className="evolution-stat-card telemetry-card-3d card-procedures">
+                  <div className="pipeline-card-top-bar">
+                    <div className="pipeline-step-pill pill-blue">
+                      <span className="step-num">03</span>
+                      <span className="step-name">REPAIR MANUALS</span>
+                    </div>
+                    <span className="pipeline-phase-tag">PHASE 3/4</span>
+                  </div>
+
+                  <div className="telemetry-3d-visual-wrap">
+                    <div className="telemetry-3d-halo halo-steel" />
+                    <Telemetry3DAnimation type="procedures" />
+                    <div className="visual-hud-tag"><span className="pulse-dot-cyan" /> OEM BLUEPRINT</div>
+                    <div className="visual-hud-hint">FACTORY MANUAL</div>
+                  </div>
+
+                  <div className="telemetry-card-content">
+                    <h3 className="pipeline-card-title">OEM Disassembly & Torques</h3>
+                    <p className="pipeline-card-desc">
+                      Retrieves authentic manufacturer workshop procedures, delivering exact bolt torque tolerances, safety steps, and specialty tools.
+                    </p>
+
+                    <div className="pipeline-metric-banner banner-blue">
+                      <div className="pipeline-metric-badge">OEM SPECS</div>
+                      <div className="pipeline-metric-info">
+                        <span className="pipeline-metric-title">Factory Workshop RAG</span>
+                        <span className="pipeline-metric-sub">Exact bolt torques in Nm</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-features-list">
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Authentic OEM repair manual extraction</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Precise bolt torque tolerances (Nm)</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Step-by-step disassembly guidelines</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-card-footer-box">
+                      <span className="pipeline-status-live">
+                        <span className="pulse-dot-green" /> INDEXED MANUALS
+                      </span>
+                      <span>Authentic Factory Blueprints</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="evolution-stat-card">
-                  <div className="stat-huge-number">&lt; 42ms</div>
-                  <div className="stat-main-label">Gateway Latency</div>
-                  <p className="stat-sub-text">
-                    Ultra-fast asynchronous ingestion, spaCy entity extraction, and live validation.
-                  </p>
+                {/* STEP 4: 3-TIER SOURCING */}
+                <div className="evolution-stat-card telemetry-card-3d card-procurement">
+                  <div className="pipeline-card-top-bar">
+                    <div className="pipeline-step-pill pill-green">
+                      <span className="step-num">04</span>
+                      <span className="step-name">PARTS SOURCING</span>
+                    </div>
+                    <span className="pipeline-phase-tag">PHASE 4/4</span>
+                  </div>
+
+                  <div className="telemetry-3d-visual-wrap">
+                    <div className="telemetry-3d-halo halo-bronze" />
+                    <Telemetry3DAnimation type="procurement" />
+                    <div className="visual-hud-tag"><span className="pulse-dot-green" /> PARTS VAULT</div>
+                    <div className="visual-hud-hint">3-TIER SOURCING</div>
+                  </div>
+
+                  <div className="telemetry-card-content">
+                    <h3 className="pipeline-card-title">3-Tier Pricing in LKR</h3>
+                    <p className="pipeline-card-desc">
+                      Automatically queries live supplier catalogs to generate transparent price comparisons across OEM Genuine, Aftermarket, and Economy parts.
+                    </p>
+
+                    <div className="pipeline-metric-banner banner-green">
+                      <div className="pipeline-metric-badge">3 TIERS</div>
+                      <div className="pipeline-metric-info">
+                        <span className="pipeline-metric-title">Local Catalog in LKR</span>
+                        <span className="pipeline-metric-sub">OEM, Aftermarket & Economy</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-features-list">
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Instant pricing in Sri Lankan Rupees (LKR)</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>OEM Genuine vs Certified Aftermarket</span>
+                      </div>
+                      <div className="pipeline-feature-item">
+                        <span className="feature-check-icon">✓</span>
+                        <span>Hazardous part suppression safety lock</span>
+                      </div>
+                    </div>
+
+                    <div className="pipeline-card-footer-box">
+                      <span className="pipeline-status-live">
+                        <span className="pulse-dot-green" /> LIVE CATALOG
+                      </span>
+                      <span>Real-time Sri Lankan Inventory</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -952,8 +1426,7 @@ export default function App() {
         <div className="console-container">
           <div className="console-header">
             <div>
-              <div className="section-tag">// Live Gateway Terminal</div>
-              <h2 className="section-title">Agent 1 // Triage & Validation Console</h2>
+              <h2 className="section-title">Triage & Validation Console</h2>
             </div>
             <div className="session-chip">
               <Terminal size={14} color="var(--red-primary)" />
@@ -975,6 +1448,63 @@ export default function App() {
                   <Activity size={18} color="var(--red-primary)" />
                   Mechanic Diagnostic Intake
                 </div>
+              </div>
+
+              {/* Role-Based Diagnostic Quota & Access Status Ribbon */}
+              <div className="console-user-quota-banner">
+                {isAuthenticated ? (
+                  <div className="quota-banner-logged-in">
+                    <div className="banner-left">
+                      <span className={`banner-tier-tag ${user?.tier}`}>{user?.tier?.toUpperCase()} TIER</span>
+                      <span className="banner-welcome">Technician: <strong>{user?.name}</strong></span>
+                      <span className="banner-workshop">({user?.workshop_name || 'Independent Bay'})</span>
+                    </div>
+                    <div className="banner-right">
+                      <div className="quota-counter-box">
+                        <Clock size={13} />
+                        <span>
+                          {quota?.is_unlimited ? (
+                            'Unlimited Autonomous Runs'
+                          ) : (
+                            <>Tries Left {quota?.period === 'daily' ? 'Today' : 'This Month'}: <strong>{quota?.remaining}</strong> / {quota?.limit}</>
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setTiersModalOpen(true)}
+                        className="banner-upgrade-btn"
+                      >
+                        <Sparkles size={12} />
+                        <span>{user?.tier === 'ultra' ? 'View Plans' : 'Upgrade Capacity'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="quota-banner-guest">
+                    <div className="banner-guest-left">
+                      <span className="banner-guest-pill">GUEST PREVIEW</span>
+                      <span>You are in guest preview. Sign in to execute vehicle diagnoses (Includes <strong>2 Free Tries/Day</strong> on Basic Tier).</span>
+                    </div>
+                    <div className="banner-guest-right">
+                      <button
+                        type="button"
+                        onClick={() => { setAuthModalTab('login'); setAuthModalOpen(true); }}
+                        className="banner-guest-btn login"
+                      >
+                        <LogIn size={13} />
+                        <span>Sign In</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setAuthModalTab('register'); setAuthModalOpen(true); }}
+                        className="banner-guest-btn register"
+                      >
+                        <span>Register Free</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Mode Toggle Control */}
@@ -1909,27 +2439,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* 4 Specialized Agents Holographic Particle DAG Section (#agents) */}
-      <section id="agents" className="agents-section">
-        <div className="section-tag">// LangGraph Multi-Agent Architecture</div>
-        <h2 className="section-title">The 4 Specialized Agents // Particle Topology</h2>
-        <p style={{ color: 'var(--text-gray)', maxWidth: 680, marginTop: -12 }}>
-          Real-time asynchronous microservice orchestration. Observe glowing photons travel along the fork-join paths 
-          connecting Ingestion, Cognitive Reasoning, Manual RAG, and Automated Procurement.
-        </p>
-
-        <HolographicAgentPipelineGraph 
-          activeStage={pipelineStage} 
-          liveLatencies={agentLatencies}
-          liveData={{ triageResult, agent2Result, repairPlan, procurement }}
-          isLiveDiagnosis={loading}
-          onRunActualDiagnosis={handleRunTriage}
-        />
-      </section>
-
       {/* Diagnostic & DTC Coverage Matrix (#matrix) */}
       <section id="matrix" className="matrix-section">
-        <div className="section-tag">// Supported Telemetry</div>
         <h2 className="section-title">Diagnostic Trouble Code Matrix</h2>
         <p style={{ color: 'var(--text-gray)', maxWidth: 640, marginTop: -12 }}>
           Agent 1 continuously parses all standard SAE J2012 OBD-II diagnostic fault categories.
@@ -2009,30 +2520,63 @@ export default function App() {
       {/* FAQ Accordion Section (#faq) */}
       <section id="faq" className="faq-section">
         <div style={{ textAlign: 'center' }}>
-          <div className="section-tag" style={{ justifyContent: 'center' }}>// Architecture FAQ</div>
           <h2 className="section-title">Frequently Asked Questions</h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: 620, margin: '12px auto 0', fontSize: '0.95rem', lineHeight: 1.6 }}>
+            Common questions from drivers, mechanics, and workshop managers regarding diagnostics, 3-tier parts sourcing, and subscription plans.
+          </p>
+
+          <div className="faq-filter-pills">
+            <button 
+              type="button" 
+              className={`faq-filter-btn ${faqCategoryFilter === 'all' ? 'active' : ''}`}
+              onClick={() => { setFaqCategoryFilter('all'); setOpenFaq(0); }}
+            >
+              All Questions ({FAQ_ITEMS.length})
+            </button>
+            <button 
+              type="button" 
+              className={`faq-filter-btn ${faqCategoryFilter === 'system' ? 'active' : ''}`}
+              onClick={() => { setFaqCategoryFilter('system'); setOpenFaq(0); }}
+            >
+              System & Diagnostics
+            </button>
+            <button 
+              type="button" 
+              className={`faq-filter-btn ${faqCategoryFilter === 'pricing' ? 'active' : ''}`}
+              onClick={() => { setFaqCategoryFilter('pricing'); setOpenFaq(0); }}
+            >
+              Pricing & Subscriptions
+            </button>
+          </div>
         </div>
 
         <div className="faq-list">
-          {FAQ_ITEMS.map((item, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div key={index} className={`faq-item ${isOpen ? 'open' : ''}`}>
-                <button 
-                  className="faq-question" 
-                  onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                >
-                  <span>{item.q}</span>
-                  {isOpen ? <ChevronUp size={18} color="var(--red-primary)" /> : <ChevronDown size={18} />}
-                </button>
-                {isOpen && (
-                  <div className="faq-answer">
-                    {item.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {FAQ_ITEMS
+            .filter(item => faqCategoryFilter === 'all' || item.categoryKey === faqCategoryFilter)
+            .map((item, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div key={index} className={`faq-item ${isOpen ? 'open' : ''}`}>
+                  <button 
+                    className="faq-question" 
+                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <span className={`faq-category-pill ${item.categoryKey}`}>
+                        {item.category}
+                      </span>
+                      <span>{item.q}</span>
+                    </span>
+                    {isOpen ? <ChevronUp size={18} color="var(--accent-primary, #FF5E14)" /> : <ChevronDown size={18} />}
+                  </button>
+                  {isOpen && (
+                    <div className="faq-answer">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </section>
         </>
@@ -2046,8 +2590,7 @@ export default function App() {
               AUTO-TRIAGE
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 8, maxWidth: 440, lineHeight: 1.6 }}>
-              Autonomous Multi-Agent Vehicle Diagnostic Gateway & Automated Procurement Engine. 
-              Engineered with FastAPI, LangGraph, and React.
+              Autonomous Vehicle Diagnostic Gateway & Multi-Tier Parts Procurement Engine for modern workshops and technicians.
             </p>
             <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
               <button 
@@ -2064,7 +2607,10 @@ export default function App() {
 
           <ul className="footer-links">
             <li><button type="button" onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}>Diagnostic Console</button></li>
-            <li><button type="button" onClick={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}>4-Agent Engine</button></li>
+            <li><button type="button" onClick={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}>Diagnostic Workflow</button></li>
+            {isAdmin && (
+              <li><button type="button" onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: '#FFB800', cursor: 'pointer', font: 'inherit', fontWeight: 700 }}>Admin Dashboard</button></li>
+            )}
             <li><a href="#showcase">Universal Architecture</a></li>
             <li><a href="#matrix">Telemetry Matrix</a></li>
             <li><a href="https://github.com/Kavisha1Gamagedara/Auto-Triage-AI-System" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2075,9 +2621,59 @@ export default function App() {
 
         <div className="footer-bottom" style={{ position: 'relative', zIndex: 1 }}>
           <span>&copy; 2026 Auto-Triage AI Platform. All rights reserved.</span>
-          <span>Aesthetic Theme: <strong>{theme.toUpperCase()}</strong> | Architecture: <strong>LangGraph Fork-Join</strong></span>
+          <span>Aesthetic Theme: <strong>{theme.toUpperCase()}</strong> | Engine: <strong>Auto-Triage v2.4</strong></span>
         </div>
       </footer>
+
+      {/* Role-Based Authentication Modal */}
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+        initialTab={authModalTab} 
+        onAuthSuccess={() => {
+          refreshUser();
+        }} 
+      />
+
+      {/* 4 Subscription Tiers Comparison & Upgrade Modal */}
+      <SubscriptionTiersModal 
+        isOpen={tiersModalOpen} 
+        onClose={() => setTiersModalOpen(false)} 
+        onSelectTierToUpgrade={(tier) => {
+          setSelectedUpgradeTier(tier);
+          setGatewayModalOpen(true);
+        }}
+        onOpenAuth={() => {
+          setAuthModalTab('login');
+          setAuthModalOpen(true);
+        }}
+      />
+
+      {/* Developer Sandbox Payment Gateway Modal */}
+      <DeveloperPaymentGatewayModal 
+        isOpen={gatewayModalOpen} 
+        onClose={() => setGatewayModalOpen(false)} 
+        targetTier={selectedUpgradeTier} 
+        onPaymentSuccess={() => {
+          refreshUser();
+        }} 
+      />
+
+      {/* Admin User & Subscription Management Console */}
+      <AdminDashboardModal 
+        isOpen={adminModalOpen} 
+        onClose={() => setAdminModalOpen(false)} 
+      />
+
+      {/* Quota Exceeded Notification Modal */}
+      <QuotaExceededModal 
+        isOpen={quotaExceededModalOpen} 
+        onClose={() => setQuotaExceededModalOpen(false)} 
+        onOpenTiers={() => {
+          setQuotaExceededModalOpen(false);
+          setTiersModalOpen(true);
+        }} 
+      />
     </div>
   );
 }

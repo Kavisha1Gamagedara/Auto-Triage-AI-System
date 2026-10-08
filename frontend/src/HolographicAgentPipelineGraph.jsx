@@ -442,7 +442,6 @@ export default function HolographicAgentPipelineGraph({
       {/* Top Controls & Status Bar */}
       <div className="pipeline-top-bar">
         <div className="pipeline-title-group">
-          <div className="section-tag" style={{ marginBottom: 4 }}>// LangGraph Asynchronous DAG</div>
           <h3 className="pipeline-heading">
             <Sparkles size={16} color="var(--accent-primary)" />
             Holographic 4-Agent Particle Pipeline
