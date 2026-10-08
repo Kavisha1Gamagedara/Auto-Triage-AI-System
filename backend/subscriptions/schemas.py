@@ -166,6 +166,9 @@ class AdminMetrics(BaseModel):
     tier_distribution: Dict[str, int]
     monthly_recurring_revenue_lkr: int
     total_diagnoses_today: int
+    tier_analytics: Optional[Dict[str, Any]] = None
+    daily_trends: Optional[List[Dict[str, Any]]] = None
+    optimization_insights: Optional[List[Dict[str, Any]]] = None
 
 
 class TierUpdatePayload(BaseModel):

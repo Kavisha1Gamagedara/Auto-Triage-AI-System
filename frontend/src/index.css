@@ -108,12 +108,12 @@
   --hero-overlay: radial-gradient(circle at 50% 30%, rgba(234, 88, 12, 0.08) 0%, rgba(248, 250, 252, 0.8) 50%, #f8fafc 95%);
 }
 
-/* Typography Tokens */
+/* Typography Tokens - Industrial Aerospace & Automotive Standards */
 :root {
-  --font-hero: 'Syne', 'Montserrat', 'Outfit', sans-serif;
-  --font-heading: 'Outfit', 'Montserrat', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-hero: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
   
   --radius-sharp: 4px;
   --radius-sm: 8px;
