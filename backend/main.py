@@ -1,6 +1,6 @@
 import os
 from typing import Dict, List, Any, Optional
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 # Core shared schemas and database
 from core.models import (
@@ -15,6 +15,9 @@ from core.models import (
     ProcurementRequest, 
     ProcurementResponse
 )
+
+# Role-Based Access Control & Subscriptions
+from subscriptions import subscriptions_router, store, get_current_user_optional
 
 # Agent 1 - Ingestion, Validation, IR & Cascade
 from agents.agent1_ingestion import (
@@ -69,6 +72,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount Subscription & Authentication Router
+app.include_router(subscriptions_router, prefix="/api/v1")
+
 
 @app.get("/", tags=["General"])
 async def root():
@@ -81,6 +87,7 @@ async def root():
         "endpoints": {
             "ingest": "/api/v1/ingest",
             "diagnose": "/api/v1/diagnose",
+            "subscriptions": "/api/v1/subscriptions/tiers",
             "docs": "/docs"
         },
         "status": "online"
@@ -102,16 +109,45 @@ async def health_check():
     status_code=status.HTTP_200_OK,
     tags=["Agent 1 - Ingestion & Validation"]
 )
-async def ingest_diagnostic(request: DiagnosticRequest):
+async def ingest_diagnostic(
+    request: DiagnosticRequest,
+    authorization: Optional[str] = Header(None)
+):
     """
-    Primary gateway endpoint for Agent 1.
-    Supports Dual Mode:
-    - Mode A (Manual Spec Entry): Technician supplies explicit Make, Model, Year, DTCs.
-    - Mode B (Smart NLP Intake): AI parses natural language complaint for all entities.
-    
-    Both modes validate against the official US DOT NHTSA vPIC database and format
-    an Agent-to-Agent (A2A) payload ready for Agent 2.
+    Primary gateway endpoint for Agent 1 with Role-Based Access Control and Quota Enforcement.
+    - Guest users: Rejected with HTTP 401 (must authenticate to diagnose).
+    - Logged-in mechanics: Evaluated against daily/monthly subscription quotas.
     """
+    # 1. Enforce Authentication Requirement (Guests can only view the app)
+    user = await get_current_user_optional(authorization)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "AUTH_REQUIRED",
+                "message": "Guest users can view the platform but must log in to execute autonomous diagnosis."
+            }
+        )
+
+    # 2. Enforce Subscription Quota Limits (Basic: 2/day, Plus: 300/mo, Pro: 600/mo, Ultra: Unlimited)
+    quota = store.get_quota(user["id"])
+    if not quota.can_diagnose:
+        period_label = "today" if quota.period == "daily" else "this month"
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "QUOTA_EXCEEDED",
+                "tier": user["tier"],
+                "limit": quota.limit,
+                "used": quota.used,
+                "period": quota.period,
+                "message": f"Subscription limit reached ({quota.used}/{quota.limit} tries {period_label} for {user['tier'].capitalize()} tier). Please upgrade your subscription to continue diagnosing vehicles."
+            }
+        )
+
+    # 3. Increment usage count for this diagnosis execution
+    store.record_usage(user["id"])
+
     # Initialize extended VIN metadata and fuzzy typo corrections
     vin = (request.vin or "").strip().upper() if request.vin else None
     vin_data = None
