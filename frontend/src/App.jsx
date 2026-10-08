@@ -2353,36 +2353,6 @@ export default function App() {
                       )}
                     </div>
                   </div>
-
-                  {/* Collapsible A2A Handshake JSON Payload */}
-                  <div className="raw-json-accordion" style={{ marginTop: 8 }}>
-                    <button
-                      type="button"
-                      className="raw-json-toggle-btn"
-                      onClick={() => setShowRawJson(!showRawJson)}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Terminal size={13} color="var(--red-primary)" />
-                        {showRawJson ? 'Hide A2A Contract JSON' : 'Inspect Verified A2A Contract JSON (Multi-Agent Telemetry)'}
-                      </span>
-                      <span>{showRawJson ? '▲' : '▼'}</span>
-                    </button>
-                    {showRawJson && (
-                      <div className="raw-json-body">
-                        <pre className="a2a-code">
-                          {JSON.stringify({ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }, null, 2)}
-                        </pre>
-                        <button
-                          type="button"
-                          onClick={handleCopyPayload}
-                          className="icon-btn"
-                          style={{ fontSize: '0.72rem', gap: 4, marginTop: 8 }}
-                        >
-                          {copied ? <><Check size={12} color="var(--emerald)" /><span style={{ color: 'var(--emerald)' }}>Copied</span></> : <><Copy size={12} /><span>Copy JSON</span></>}
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 

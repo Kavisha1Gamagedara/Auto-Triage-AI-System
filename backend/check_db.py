@@ -10,7 +10,7 @@ collection = client.get_collection(name="oem_manuals")
 results = collection.get()
 
 from collections import Counter
-print("Chunks per vehicle:", dict(Counter(m["vehicle"] for m in results["metadatas"])))
+print("Chunks per vehicle:", dict(Counter(m.get("vehicle", "Unknown") for m in results["metadatas"] if isinstance(m, dict))))
 
 for i, (doc, meta) in enumerate(zip(results["documents"], results["metadatas"]), start=1):
     print(f"=== Chunk {i} ===")
