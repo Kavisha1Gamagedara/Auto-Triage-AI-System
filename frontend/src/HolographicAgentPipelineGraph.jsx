@@ -173,6 +173,7 @@ export default function HolographicAgentPipelineGraph({
     // Lead-in gateway intake edge to Agent 1
     {
       id: 'e0-1',
+      gradientId: 'grad-e0-1',
       from: 0,
       to: 1,
       activeOnStep: 1,
@@ -185,6 +186,7 @@ export default function HolographicAgentPipelineGraph({
     // Agent 1 -> Agent 2 (Reasoning)
     {
       id: 'e1-2',
+      gradientId: 'grad-e1-2',
       from: 1,
       to: 2,
       activeOnStep: 2,
@@ -197,6 +199,7 @@ export default function HolographicAgentPipelineGraph({
     // Agent 1 -> Agent 3 (RAG)
     {
       id: 'e1-3',
+      gradientId: 'grad-e1-3',
       from: 1,
       to: 3,
       activeOnStep: 3,
@@ -209,6 +212,7 @@ export default function HolographicAgentPipelineGraph({
     // Agent 2 -> Agent 4 (Procure)
     {
       id: 'e2-4',
+      gradientId: 'grad-e2-4',
       from: 2,
       to: 4,
       activeOnStep: 4,
@@ -221,6 +225,7 @@ export default function HolographicAgentPipelineGraph({
     // Agent 3 -> Agent 4 (Procure)
     {
       id: 'e3-4',
+      gradientId: 'grad-e3-4',
       from: 3,
       to: 4,
       activeOnStep: 4,
@@ -233,6 +238,7 @@ export default function HolographicAgentPipelineGraph({
     // Agent 4 -> Complete dossier out
     {
       id: 'e4-out',
+      gradientId: 'grad-e4-out',
       from: 4,
       to: 5,
       activeOnStep: 5,
@@ -251,7 +257,7 @@ export default function HolographicAgentPipelineGraph({
     const ctx = canvas.getContext('2d');
 
     let particles = [];
-    const PARTICLE_COUNT = 42;
+    const PARTICLE_COUNT = 44;
 
     // Initialize flowing photons along the DAG edges
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -260,20 +266,22 @@ export default function HolographicAgentPipelineGraph({
         edge,
         t: Math.random(),
         speed: 0.0035 + Math.random() * 0.004,
-        size: 2.5 + Math.random() * 2,
+        size: 2.8 + Math.random() * 1.8,
         tail: [],
-        tailLength: 7
+        tailLength: 8
       });
     }
 
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      const isLight = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light';
+
       particles.forEach(p => {
         // Boost particle flow speed if corresponding edge is active
         const isEdgeActive = simStep >= p.edge.activeOnStep;
         const isCurrentFocus = simStep === p.edge.activeOnStep;
-        const currentSpeed = isCurrentFocus ? p.speed * 3.2 : (isEdgeActive ? p.speed * 2.2 : p.speed * 0.6);
+        const currentSpeed = isCurrentFocus ? p.speed * 3.2 : (isEdgeActive ? p.speed * 2.2 : p.speed * 0.7);
 
         p.t += currentSpeed;
         if (p.t > 1) {
@@ -287,26 +295,32 @@ export default function HolographicAgentPipelineGraph({
         p.tail.unshift({ ...pt });
         if (p.tail.length > p.tailLength) p.tail.pop();
 
-        // Draw particle tail / photon trail
+        // Draw particle tail / photon trail with radiant jewel glow
         if (p.tail.length > 1) {
           ctx.beginPath();
           ctx.moveTo(p.tail[0].x, p.tail[0].y);
           for (let j = 1; j < p.tail.length; j++) {
             ctx.lineTo(p.tail[j].x, p.tail[j].y);
           }
-          ctx.strokeStyle = isEdgeActive ? p.edge.color : 'rgba(255, 255, 255, 0.12)';
-          ctx.lineWidth = isCurrentFocus ? p.size * 0.9 : p.size * 0.6;
+          ctx.strokeStyle = isEdgeActive ? p.edge.color : (isLight ? p.edge.color + '88' : 'rgba(255, 255, 255, 0.22)');
+          ctx.lineWidth = isCurrentFocus ? p.size * 1.25 : (isEdgeActive ? p.size * 0.95 : p.size * 0.65);
           ctx.lineCap = 'round';
           ctx.stroke();
         }
 
-        // Draw glowing particle head
+        // Draw glowing particle head in saturated edge jewel-tone
         ctx.save();
-        ctx.shadowBlur = isCurrentFocus ? 20 : (isEdgeActive ? 14 : 4);
-        ctx.shadowColor = isEdgeActive ? p.edge.color : 'rgba(255, 255, 255, 0.3)';
-        ctx.fillStyle = isEdgeActive ? p.edge.color : 'rgba(255, 255, 255, 0.6)';
+        ctx.shadowBlur = isCurrentFocus ? 26 : (isEdgeActive ? 18 : (isLight ? 12 : 8));
+        ctx.shadowColor = p.edge.color;
+        ctx.fillStyle = p.edge.color;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isCurrentFocus ? p.size * 1.6 : (isEdgeActive ? p.size * 1.3 : p.size), 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, isCurrentFocus ? p.size * 1.9 : (isEdgeActive ? p.size * 1.5 : (isLight ? p.size * 1.25 : p.size * 1.05)), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Luminous star core reflection
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isCurrentFocus ? p.size * 0.9 : (isEdgeActive ? p.size * 0.7 : p.size * 0.48), 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       });
@@ -513,51 +527,61 @@ export default function HolographicAgentPipelineGraph({
             </filter>
 
             {/* Path Gradients */}
+            <linearGradient id="grad-e0-1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#00F0FF" stopOpacity="0.95" />
+            </linearGradient>
             <linearGradient id="grad-e1-2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.95" />
             </linearGradient>
             <linearGradient id="grad-e1-3" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#10B981" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="#00F0FF" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#10B981" stopOpacity="0.95" />
             </linearGradient>
             <linearGradient id="grad-e2-4" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#FF5E14" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#FF5E14" stopOpacity="0.95" />
             </linearGradient>
             <linearGradient id="grad-e3-4" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#FF5E14" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="#10B981" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#FF5E14" stopOpacity="0.95" />
+            </linearGradient>
+            <linearGradient id="grad-e4-out" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#FF5E14" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#FF5E14" stopOpacity="0.35" />
             </linearGradient>
           </defs>
 
           {/* Passive Background Grid Lines */}
-          <line x1="50" y1="220" x2="950" y2="220" stroke="rgba(255, 255, 255, 0.03)" strokeDasharray="4 6" />
-          <line x1="500" y1="50" x2="500" y2="390" stroke="rgba(255, 255, 255, 0.03)" strokeDasharray="4 6" />
+          <line className="graph-grid-line" x1="50" y1="220" x2="950" y2="220" stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="4 6" />
+          <line className="graph-grid-line" x1="500" y1="50" x2="500" y2="390" stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="4 6" />
 
           {/* Base Wire Connector Paths */}
           {EDGES.map(edge => {
             const pathData = `M ${edge.p0.x} ${edge.p0.y} C ${edge.p1.x} ${edge.p1.y}, ${edge.p2.x} ${edge.p2.y}, ${edge.p3.x} ${edge.p3.y}`;
             const isActive = simStep >= edge.activeOnStep;
             const isFocus = simStep === edge.activeOnStep;
+            const strokeColor = edge.gradientId ? `url(#${edge.gradientId})` : edge.color;
+
             return (
               <g key={edge.id}>
                 {/* Outer Glow Path */}
                 <path
                   d={pathData}
                   fill="none"
-                  stroke={edge.color}
-                  strokeWidth={isFocus ? 4 : (isActive ? 2.8 : 1.2)}
-                  strokeOpacity={isFocus ? 0.95 : (isActive ? 0.65 : 0.18)}
+                  stroke={strokeColor}
+                  strokeWidth={isFocus ? 4.5 : (isActive ? 3.2 : 2.2)}
+                  strokeOpacity={isFocus ? 1 : (isActive ? 0.85 : 0.42)}
                   filter={isActive ? "url(#neon-glow)" : undefined}
                 />
-                {/* Core White Pulse Line */}
+                {/* Core Luminous Pulse Line */}
                 <path
                   d={pathData}
                   fill="none"
-                  stroke={isFocus ? '#ffffff' : (isActive ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.25)')}
-                  strokeWidth={isFocus ? 2 : (isActive ? 1.2 : 0.8)}
-                  strokeOpacity={isFocus ? 1 : 0.6}
+                  stroke={isFocus ? '#ffffff' : (isActive ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.35)')}
+                  strokeWidth={isFocus ? 2.2 : (isActive ? 1.4 : 0.9)}
+                  strokeOpacity={isFocus ? 1 : 0.65}
                 />
               </g>
             );
@@ -565,15 +589,15 @@ export default function HolographicAgentPipelineGraph({
 
           {/* Fork & Join Label Micro Tags */}
           <g transform="translate(340, 212)">
-            <rect x="-38" y="-10" width="76" height="20" rx="10" fill="rgba(11, 14, 22, 0.88)" stroke="rgba(255, 255, 255, 0.18)" />
-            <text x="0" y="3.5" fill="var(--text-muted)" fontSize="9" fontWeight="800" textAnchor="middle" fontFamily="var(--font-mono)">
+            <rect className="graph-flow-pill-bg" x="-38" y="-10" width="76" height="20" rx="10" fill="rgba(11, 14, 22, 0.88)" stroke="rgba(255, 255, 255, 0.18)" />
+            <text className="graph-flow-pill-text" x="0" y="3.5" fill="var(--text-muted)" fontSize="9" fontWeight="800" textAnchor="middle" fontFamily="var(--font-mono)">
               FORK // ASYNC
             </text>
           </g>
 
           <g transform="translate(680, 212)">
-            <rect x="-42" y="-10" width="84" height="20" rx="10" fill="rgba(11, 14, 22, 0.88)" stroke="rgba(255, 255, 255, 0.18)" />
-            <text x="0" y="3.5" fill="var(--text-muted)" fontSize="9" fontWeight="800" textAnchor="middle" fontFamily="var(--font-mono)">
+            <rect className="graph-flow-pill-bg" x="-42" y="-10" width="84" height="20" rx="10" fill="rgba(11, 14, 22, 0.88)" stroke="rgba(255, 255, 255, 0.18)" />
+            <text className="graph-flow-pill-text" x="0" y="3.5" fill="var(--text-muted)" fontSize="9" fontWeight="800" textAnchor="middle" fontFamily="var(--font-mono)">
               JOIN // CONVERGE
             </text>
           </g>
@@ -660,7 +684,7 @@ export default function HolographicAgentPipelineGraph({
 
       {/* Selected Node Telemetry Inspector Drawer */}
       {selectedAgentDetails && (
-        <div className="pipeline-inspector-drawer">
+        <div className={`pipeline-inspector-drawer selected-agent-${selectedAgentId}`}>
           <div className="inspector-header-row">
             <div className="inspector-title-box">
               <Layers size={14} color="var(--accent-primary)" />
