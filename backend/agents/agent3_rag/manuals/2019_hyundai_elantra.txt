@@ -1,0 +1,11 @@
+[Vehicle: 2019 Hyundai Elantra]
+[Source: YouCanic "Change spark plugs Hyundai Kia four-cylinder engine" guide (Theta II engines); engine family for the 2019 Elantra 2.0L is not confirmed - NOT Hyundai service information]
+Component: Spark Plug
+Replacement Procedure (2.0L, general outline):
+1. Park, set the parking brake and let the engine cool. Disconnect the negative battery terminal.
+2. The engine uses coil-on-plug ignition: unplug the coil connector, remove the 10mm bolt and lift the coil out, twisting slightly if it sticks.
+3. Blow debris away from the plug recess before removing the plug.
+4. Remove the plug with a spark plug socket and extension; a magnetic pickup tool can retrieve a stuck plug.
+5. Install the new plug and tighten with a torque wrench, not by feel.
+6. Reinstall the coils and connectors.
+Torque: NOT VERIFIED. The guide lists 11 to 15 lb-ft for plugs and 3.9 to 5.9 N.m (2.9 to 4.3 lb-ft) for coil bolts on Theta II engines and says to verify with a dealer. Confirm the engine code and the value in Hyundai service information before use.

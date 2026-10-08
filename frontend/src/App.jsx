@@ -534,15 +534,20 @@ export default function App() {
               vehicle_make: data1.vehicle_details.make,
               vehicle_model: data1.vehicle_details.model,
               vehicle_year: data1.vehicle_details.year,
-              issue_summary: deducedRootCause
+              issue_summary: deducedRootCause,
+              dtc_codes: data1.dtc_codes || []
             })
           });
           const repairData = await repairRes.json();
           if (repairRes.ok && repairData.status === "success") {
             setRepairPlan(repairData.repair_plan);
+          } else {
+            // Show the failure instead of hiding the box, so "no manual" and "Agent 3 broke" are distinguishable
+            setRepairPlan({ steps: [], error: repairData.message || repairData.detail || `Agent 3 request failed (HTTP ${repairRes.status})` });
           }
         } catch (repairErr) {
           console.warn('Agent 3 repair retrieval error:', repairErr);
+          setRepairPlan({ steps: [], error: `Agent 3 request failed: ${repairErr.message}` });
         }
 
         // Agent 4 Call (Procurement & Pricing)
@@ -1460,8 +1465,14 @@ export default function App() {
                             Agent 3 // OEM Repair Manual (RAG)
                           </div>
                           
+                          {(!repairPlan.steps || repairPlan.steps.length === 0) && (
+                            <div style={{ fontSize: '0.85rem', color: '#e9d5ff' }}>
+                              No matching manual found{repairPlan.error ? ` (${repairPlan.error})` : ''}.
+                            </div>
+                          )}
+
                           <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-white)' }}>
-                            {repairPlan.steps.map((step, idx) => (
+                            {(repairPlan.steps || []).map((step, idx) => (
                               <li key={idx} style={{ marginBottom: '6px' }}>{step}</li>
                             ))}
                           </ol>

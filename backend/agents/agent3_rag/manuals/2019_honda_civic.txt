@@ -1,0 +1,14 @@
+[Vehicle: 2019 Honda Civic]
+[Source: iFixit guide "2019 Honda Civic Spark Plugs Replacement" (ifixit.com/Guide/2019+Honda+Civic+Spark+Plugs+Replacement/135477), paraphrased; torque range from NGK data on a retailer page - NOT an OEM figure]
+Component: Spark Plug
+Replacement Procedure (1.5L turbo):
+1. Make sure the engine and cylinder head are completely cold.
+2. Remove the engine cover by taking out its top bolts.
+3. Unclip the wire harness holder and disconnect the harness from the ignition coil connector.
+4. Remove the bolt beside the coil and pull the ignition coil out.
+5. Clean debris and moisture out of each spark plug well before removing the plug.
+6. Use a spark plug socket on an extension to loosen and remove the old plug.
+7. Check the new plug is dry and correctly gapped, then start it by hand to avoid cross-threading.
+8. Tighten with a torque wrench. Do not add anti-seize unless the service information says to.
+9. Repeat for the other three cylinders, then reinstall the coils, reconnect the connectors and refit the engine cover.
+Torque: NOT VERIFIED against the Honda service manual. NGK data for aluminum cylinder heads lists 10.8 to 14.5 lb-ft (about 14.6 to 19.7 N.m). Confirm the exact value in Honda service information before use.

@@ -1,0 +1,10 @@
+[Vehicle: 2018 Honda CR-V]
+[Source: General spark plug guidance (Haynes repair guide for Honda CR-V; bobistheoilguy.com "Honda Spark Plug Torque Dilemma" thread) - NOT Honda service information]
+Component: Spark Plug
+Replacement Procedure (general outline):
+1. Wait for a cold engine and clean the spark plug wells with compressed air before removing anything.
+2. Disconnect each ignition coil connector and remove the coil.
+3. Remove the old plug with a spark plug wrench. Never install a plug that has been dropped.
+4. Check the plug gap, hand-tighten the new plug, then tighten with a torque wrench to specification.
+5. Reinstall the coils and connectors.
+Torque: NOT VERIFIED. No torque value for the 2018 CR-V 1.5T was found. Do not use figures from other Honda engines. Look up the value in Honda service information before use.
