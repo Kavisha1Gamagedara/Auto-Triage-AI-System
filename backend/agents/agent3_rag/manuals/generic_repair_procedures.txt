@@ -1,0 +1,43 @@
+[Vehicle: Generic Repair]
+[Source: Public DIY guides: ricksfreeautorepairadvice.com "How to replace an O2 sensor", oreillyauto.com "DIY how to change O2 sensors", ebay.com/motors "Replace an oxygen sensor", paraphrased; NOT OEM service information]
+Component: Heated Oxygen (O2) Sensor Replacement
+Replacement Procedure (upstream sensor before the catalytic converter, downstream sensor after it):
+1. Identify which sensor the code points to (upstream/Sensor 1 or downstream/Sensor 2). They are not interchangeable: harness length and connector type differ, so match the replacement to its position.
+2. Let the engine and exhaust cool before disconnecting anything. A slightly warm exhaust can make a stuck sensor easier to remove, but it burns easily.
+3. Gather an O2 sensor socket (slotted for the wire) and a breaker bar. If the threads are rusty, spray penetrating oil on them and let it soak (one guide suggests about 15 minutes).
+4. Locate the electrical connector near the exhaust manifold or catalytic converter, release its locking tab or clip and pull it apart without damaging the terminals.
+5. Unscrew the old sensor counterclockwise with the O2 socket. Do not force a seized sensor: you can damage the exhaust pipe, the sensor boss or the catalytic converter.
+6. Check whether the new sensor is pre-coated with anti-seize; if so, do not add more. If you apply anti-seize yourself, put it on the threads only and keep it off the sensor tip.
+7. Hand-thread the new sensor to avoid cross-threading, then tighten it to the specified torque.
+8. Reconnect the connector until the locking tab clicks, check the harness is clear of hot exhaust parts, clear the codes and confirm the check engine light stays off.
+Torque: NOT VERIFIED. The sources give no torque value. Look up the value for this vehicle and sensor in the OEM service information.
+
+---
+[Vehicle: Generic Repair]
+[Source: Public DIY guides: autowin.es "How do I replace spark plugs or ignition coils", autopartspro.co.uk "How to change spark plugs", paraphrased; NOT OEM service information]
+Component: Ignition Coil (Coil-on-Plug) Replacement
+Replacement Procedure:
+1. Let the engine cool and disconnect the negative battery terminal.
+2. Remove the engine cover if fitted, locate the coils and photograph their positions. Move any intake tubes or braces that block access and label the connectors.
+3. Blow debris out of the spark plug wells with compressed air so grit does not fall into the cylinder.
+4. Press the tab and pull the electrical connector off the coil without breaking the clip.
+5. Remove the coil mounting bolt (often 8 or 10 mm) and pull the coil straight up, twisting gently if it is stuck.
+6. Inspect the coil boot for tears or carbon tracking. If the coil is being replaced for a misfire, consider the spark plug in that cylinder at the same time.
+7. Apply a thin layer of dielectric grease inside the boot of the new coil if the coil maker or service information calls for it, push the boot firmly onto the plug, fit the mounting bolt and reconnect the connector.
+8. Reinstall the engine cover and reconnect the battery. Start the engine, check for a smooth idle, clear the codes and test drive to confirm the misfire is gone.
+Torque: NOT VERIFIED. The sources give no coil bolt torque; use a torque wrench and the value from the OEM service information. For spark plugs one source gives a general 15 to 25 N.m range, which is not specific to any engine.
+
+---
+[Vehicle: Generic Repair]
+[Source: Public DIY guides: ebay.com/motors "How to replace a throttle body", ricksfreeautorepairadvice.com throttle body relearn pages (GM, Ford, Nissan, Hyundai), tomorrowstechnician.com "Honda Electronic Throttle Body Service Tips", paraphrased; mostly enthusiast/trade sources, NOT OEM service information]
+Component: Throttle Body Cleaning or Replacement (electronic / drive-by-wire)
+Procedure:
+1. Confirm it is needed: rough or fluctuating idle, no-start, or throttle-related codes (some Hyundai sources cite P2118/P2119) can point to a dirty or failing throttle body.
+2. Disconnect the negative battery terminal (note: on some Hondas this locks the radio; prefer a scan tool reset there).
+3. Remove the intake duct between the air filter box and the throttle body, disconnect the electrical connector and any vacuum or EVAP purge hose (mark their positions), then remove the retaining bolts (typically four) and lift the unit off with its gasket. On some units the coolant hose must stay connected.
+4. To clean: spray throttle body cleaner onto a shop rag, not directly into the unit, because liquid can seep into the electronics. Open the plate by hand and wipe carbon from the bore and plate edges; keep the motor and sensor area dry.
+5. To replace: use a new gasket and fit the bolts to the specified torque (one GM example used 89 in-lb, about 10 N.m, which is not a general value).
+6. Reinstall in reverse order and reconnect hoses, connectors and the intake duct.
+7. Relearn idle/throttle position. This varies by make: GM (one blog): idle in Park for about 3 minutes, ignition off for 60 seconds, then idle another 3 minutes. Ford: clear the PCM adaptive memory (a scan tool is preferred), then idle and drive at varied speeds. Nissan: needs battery voltage above 12.9 V at idle, coolant temperature about 158 to 212 F and the car in Park or Neutral. Honda (trade article): reset PCM memory with a scan tool, then ignition on, wait 2 seconds, start the engine, run about 3,000 rpm until the cooling fans come on, then idle 5 minutes with no load. If idle still has not relearned, drive above about 44 mph with several decelerations and extended idles. Some makes need a bidirectional scan tool.
+8. Clear any codes set during the relearn once idle is normal.
+Torque: NOT VERIFIED for any vehicle here. Look up the throttle body bolt torque and the exact relearn procedure in the OEM service information.
