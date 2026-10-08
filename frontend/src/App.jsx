@@ -711,18 +711,11 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               session_id: sessionId,
-<<<<<<< HEAD
-              vehicle_make: data1.vehicle_details.make,
-              vehicle_model: data1.vehicle_details.model,
-              vehicle_year: data1.vehicle_details.year,
-              issue_summary: deducedRootCause,
-              dtc_codes: data1.dtc_codes || []
-=======
               vehicle_make: data1.vehicle_details?.make || 'Toyota',
               vehicle_model: data1.vehicle_details?.model || 'Corolla',
               vehicle_year: data1.vehicle_details?.year || 2019,
-              issue_summary: deducedRootCause
->>>>>>> origin/main
+              issue_summary: deducedRootCause,
+              dtc_codes: data1.dtc_codes || []
             })
           });
           const repairData = await repairRes.json();
@@ -2239,21 +2232,11 @@ export default function App() {
                               ))}
                             </ol>
                           </div>
-<<<<<<< HEAD
-                          
                           {(!repairPlan.steps || repairPlan.steps.length === 0) && (
                             <div style={{ fontSize: '0.85rem', color: '#e9d5ff' }}>
                               No matching manual found{repairPlan.error ? ` (${repairPlan.error})` : ''}.
                             </div>
                           )}
-
-                          <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-white)' }}>
-                            {(repairPlan.steps || []).map((step, idx) => (
-                              <li key={idx} style={{ marginBottom: '6px' }}>{step}</li>
-                            ))}
-                          </ol>
-=======
->>>>>>> origin/main
 
                           {repairPlan.torque_specs && (
                             <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 6, padding: '12px 14px' }}>
