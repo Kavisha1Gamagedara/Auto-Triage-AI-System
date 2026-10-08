@@ -1,5 +1,6 @@
 import os
 from typing import Dict, List, Any, Optional
+from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException, status, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 # Core shared schemas and database
@@ -11,6 +12,8 @@ from core.models import (
     SpellcheckRequest,
     DTCCascadeRequest,
     DTCCascadeAnalysis,
+    FreezeFrameData,
+    FreezeFrameAnalysis,
     RepairRequest,
     ProcurementRequest, 
     ProcurementResponse
@@ -31,6 +34,8 @@ from agents.agent1_ingestion import (
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
+    parse_freeze_frame_scanner_text,
+    analyze_freeze_frame,
     nlp,
     verify_vehicle,
     decode_vin_nhtsa,
@@ -255,6 +260,23 @@ async def ingest_diagnostic(
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
     dtc_cascade = classify_dtc_cascades(dtc_codes)
 
+    # OBD-II Mode $02 Freeze Frame Sensor Telemetry ingestion & empirical analysis
+    freeze_frame = request.freeze_frame
+    if not freeze_frame and request.raw_text:
+        freeze_frame = parse_freeze_frame_scanner_text(request.raw_text)
+    elif freeze_frame and freeze_frame.raw_scanner_text and freeze_frame.stft_pct is None:
+        parsed_ff = parse_freeze_frame_scanner_text(freeze_frame.raw_scanner_text)
+        if parsed_ff:
+            freeze_frame = parsed_ff
+
+    freeze_frame_analysis = None
+    if freeze_frame:
+        freeze_frame_analysis = analyze_freeze_frame(
+            freeze_frame,
+            dtc_codes=dtc_codes,
+            vehicle={"make": make, "model": model, "year": year}
+        )
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -280,7 +302,9 @@ async def ingest_diagnostic(
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy,
         dtc_cascade=dtc_cascade,
-        fuzzy_corrections=fuzzy_corrections
+        fuzzy_corrections=fuzzy_corrections,
+        freeze_frame=freeze_frame,
+        freeze_frame_analysis=freeze_frame_analysis
     )
 
 
@@ -342,6 +366,36 @@ async def analyze_dtc_cascade(data: DTCCascadeRequest):
     return classify_dtc_cascades(data.dtc_codes)
 
 
+class ParseFreezeFrameRequest(BaseModel):
+    raw_text: str
+    dtc_codes: Optional[List[str]] = None
+
+
+@app.post(
+    "/api/v1/parse-freeze-frame",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def parse_freeze_frame_endpoint(data: ParseFreezeFrameRequest):
+    """
+    Dedicated endpoint to parse unformatted scan tool text dumps (Autel, Snap-on, Launch, BlueDriver, generic Mode $02)
+    and compute empirical physical telemetry analysis.
+    """
+    parsed = parse_freeze_frame_scanner_text(data.raw_text)
+    if not parsed:
+        return {
+            "success": False,
+            "message": "No recognized freeze frame telemetry parameters found in the provided text.",
+            "freeze_frame": None,
+            "analysis": None
+        }
+    analysis = analyze_freeze_frame(parsed, dtc_codes=data.dtc_codes or [])
+    return {
+        "success": True,
+        "freeze_frame": parsed,
+        "analysis": analysis
+    }
+
+
 @app.post(
     "/api/v1/diagnose",
     response_model=DiagnosticResult,
@@ -361,6 +415,8 @@ async def run_diagnostics(payload: Agent1Payload):
         )
     try:
         result = deduce_root_cause(payload)
+        if payload.freeze_frame_analysis and not getattr(result, "freeze_frame_analysis", None):
+            result.freeze_frame_analysis = payload.freeze_frame_analysis
         return result
     except Exception as e:
         if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):

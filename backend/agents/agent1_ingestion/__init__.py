@@ -14,6 +14,8 @@ from .nlp_extractor import (
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
+    parse_freeze_frame_scanner_text,
+    analyze_freeze_frame,
     nlp
 )
 
@@ -46,6 +48,8 @@ __all__ = [
     "classify_dtc_cascades",
     "fuzzy_correct_make",
     "fuzzy_correct_model",
+    "parse_freeze_frame_scanner_text",
+    "analyze_freeze_frame",
     "nlp",
     "verify_vehicle",
     "decode_vin_nhtsa",

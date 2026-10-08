@@ -38,7 +38,11 @@ import {
   LogOut,
   CreditCard,
   Building2,
-  Clock
+  Clock,
+  Fuel,
+  Thermometer,
+  FileText,
+  XCircle
 } from 'lucide-react';
 
 import './App.css';
@@ -310,6 +314,157 @@ export default function App() {
     { label: '2021 Toyota Camry', make: 'Toyota', model: 'Camry', year: 2021, dtcs: 'P0420', parts: 'catalytic converter' },
     { label: 'Bogus Car Test', make: 'Ford', model: 'GalaxyCruiser9000', year: 2025, dtcs: 'P0999', parts: 'warp drive' }
   ];
+
+  // OBD-II Mode $02 Freeze Frame Telemetry State & Presets
+  const [freezeFrameExpanded, setFreezeFrameExpanded] = useState(false);
+  const [ffTab, setFfTab] = useState('manual'); // 'manual' | 'scanner'
+  const [ffStft, setFfStft] = useState('');
+  const [ffLtft, setFfLtft] = useState('');
+  const [ffRpm, setFfRpm] = useState('');
+  const [ffCoolant, setFfCoolant] = useState('');
+  const [ffMaf, setFfMaf] = useState('');
+  const [ffLoad, setFfLoad] = useState('');
+  const [ffSpeed, setFfSpeed] = useState('');
+  const [ffCellDelta, setFfCellDelta] = useState('');
+  const [ffScannerText, setFfScannerText] = useState('');
+  const [ffParserLoading, setFfParserLoading] = useState(false);
+
+  const FREEZE_FRAME_PRESETS = [
+    {
+      label: 'Idle Lean Misfire (+43.7% Trim @ 780 RPM)',
+      desc: 'Isolates intake vacuum leak; rules out fuel pump & coils',
+      stft: '19.5',
+      ltft: '24.2',
+      rpm: '780',
+      coolant: '88',
+      maf: '2.1',
+      load: '26',
+      speed: '0',
+      cellDelta: '',
+      text: 'DTC: P0171 / P0300 Freeze Frame:\nSTFT Bank 1: +19.5%\nLTFT Bank 1: +24.2%\nEngine RPM: 780 RPM\nCoolant Temp: 88 C\nMAF: 2.1 g/s\nEngine Load: 26%'
+    },
+    {
+      label: 'High-RPM Fuel Starvation (+32.5% Trim @ 3200 RPM)',
+      desc: 'Isolates in-tank fuel pump / filter; rules out vacuum leak',
+      stft: '14.0',
+      ltft: '18.5',
+      rpm: '3200',
+      coolant: '92',
+      maf: '48.2',
+      load: '78',
+      speed: '95',
+      cellDelta: '',
+      text: 'DTC: P0171 Freeze Frame:\nSTFT Bank 1: +14.0%\nLTFT Bank 1: +18.5%\nEngine RPM: 3200 RPM\nCoolant Temp: 92 C\nMAF: 48.2 g/s\nSpeed: 95 km/h'
+    },
+    {
+      label: 'Rich Mixture Flooding (-30.7% Trim @ 820 RPM)',
+      desc: 'Isolates leaking injector / purge solenoid; rules out vacuum leak',
+      stft: '-18.2',
+      ltft: '-12.5',
+      rpm: '820',
+      coolant: '90',
+      maf: '3.4',
+      load: '32',
+      speed: '0',
+      cellDelta: '',
+      text: 'DTC: P0172 Freeze Frame:\nSTFT Bank 1: -18.2%\nLTFT Bank 1: -12.5%\nEngine RPM: 820 RPM\nCoolant Temp: 90 C\nMAF: 3.4 g/s'
+    },
+    {
+      label: 'Hybrid / EV Cell Delta (88 mV Deviation)',
+      desc: 'Isolates high-voltage battery module degradation',
+      stft: '',
+      ltft: '',
+      rpm: '0',
+      coolant: '35',
+      maf: '',
+      load: '',
+      speed: '45',
+      cellDelta: '88',
+      text: 'EV Hybrid Battery Telemetry:\nMax Cell Voltage Delta: 88 mV\nPack State of Charge: 48%\nBattery Temp: 35 C'
+    }
+  ];
+
+  const applyFreezeFramePreset = (preset) => {
+    setFfStft(preset.stft);
+    setFfLtft(preset.ltft);
+    setFfRpm(preset.rpm);
+    setFfCoolant(preset.coolant);
+    setFfMaf(preset.maf);
+    setFfLoad(preset.load);
+    setFfSpeed(preset.speed);
+    setFfCellDelta(preset.cellDelta);
+    setFfScannerText(preset.text);
+    setFreezeFrameExpanded(true);
+  };
+
+  const clearFreezeFrameData = () => {
+    setFfStft('');
+    setFfLtft('');
+    setFfRpm('');
+    setFfCoolant('');
+    setFfMaf('');
+    setFfLoad('');
+    setFfSpeed('');
+    setFfCellDelta('');
+    setFfScannerText('');
+  };
+
+  const handleParseScannerText = async () => {
+    if (!ffScannerText.trim()) return;
+    setFfParserLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/parse-freeze-frame`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_text: ffScannerText.trim() })
+      });
+      const data = await res.json();
+      if (data.success && data.freeze_frame) {
+        const ff = data.freeze_frame;
+        if (ff.stft_pct !== null && ff.stft_pct !== undefined) setFfStft(String(ff.stft_pct));
+        if (ff.ltft_pct !== null && ff.ltft_pct !== undefined) setFfLtft(String(ff.ltft_pct));
+        if (ff.engine_rpm !== null && ff.engine_rpm !== undefined) setFfRpm(String(ff.engine_rpm));
+        if (ff.coolant_temp_c !== null && ff.coolant_temp_c !== undefined) setFfCoolant(String(ff.coolant_temp_c));
+        if (ff.maf_gps !== null && ff.maf_gps !== undefined) setFfMaf(String(ff.maf_gps));
+        if (ff.engine_load_pct !== null && ff.engine_load_pct !== undefined) setFfLoad(String(ff.engine_load_pct));
+        if (ff.vehicle_speed_kmh !== null && ff.vehicle_speed_kmh !== undefined) setFfSpeed(String(ff.vehicle_speed_kmh));
+        if (ff.battery_cell_delta_mv !== null && ff.battery_cell_delta_mv !== undefined) setFfCellDelta(String(ff.battery_cell_delta_mv));
+      }
+    } catch (err) {
+      console.error('Failed to parse scan tool text:', err);
+    } finally {
+      setFfParserLoading(false);
+    }
+  };
+
+  const computedTotalTrim = (() => {
+    const s = parseFloat(ffStft);
+    const l = parseFloat(ffLtft);
+    if (isNaN(s) && isNaN(l)) return null;
+    return Math.round(((isNaN(s) ? 0 : s) + (isNaN(l) ? 0 : l)) * 10) / 10;
+  })();
+
+  const getTrimStatus = (total) => {
+    if (total === null) return { label: 'AWAITING METRICS', color: 'var(--text-muted)', class: 'neutral' };
+    if (total >= 25.0) return { label: `CRITICAL LEAN (+${total}%)`, color: '#ef4444', class: 'critical-lean' };
+    if (total >= 15.0) return { label: `MODERATE LEAN (+${total}%)`, color: '#f59e0b', class: 'moderate-lean' };
+    if (total <= -25.0) return { label: `CRITICAL RICH (${total}%)`, color: '#ef4444', class: 'critical-rich' };
+    if (total <= -12.0) return { label: `MODERATE RICH (${total}%)`, color: '#f59e0b', class: 'moderate-rich' };
+    return { label: `OPTIMAL STOICHIOMETRIC (${total >= 0 ? '+' : ''}${total}%)`, color: '#10b981', class: 'normal' };
+  };
+
+  const estimatedOperatingState = (rpmStr, ectStr) => {
+    const r = parseInt(rpmStr, 10);
+    const ect = parseFloat(ectStr);
+    if (isNaN(r)) return 'IDLE / RUNNING';
+    if (r <= 950) {
+      if (!isNaN(ect) && ect >= 70) return 'IDLE (WARM)';
+      if (!isNaN(ect) && ect < 70) return 'IDLE (COLD START)';
+      return 'IDLE ENGINE';
+    }
+    if (r <= 2200) return 'LOW-LOAD CRUISE';
+    return 'HIGH-RPM / LOAD';
+  };
 
   // Check Backend Health on Mount
   useEffect(() => {
@@ -605,6 +760,25 @@ export default function App() {
         };
       }
 
+      // Assemble Mode $02 Freeze Frame Telemetry if supplied
+      if (
+        ffStft !== '' || ffLtft !== '' || ffRpm !== '' || ffCoolant !== '' ||
+        ffMaf !== '' || ffLoad !== '' || ffSpeed !== '' || ffCellDelta !== '' ||
+        ffScannerText.trim()
+      ) {
+        payload.freeze_frame = {
+          stft_pct: ffStft !== '' ? parseFloat(ffStft) : null,
+          ltft_pct: ffLtft !== '' ? parseFloat(ffLtft) : null,
+          engine_rpm: ffRpm !== '' ? parseInt(ffRpm, 10) : null,
+          coolant_temp_c: ffCoolant !== '' ? parseFloat(ffCoolant) : null,
+          maf_gps: ffMaf !== '' ? parseFloat(ffMaf) : null,
+          engine_load_pct: ffLoad !== '' ? parseFloat(ffLoad) : null,
+          vehicle_speed_kmh: ffSpeed !== '' ? parseInt(ffSpeed, 10) : null,
+          battery_cell_delta_mv: ffCellDelta !== '' ? parseFloat(ffCellDelta) : null,
+          raw_scanner_text: ffScannerText.trim() || null
+        };
+      }
+
       // ==========================================
       // STAGE 1: Execute Agent 1 Ingestion & NHTSA Validation
       // ==========================================
@@ -803,6 +977,328 @@ export default function App() {
       const el = document.getElementById(targetId);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const renderFreezeFrameDrawer = () => {
+    const trimStatus = getTrimStatus(computedTotalTrim);
+    const hasData = Boolean(
+      ffStft !== '' || ffLtft !== '' || ffRpm !== '' || ffCoolant !== '' ||
+      ffMaf !== '' || ffLoad !== '' || ffSpeed !== '' || ffCellDelta !== '' ||
+      ffScannerText.trim()
+    );
+
+    return (
+      <div className={`ff-telemetry-drawer-container ${freezeFrameExpanded ? 'is-expanded' : ''}`}>
+        {/* Drawer Toggle Header */}
+        <button
+          type="button"
+          className="ff-drawer-toggle-btn"
+          onClick={() => setFreezeFrameExpanded(prev => !prev)}
+        >
+          <div className="ff-toggle-left">
+            <div className="ff-toggle-icon-wrap">
+              <Gauge size={18} color="#00F0FF" />
+            </div>
+            <div className="ff-toggle-text">
+              <div className="ff-toggle-title">
+                <span>OBD-II Mode $02 Freeze Frame Telemetry</span>
+                <span className="ff-toggle-subtag">SAE J1979 / ISO 15031-5</span>
+              </div>
+              <div className="ff-toggle-desc">
+                Ground-truth ECU snapshot at trigger millisecond (Trims, RPM, Coolant, MAF, EV Delta)
+              </div>
+            </div>
+          </div>
+
+          <div className="ff-toggle-right">
+            {hasData ? (
+              <span className={`ff-status-pill ${trimStatus.class}`}>
+                <Activity size={11} />
+                {computedTotalTrim !== null
+                  ? `TRIM: ${computedTotalTrim > 0 ? '+' : ''}${computedTotalTrim}%`
+                  : 'TELEMETRY LOADED'}
+              </span>
+            ) : (
+              <span className="ff-optional-pill">EMPIRICAL ENHANCER</span>
+            )}
+            <span className="ff-chevron-arrow">
+              {freezeFrameExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          </div>
+        </button>
+
+        {/* Collapsible Body */}
+        {freezeFrameExpanded && (
+          <div className="ff-drawer-content">
+            {/* Quick Presets Ribbon */}
+            <div className="ff-presets-section">
+              <div className="ff-presets-header">
+                <span className="ff-presets-title">
+                  <Sparkles size={12} color="#f59e0b" />
+                  Quick Empirical Telemetry Presets:
+                </span>
+                {hasData && (
+                  <button
+                    type="button"
+                    className="ff-clear-btn"
+                    onClick={clearFreezeFrameData}
+                  >
+                    <RefreshCw size={11} />
+                    Clear Telemetry
+                  </button>
+                )}
+              </div>
+              <div className="ff-presets-grid">
+                {FREEZE_FRAME_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="ff-preset-card"
+                    onClick={() => applyFreezeFramePreset(preset)}
+                  >
+                    <div className="ff-preset-top">
+                      <span className="ff-preset-name">{preset.label}</span>
+                    </div>
+                    <div className="ff-preset-sub">{preset.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subtabs: Sensor Dashboard vs Raw Scanner OCR */}
+            <div className="ff-tab-switch-row">
+              <button
+                type="button"
+                className={`ff-subtab-btn ${ffTab === 'manual' ? 'active' : ''}`}
+                onClick={() => setFfTab('manual')}
+              >
+                <Sliders size={13} />
+                Interactive Sensor Sliders & Gauges
+              </button>
+              <button
+                type="button"
+                className={`ff-subtab-btn ${ffTab === 'scanner' ? 'active' : ''}`}
+                onClick={() => setFfTab('scanner')}
+              >
+                <FileText size={13} />
+                Scan Tool Text Dump Parser (Autel / Snap-on / Launch)
+              </button>
+            </div>
+
+            {ffTab === 'manual' ? (
+              <>
+                {/* Live Combined Fuel Trim HUD Gauge */}
+                <div className="ff-trim-hud-banner">
+                  <div className="ff-trim-hud-left">
+                    <div className="ff-hud-label">COMBINED TOTAL FUEL TRIM</div>
+                    <div className={`ff-hud-value ${trimStatus.class}`}>
+                      {computedTotalTrim !== null
+                        ? `${computedTotalTrim > 0 ? '+' : ''}${computedTotalTrim}%`
+                        : '0.0%'}
+                    </div>
+                    <div className="ff-hud-sublabel">{trimStatus.label}</div>
+                  </div>
+
+                  <div className="ff-trim-meter-center">
+                    <div className="ff-meter-scale">
+                      <span className="scale-tick rich">-30% Rich</span>
+                      <span className="scale-tick normal">-10%</span>
+                      <span className="scale-tick stoich">0% Stoich</span>
+                      <span className="scale-tick normal">+10%</span>
+                      <span className="scale-tick lean">+30% Lean</span>
+                    </div>
+                    <div className="ff-meter-track">
+                      <div className="ff-meter-center-mark" />
+                      <div
+                        className={`ff-meter-fill ${trimStatus.class}`}
+                        style={{
+                          width: `${Math.min(50, Math.abs(computedTotalTrim || 0) * 1.25)}%`,
+                          left: (computedTotalTrim || 0) >= 0 ? '50%' : `${50 - Math.min(50, Math.abs(computedTotalTrim || 0) * 1.25)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="ff-meter-legend">
+                      Normal ECU threshold: ±10% · DTC trigger boundary: &gt;±20%
+                    </div>
+                  </div>
+
+                  <div className="ff-operating-state-badge">
+                    <div className="regime-label">ESTIMATED REGIME</div>
+                    <div className="regime-val">
+                      {estimatedOperatingState(ffRpm, ffCoolant)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 8 Sensor Input Tiles */}
+                <div className="ff-sensors-grid">
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Short-Term Fuel Trim (STFT)</span>
+                      <span className="ff-unit">%</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="ff-field-input"
+                      placeholder="e.g. +19.5"
+                      value={ffStft}
+                      onChange={(e) => setFfStft(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Bank 1 instantaneous (±100%)</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Long-Term Fuel Trim (LTFT)</span>
+                      <span className="ff-unit">%</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="ff-field-input"
+                      placeholder="e.g. +24.2"
+                      value={ffLtft}
+                      onChange={(e) => setFfLtft(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Bank 1 learned adaptive</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Engine Speed</span>
+                      <span className="ff-unit">RPM</span>
+                    </label>
+                    <input
+                      type="number"
+                      className="ff-field-input"
+                      placeholder="e.g. 780"
+                      value={ffRpm}
+                      onChange={(e) => setFfRpm(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Idle &lt;950 · Cruise &gt;2000</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Coolant Temp (ECT)</span>
+                      <span className="ff-unit">°C</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="ff-field-input"
+                      placeholder="e.g. 88"
+                      value={ffCoolant}
+                      onChange={(e) => setFfCoolant(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Operating warm: 82 - 95°C</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Mass Air Flow (MAF)</span>
+                      <span className="ff-unit">g/s</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="ff-field-input"
+                      placeholder="e.g. 2.1"
+                      value={ffMaf}
+                      onChange={(e) => setFfMaf(e.target.value)}
+                    />
+                    <span className="ff-field-hint">~1 g/s per engine liter at idle</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Engine Load Value</span>
+                      <span className="ff-unit">%</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="ff-field-input"
+                      placeholder="e.g. 26.5"
+                      value={ffLoad}
+                      onChange={(e) => setFfLoad(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Calculated load (0 - 100%)</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>Vehicle Speed</span>
+                      <span className="ff-unit">km/h</span>
+                    </label>
+                    <input
+                      type="number"
+                      className="ff-field-input"
+                      placeholder="e.g. 0"
+                      value={ffSpeed}
+                      onChange={(e) => setFfSpeed(e.target.value)}
+                    />
+                    <span className="ff-field-hint">0 km/h = Bay idle test</span>
+                  </div>
+
+                  <div className="ff-sensor-field">
+                    <label className="ff-field-label">
+                      <span>EV Battery Cell Delta</span>
+                      <span className="ff-unit">mV</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      className="ff-field-input"
+                      placeholder="e.g. 88"
+                      value={ffCellDelta}
+                      onChange={(e) => setFfCellDelta(e.target.value)}
+                    />
+                    <span className="ff-field-hint">Hybrid/EV tolerance &lt;30 mV</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Raw Scanner OCR Dump Tab */
+              <div className="ff-scanner-box">
+                <div className="ff-scanner-label-row">
+                  <span className="scanner-label">Paste Scan Tool Export / Text Report:</span>
+                  <span className="scanner-supported-tools">Compatible: Autel MaxiSys · Snap-on Zeus · Launch X431 · BlueDriver · OBDLink</span>
+                </div>
+                <textarea
+                  className="ff-scanner-textarea"
+                  rows={5}
+                  placeholder="Paste freeze frame log, e.g.:&#10;DTC: P0171 Freeze Frame&#10;Short Term Fuel Trim B1: +19.5%&#10;Long Term Fuel Trim B1: +24.2%&#10;Engine RPM: 780 RPM&#10;Coolant Temperature: 88 C&#10;Mass Air Flow: 2.1 g/s"
+                  value={ffScannerText}
+                  onChange={(e) => setFfScannerText(e.target.value)}
+                />
+                <div className="ff-scanner-action-row">
+                  <button
+                    type="button"
+                    className="ff-parse-action-btn"
+                    onClick={handleParseScannerText}
+                    disabled={ffParserLoading || !ffScannerText.trim()}
+                  >
+                    {ffParserLoading ? (
+                      <>
+                        <RefreshCw size={13} className="spin-icon" />
+                        Parsing Scan Tool Report...
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={13} />
+                        Auto-Extract Freeze Frame Telemetry & Populate Inputs
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -1560,6 +2056,8 @@ export default function App() {
                         placeholder="e.g. 2019 Honda Civic with crashed bumper and trouble code P0171..."
                       />
 
+                      {renderFreezeFrameDrawer()}
+
                       <button
                         type="submit"
                         className="btn-red"
@@ -1671,6 +2169,8 @@ export default function App() {
                         />
                       </div>
 
+                      {renderFreezeFrameDrawer()}
+
                       <button
                         type="submit"
                         className="btn-red"
@@ -1761,6 +2261,8 @@ export default function App() {
                           />
                         </div>
                       </div>
+
+                      {renderFreezeFrameDrawer()}
 
                       <button
                         type="submit"
@@ -2097,6 +2599,75 @@ export default function App() {
                         </div>
                       )}
 
+                      {/* OBD-II Mode $02 Freeze Frame Sensor Telemetry Ingested */}
+                      {triageResult.freeze_frame && (
+                        <div className="freeze-frame-results-box">
+                          <div className="freeze-frame-header">
+                            <div className="freeze-frame-title">
+                              <Gauge size={16} color="#00F0FF" />
+                              <span>OBD-II Mode $02 Freeze Frame Ingestion (SAE J1979)</span>
+                            </div>
+                            <span className="freeze-frame-badge">
+                              <Activity size={12} />
+                              GROUND-TRUTH TELEMETRY
+                            </span>
+                          </div>
+
+                          <div className="telemetry-sensor-grid">
+                            {triageResult.freeze_frame.engine_rpm !== null && triageResult.freeze_frame.engine_rpm !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">Engine Speed</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.engine_rpm} RPM</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.stft_pct !== null && triageResult.freeze_frame.stft_pct !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">STFT Bank 1</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.stft_pct > 0 ? '+' : ''}{triageResult.freeze_frame.stft_pct}%</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.ltft_pct !== null && triageResult.freeze_frame.ltft_pct !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">LTFT Bank 1</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.ltft_pct > 0 ? '+' : ''}{triageResult.freeze_frame.ltft_pct}%</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame_analysis?.total_fuel_trim_pct !== null && triageResult.freeze_frame_analysis?.total_fuel_trim_pct !== undefined && (
+                              <div className="telemetry-sensor-tile highlight-trim">
+                                <span className="sensor-label">Combined Trim</span>
+                                <span className={`sensor-value trim-${(triageResult.freeze_frame_analysis.trim_condition || 'normal').toLowerCase()}`}>
+                                  {triageResult.freeze_frame_analysis.total_fuel_trim_pct > 0 ? '+' : ''}{triageResult.freeze_frame_analysis.total_fuel_trim_pct}%
+                                </span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.coolant_temp_c !== null && triageResult.freeze_frame.coolant_temp_c !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">Coolant Temp</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.coolant_temp_c} °C</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.maf_gps !== null && triageResult.freeze_frame.maf_gps !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">MAF Airflow</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.maf_gps} g/s</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.engine_load_pct !== null && triageResult.freeze_frame.engine_load_pct !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">Engine Load</span>
+                                <span className="sensor-value">{triageResult.freeze_frame.engine_load_pct}%</span>
+                              </div>
+                            )}
+                            {triageResult.freeze_frame.battery_cell_delta_mv !== null && triageResult.freeze_frame.battery_cell_delta_mv !== undefined && (
+                              <div className="telemetry-sensor-tile">
+                                <span className="sensor-label">EV Cell Delta</span>
+                                <span className="sensor-value alert">{triageResult.freeze_frame.battery_cell_delta_mv} mV</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* IR Canonical Query */}
                       {triageResult.canonical_query && (
                         <div className="canonical-query-box">
@@ -2160,6 +2731,80 @@ export default function App() {
                               {agent2Result.failure_mode}
                             </div>
                           </div>
+
+                          {/* Empirical Ground-Truth Physical Telemetry Card */}
+                          {(agent2Result.freeze_frame_analysis || triageResult?.freeze_frame_analysis) && (() => {
+                            const ffa = agent2Result.freeze_frame_analysis || triageResult?.freeze_frame_analysis;
+                            return (
+                              <div className="empirical-ground-truth-card">
+                                <div className="ground-truth-header">
+                                  <div className="ground-truth-title">
+                                    <ShieldCheck size={16} color="#10B981" />
+                                    <span>Freeze Frame Empirical Ground-Truth Telemetry</span>
+                                  </div>
+                                  <div className="ground-truth-regime-tag">
+                                    REGIME: {ffa.operating_state}
+                                  </div>
+                                </div>
+
+                                {/* Master Verdict Banner */}
+                                <div className="ground-truth-verdict-box">
+                                  <div className="verdict-icon-col">
+                                    <Zap size={18} color="#00F0FF" />
+                                  </div>
+                                  <div className="verdict-content-col">
+                                    <div className="verdict-headline">Master Diagnostic Telemetry Verdict</div>
+                                    <div className="verdict-text">{ffa.root_cause_verdict}</div>
+                                  </div>
+                                </div>
+
+                                {/* Ruled-Out vs Target Components Comparison Grid */}
+                                <div className="ground-truth-columns">
+                                  {/* Ruled-Out Components */}
+                                  {ffa.ruled_out_components && ffa.ruled_out_components.length > 0 && (
+                                    <div className="ground-truth-col ruled-out-col">
+                                      <div className="col-header-label">
+                                        <span className="icon-shield-cross">✕</span>
+                                        PROVEN FUNCTIONAL / RULED OUT ({ffa.ruled_out_components.length})
+                                      </div>
+                                      <div className="ruled-out-tags-wrap">
+                                        {ffa.ruled_out_components.map((part, idx) => (
+                                          <div key={idx} className="ruled-out-chip">
+                                            <span className="strikethrough-text">{part}</span>
+                                            <span className="eliminated-badge">RULED OUT</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="col-subtext">
+                                        Empirical operating parameters disprove component fault under test regime.
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* High-Probability Targets */}
+                                  {ffa.high_probability_targets && ffa.high_probability_targets.length > 0 && (
+                                    <div className="ground-truth-col targets-col">
+                                      <div className="col-header-label" style={{ color: '#00F0FF' }}>
+                                        <span className="icon-target-bullseye">🎯</span>
+                                        PRIMARY ISOLATED TARGETS ({ffa.high_probability_targets.length})
+                                      </div>
+                                      <div className="target-tags-wrap">
+                                        {ffa.high_probability_targets.map((part, idx) => (
+                                          <div key={idx} className="target-chip">
+                                            <Check size={12} color="#00F0FF" />
+                                            <span>{part}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="col-subtext">
+                                        Directly corroborated by fuel trim stoichiometry & manifold dynamics.
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Safety Warning */}
                           {agent2Result.safety_warning && (

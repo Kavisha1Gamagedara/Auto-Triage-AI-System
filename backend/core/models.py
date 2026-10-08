@@ -1,6 +1,39 @@
 from typing import List, Optional, Dict, Any,Literal
 from pydantic import BaseModel, Field, model_validator, computed_field
 
+class FreezeFrameData(BaseModel):
+    """
+    OBD-II Mode $02 Freeze Frame Sensor Telemetry captured at the exact moment
+    a Diagnostic Trouble Code (DTC) was registered by the ECU.
+    Standardized per SAE J1979 / ISO 15031-5.
+    """
+    stft_pct: Optional[float] = Field(None, ge=-100.0, le=100.0, description="Short Term Fuel Trim Bank 1 in % (-100 to +100)")
+    ltft_pct: Optional[float] = Field(None, ge=-100.0, le=100.0, description="Long Term Fuel Trim Bank 1 in % (-100 to +100)")
+    engine_rpm: Optional[int] = Field(None, ge=0, le=15000, description="Engine speed in RPM when code triggered")
+    coolant_temp_c: Optional[float] = Field(None, ge=-40.0, le=160.0, description="Engine Coolant Temperature (ECT) in °C")
+    maf_gps: Optional[float] = Field(None, ge=0.0, le=600.0, description="Mass Air Flow rate in grams/second (g/s)")
+    engine_load_pct: Optional[float] = Field(None, ge=0.0, le=100.0, description="Calculated engine load value in %")
+    vehicle_speed_kmh: Optional[int] = Field(None, ge=0, le=400, description="Vehicle speed in km/h")
+    fuel_rail_pressure_kpa: Optional[float] = Field(None, ge=0.0, description="Fuel rail pressure in kPa (GDI & Diesel)")
+    battery_soc_pct: Optional[float] = Field(None, ge=0.0, le=100.0, description="High-Voltage Battery State of Charge % (EV/Hybrid)")
+    battery_cell_delta_mv: Optional[float] = Field(None, ge=0.0, description="Max battery cell voltage deviation in mV (EV/Hybrid)")
+    raw_scanner_text: Optional[str] = Field(None, description="Raw unparsed scanner freeze frame text report")
+
+
+class FreezeFrameAnalysis(BaseModel):
+    """
+    Master Diagnostic Reasoning evaluation derived from Freeze Frame parameters.
+    Mathematically isolates vacuum leaks, fuel pump failures, EV cell imbalances, or sensor faults.
+    """
+    total_fuel_trim_pct: Optional[float] = Field(None, description="Sum of STFT + LTFT in %")
+    trim_condition: str = Field("NORMAL", description="Status: CRITICAL_LEAN, MODERATE_LEAN, NORMAL, MODERATE_RICH, CRITICAL_RICH")
+    operating_state: str = Field("UNKNOWN", description="Vehicle operating regime: IDLE_WARM, HIGH_LOAD_CRUISE, COLD_START, HIGHWAY, STOPPED")
+    root_cause_verdict: str = Field("", description="Authoritative master mechanic deduction derived from telemetry")
+    ruled_out_components: List[str] = Field(default_factory=list, description="Components proven functional by operating telemetry (prevents guessing)")
+    high_probability_targets: List[str] = Field(default_factory=list, description="Specific components isolated as primary suspect causes")
+    confidence_score: int = Field(80, ge=0, le=100, description="Confidence percentage derived from sensor correlation")
+
+
 class DiagnosticRequest(BaseModel):
     """
     Payload received by Agent 1 from the technician or customer interface.
@@ -21,6 +54,9 @@ class DiagnosticRequest(BaseModel):
     year: Optional[int] = Field(None, ge=1900, le=2100, description="Direct vehicle manufacturing year")
     dtc_codes: Optional[List[str]] = Field(default_factory=list, description="Direct list of OBD-II DTC codes")
     damaged_parts: Optional[List[str]] = Field(default_factory=list, description="Direct list of damaged parts")
+
+    # Optional OBD-II Mode $02 Freeze Frame Sensor Telemetry
+    freeze_frame: Optional[FreezeFrameData] = Field(None, description="Optional OBD-II Mode $02 Freeze Frame Sensor Telemetry")
 
     @model_validator(mode="after")
     def validate_input_mode(self):
@@ -142,6 +178,10 @@ class Agent1Payload(BaseModel):
     # Multi-DTC Cascade & Correlation Analysis (Additive)
     dtc_cascade: Optional[DTCCascadeAnalysis] = Field(default=None, description="Multi-DTC causal hierarchy and cascade classification")
 
+    # OBD-II Mode $02 Freeze Frame Sensor Telemetry (Additive)
+    freeze_frame: Optional[FreezeFrameData] = Field(default=None, description="Ingested OBD-II Freeze Frame Sensor Telemetry")
+    freeze_frame_analysis: Optional[FreezeFrameAnalysis] = Field(default=None, description="Master Diagnostic Analysis derived from Freeze Frame metrics")
+
     @model_validator(mode="before")
     @classmethod
     def sync_vehicle_fields(cls, data: Any):
@@ -255,6 +295,7 @@ class DiagnosticResult(BaseModel):
     )
     severity: Literal["low", "moderate", "high", "critical"]
     safety_warning: str
+    freeze_frame_analysis: Optional[FreezeFrameAnalysis] = Field(default=None, description="Ground-truth freeze frame analysis")
 
     @model_validator(mode="after")
     def primary_must_rank_highest(self):
@@ -362,9 +403,9 @@ class ProcurementResponse(BaseModel):
 
 #Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning - Agent 2
 class VerificationVerdict(BaseModel):
-    index: int =Field(...,ge=0, decsription="Psotion of the hypothesis in the list under review")
-    plausible: bool="Whether this component exists on the vehicle and explains the codes"
-    reason: str = Field(...,description="One sentence. Required when plausible is false.")
+    index: int = Field(..., ge=0, description="Position of the hypothesis in the list under review")
+    plausible: bool = Field(..., description="Whether this component exists on the vehicle and explains the codes")
+    reason: Optional[str] = Field(default="", description="One sentence. Required when plausible is false.")
 
 class VerificationResponse(BaseModel):
     verdicts: List[VerificationVerdict]

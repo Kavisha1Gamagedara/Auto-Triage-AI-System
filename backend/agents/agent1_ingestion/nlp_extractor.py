@@ -929,3 +929,257 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "fuzzy_corrections": fuzzy_corrections,
         "dtc_cascade": dtc_cascade
     }
+
+
+def parse_freeze_frame_scanner_text(raw_text: str) -> Optional[Any]:
+    """
+    Parses raw unformatted diagnostic scan tool reports (Autel, Launch, Snap-on, BlueDriver, OBDLink, etc.)
+    and extracts standard SAE J1979 Mode $02 Freeze Frame PIDs.
+    """
+    if not raw_text or not isinstance(raw_text, str) or len(raw_text.strip()) < 5:
+        return None
+
+    text = raw_text.strip()
+    
+    # 1. Short Term Fuel Trim (STFT)
+    stft = None
+    m = re.search(r"(?:STFT|Short\s*Term\s*(?:Fuel\s*)?Trim|Short-Term\s*Trim)\s*(?:Bank\s*1|B1|B\s*1|1)?(?:\s*Sensor\s*\d|\s*S\d)?[:=\s]+([+-]?\d+(?:\.\d+)?)\s*%?", text, re.IGNORECASE)
+    if m:
+        try:
+            stft = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 2. Long Term Fuel Trim (LTFT)
+    ltft = None
+    m = re.search(r"(?:LTFT|Long\s*Term\s*(?:Fuel\s*)?Trim|Long-Term\s*Trim)\s*(?:Bank\s*1|B1|B\s*1|1)?(?:\s*Sensor\s*\d|\s*S\d)?[:=\s]+([+-]?\d+(?:\.\d+)?)\s*%?", text, re.IGNORECASE)
+    if m:
+        try:
+            ltft = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 3. Engine RPM
+    rpm = None
+    m = re.search(r"(?:Engine\s*Speed|Engine\s*RPM|\bRPM\b)[:=\s]+(\d{2,5})\s*(?:RPM)?", text, re.IGNORECASE)
+    if m:
+        try:
+            rpm = int(m.group(1))
+        except ValueError:
+            pass
+
+    # 4. Engine Coolant Temperature (ECT)
+    coolant = None
+    m = re.search(r"(?:ECT|Coolant\s*Temp(?:erature)?|Engine\s*Coolant)[:=\s]+([+-]?\d+(?:\.\d+)?)\s*(?:[°C|C|deg\s*C])?", text, re.IGNORECASE)
+    if m:
+        try:
+            coolant = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 5. Mass Air Flow (MAF)
+    maf = None
+    m = re.search(r"(?:MAF|Mass\s*Air\s*Flow(?:\s*Rate)?)[:=\s]+(\d+(?:\.\d+)?)\s*(?:g/s|gps|gm/s)?", text, re.IGNORECASE)
+    if m:
+        try:
+            maf = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 6. Engine Load
+    load = None
+    m = re.search(r"(?:Calculated\s*)?(?:Engine\s*)?Load[:=\s]+(\d+(?:\.\d+)?)\s*%?", text, re.IGNORECASE)
+    if m:
+        try:
+            load = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 7. Vehicle Speed
+    speed = None
+    m = re.search(r"(?:Vehicle\s*)?Speed[:=\s]+(\d+(?:\.\d+)?)\s*(?:km/h|kph|mph)?", text, re.IGNORECASE)
+    if m:
+        try:
+            speed = int(float(m.group(1)))
+        except ValueError:
+            pass
+
+    # 8. Fuel Rail Pressure
+    frp = None
+    m = re.search(r"(?:Fuel\s*Rail\s*Pressure|\bFRP\b)[:=\s]+(\d+(?:\.\d+)?)\s*(?:kPa|psi|bar|MPa)?", text, re.IGNORECASE)
+    if m:
+        try:
+            frp = float(m.group(1))
+        except ValueError:
+            pass
+
+    # 9. EV Battery SoC & Cell Delta
+    soc = None
+    m = re.search(r"(?:Battery\s*SoC|State\s*of\s*Charge|HV\s*SoC)[:=\s]+(\d+(?:\.\d+)?)\s*%?", text, re.IGNORECASE)
+    if m:
+        try:
+            soc = float(m.group(1))
+        except ValueError:
+            pass
+
+    delta = None
+    m = re.search(r"(?:Cell\s*Delta|Max\s*Cell\s*Deviation|Cell\s*Voltage\s*Delta)[:=\s]+(\d+(?:\.\d+)?)\s*(?:mV|millivolts)?", text, re.IGNORECASE)
+    if m:
+        try:
+            delta = float(m.group(1))
+        except ValueError:
+            pass
+
+    # If at least one key parameter was discovered
+    if any(val is not None for val in [stft, ltft, rpm, coolant, maf, load, speed, frp, soc, delta]):
+        data = {
+            "stft_pct": stft,
+            "ltft_pct": ltft,
+            "engine_rpm": rpm,
+            "coolant_temp_c": coolant,
+            "maf_gps": maf,
+            "engine_load_pct": load,
+            "vehicle_speed_kmh": speed,
+            "fuel_rail_pressure_kpa": frp,
+            "battery_soc_pct": soc,
+            "battery_cell_delta_mv": delta,
+            "raw_scanner_text": text
+        }
+        try:
+            from core.models import FreezeFrameData
+            return FreezeFrameData(**data)
+        except Exception:
+            return data
+
+    return None
+
+
+def analyze_freeze_frame(freeze_frame: Any, dtc_codes: List[str] = None, vehicle: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    """
+    Evaluates OBD-II Freeze Frame Sensor Telemetry to establish ground-truth physical root-cause.
+    Discriminates between vacuum leaks vs. fuel delivery pump failures vs. ignition breakdowns vs. EV cell degradation.
+    """
+    if not freeze_frame:
+        return None
+
+    # Handle object or dict
+    def get_fld(k, default=None):
+        if hasattr(freeze_frame, k):
+            v = getattr(freeze_frame, k)
+            return v if v is not None else default
+        elif isinstance(freeze_frame, dict):
+            v = freeze_frame.get(k)
+            return v if v is not None else default
+        return default
+
+    stft = get_fld("stft_pct")
+    ltft = get_fld("ltft_pct")
+    rpm = get_fld("engine_rpm")
+    ect = get_fld("coolant_temp_c")
+    maf = get_fld("maf_gps")
+    cell_delta = get_fld("battery_cell_delta_mv")
+
+    # Calculate total fuel trim
+    total_trim = None
+    if stft is not None or ltft is not None:
+        total_trim = round((stft or 0.0) + (ltft or 0.0), 1)
+
+    # Determine operating regime
+    operating_state = "UNKNOWN"
+    if rpm is not None:
+        if rpm <= 950:
+            operating_state = "IDLE_WARM" if (ect is not None and ect >= 70.0) else "IDLE_COLD" if (ect is not None and ect < 70.0) else "IDLE"
+        elif 950 < rpm <= 2200:
+            operating_state = "LOW_LOAD_CRUISE"
+        else:
+            operating_state = "HIGH_RPM_LOAD"
+
+    # 1. Check EV / Hybrid High Voltage Battery Imbalance
+    if cell_delta is not None and cell_delta >= 60.0:
+        analysis_data = {
+            "total_fuel_trim_pct": total_trim,
+            "trim_condition": "BATTERY_DELTA_CRITICAL" if cell_delta >= 120.0 else "BATTERY_DELTA_ELEVATED",
+            "operating_state": operating_state,
+            "root_cause_verdict": f"High-Voltage Battery Cell Imbalance confirmed. Cell deviation of {cell_delta:.0f}mV exceeds maximum OEM tolerance of 30mV, indicating internal electrochemical degradation.",
+            "ruled_out_components": ["12V Auxiliary Battery", "DC-DC Converter", "High-Voltage Inverter Main Bridge"],
+            "high_probability_targets": ["High-Voltage Battery Module Block", "Cell Voltage Monitoring Busbar Wiring", "Battery Cell Balancing IC"],
+            "confidence_score": 97
+        }
+    # 2. Check Severe Lean Starvation (+15% or higher Total Fuel Trim)
+    elif total_trim is not None and total_trim >= 15.0:
+        trim_condition = "CRITICAL_LEAN" if total_trim >= 25.0 else "MODERATE_LEAN"
+        
+        # Idle Lean Signature -> Intake Vacuum Leak
+        if rpm is not None and rpm <= 1000:
+            rpm_disp = f"at {rpm} RPM idle"
+            analysis_data = {
+                "total_fuel_trim_pct": total_trim,
+                "trim_condition": trim_condition,
+                "operating_state": operating_state,
+                "root_cause_verdict": f"Severe unmetered air intake vacuum leak verified {rpm_disp} (Combined Fuel Trim: +{total_trim:.1f}%). High intake manifold vacuum is sucking false air past the MAF sensor into the combustion chambers. In-tank fuel pump and ignition coils are proven functional and ruled out.",
+                "ruled_out_components": ["In-Tank Fuel Pump", "High-Pressure Fuel Pump", "Fuel Filter", "Ignition Coils", "Spark Plugs"],
+                "high_probability_targets": ["PCV Valve & Vacuum Hose", "Intake Manifold Gasket", "Air Intake Duct / Boot Pinhole Crack", "Brake Booster Vacuum Line"],
+                "confidence_score": 96
+            }
+        # High-Speed / High-RPM Lean Signature -> Fuel Delivery Failure
+        elif rpm is not None and rpm > 2000:
+            analysis_data = {
+                "total_fuel_trim_pct": total_trim,
+                "trim_condition": trim_condition,
+                "operating_state": operating_state,
+                "root_cause_verdict": f"Fuel delivery volume starvation confirmed under load (RPM: {rpm}, Combined Fuel Trim: +{total_trim:.1f}%). Intake vacuum leak is ruled out because vacuum drops at open throttle, whereas fuel starvation worsens as injector pulse width increases.",
+                "ruled_out_components": ["Intake Manifold Vacuum Leak", "PCV Hose Leak", "Brake Booster Line", "Spark Plugs"],
+                "high_probability_targets": ["In-Tank Fuel Pump", "Clogged Fuel Filter", "Faulty Fuel Pressure Regulator", "Restricted Fuel Injector Nozzles"],
+                "confidence_score": 94
+            }
+        else:
+            # Generic Lean
+            analysis_data = {
+                "total_fuel_trim_pct": total_trim,
+                "trim_condition": trim_condition,
+                "operating_state": operating_state,
+                "root_cause_verdict": f"Excess air / fuel deficiency detected (Combined Fuel Trim: +{total_trim:.1f}%). ECM is commanding +{total_trim:.1f}% additional fuel injection over factory baseline.",
+                "ruled_out_components": ["Rich Fueling Faults", "Stuck-Open Purge Valve"],
+                "high_probability_targets": ["Intake Vacuum Leak", "Contaminated MAF Sensor", "Low Fuel Pressure Delivery", "Upstream O2/AFR Sensor Bias"],
+                "confidence_score": 90
+            }
+    # 3. Check Rich Flooding (Total Fuel Trim <= -12%)
+    elif total_trim is not None and total_trim <= -12.0:
+        trim_condition = "CRITICAL_RICH" if total_trim <= -25.0 else "MODERATE_RICH"
+        analysis_data = {
+            "total_fuel_trim_pct": total_trim,
+            "trim_condition": trim_condition,
+            "operating_state": operating_state,
+            "root_cause_verdict": f"Rich fuel-air mixture confirmed (Combined Fuel Trim: {total_trim:.1f}%). ECM is aggressively subtracting fuel to prevent catalytic converter flooding and unburnt hydrocarbon saturation.",
+            "ruled_out_components": ["Intake Vacuum Leak", "Low Fuel Pressure", "Weak Fuel Pump"],
+            "high_probability_targets": ["Stuck-Open EVAP Canister Purge Solenoid", "Leaking / Dripping Fuel Injector", "Over-Reporting / Contaminated MAF Sensor", "Faulty Engine Coolant Temp (ECT) Sensor"],
+            "confidence_score": 92
+        }
+    # 4. Normal Fuel Trims (-12% to +12%)
+    elif total_trim is not None:
+        analysis_data = {
+            "total_fuel_trim_pct": total_trim,
+            "trim_condition": "NORMAL",
+            "operating_state": operating_state,
+            "root_cause_verdict": f"Fuel trimming and stoichiometric air-fuel ratio are within normal factory parameters (Total Trim: {total_trim:.1f}%). Lean/rich fueling faults and vacuum leaks are eliminated. Focus investigation on ignition timing, mechanical compression, or catalytic efficiency.",
+            "ruled_out_components": ["Intake Vacuum Leak", "Fuel Pump Failure", "Fuel Injector Delivery", "MAF Metering"],
+            "high_probability_targets": ["Ignition Coil / Spark Plug", "Exhaust Catalytic Converter", "Cylinder Mechanical Compression"],
+            "confidence_score": 88
+        }
+    else:
+        # Fallback when only RPM/ECT/MAF are supplied without trims
+        analysis_data = {
+            "total_fuel_trim_pct": None,
+            "trim_condition": "TELEMETRY_RECORDED",
+            "operating_state": operating_state,
+            "root_cause_verdict": f"Freeze frame operating state captured: {operating_state} (RPM: {rpm or 'N/A'}, ECT: {ect or 'N/A'} deg C, MAF: {maf or 'N/A'} g/s). Telemetry supports operating environment isolation.",
+            "ruled_out_components": [],
+            "high_probability_targets": [],
+            "confidence_score": 82
+        }
+
+    try:
+        from core.models import FreezeFrameAnalysis
+        return FreezeFrameAnalysis(**analysis_data)
+    except Exception:
+        return analysis_data
