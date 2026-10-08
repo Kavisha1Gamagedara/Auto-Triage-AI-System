@@ -1,0 +1,116 @@
+{
+  "users": {
+    "user_admin_001": {
+      "id": "user_admin_001",
+      "name": "Head of Operations (Admin)",
+      "email": "admin@autotriage.io",
+      "phone": "+94 11 234 5678",
+      "role": "admin",
+      "tier": "ultra",
+      "workshop_name": "Auto-Triage HQ Command",
+      "password_hash": "b77c1b300a816ab072700455aa10a55514da70d99c5192db8cd85d7569778d10",
+      "salt": "324dc8e4caee4cc2",
+      "created_at": "2026-10-08T06:12:10.618131+00:00",
+      "last_active": "2026-10-08T07:22:50.670710+00:00",
+      "subscription_status": "active",
+      "subscription_expires": null,
+      "daily_usage": {},
+      "monthly_usage": {},
+      "total_usage": 0
+    },
+    "user_mech_001": {
+      "id": "user_mech_001",
+      "name": "Kavisha Gamagedara (Master Tech)",
+      "email": "mechanic@workshop.com",
+      "phone": "+94 77 123 4567",
+      "role": "mechanic",
+      "tier": "plus",
+      "workshop_name": "Apex Performance & Diagnostic Lab",
+      "password_hash": "1aea42518133937037672e1b1a864fdba3d00f7f38d5560d0f95e13a0461a65d",
+      "salt": "c49409e1cab748da",
+      "created_at": "2026-10-08T06:12:10.618131+00:00",
+      "last_active": "2026-10-08T07:07:04.152467+00:00",
+      "subscription_status": "active",
+      "subscription_expires": "2026-11-07T06:30:21.756924+00:00",
+      "daily_usage": {
+        "2026-10-08": 3
+      },
+      "monthly_usage": {
+        "2026-10": 3
+      },
+      "total_usage": 3
+    },
+    "user_plus_001": {
+      "id": "user_plus_001",
+      "name": "Nuwan Perera (Plus Garage)",
+      "email": "plus@workshop.com",
+      "phone": "+94 71 987 6543",
+      "role": "mechanic",
+      "tier": "plus",
+      "workshop_name": "Colombo Speed Motors",
+      "password_hash": "ba4f19035265bec6f13bc3f1668f44d9d7f8b267a1bc95f41b5743a84a0185bc",
+      "salt": "614906d184d942ad",
+      "created_at": "2026-10-08T06:12:10.618131+00:00",
+      "last_active": "2026-10-08T06:12:10.618131+00:00",
+      "subscription_status": "active",
+      "subscription_expires": "2026-11-07T06:12:10.618210+00:00",
+      "daily_usage": {},
+      "monthly_usage": {},
+      "total_usage": 14
+    },
+    "user_b58703a8f178": {
+      "id": "user_b58703a8f178",
+      "name": "Kasun Perera",
+      "email": "kasun@testworkshop.lk",
+      "phone": "+94771234567",
+      "role": "mechanic",
+      "tier": "basic",
+      "workshop_name": "Colombo Speed Works",
+      "password_hash": "4a420eac50c02ec6e39272fc2c6493531ce16cc2eac915a760cb7aadf1252774",
+      "salt": "66b97105a2834e1e",
+      "created_at": "2026-10-08T06:30:48.287673+00:00",
+      "last_active": "2026-10-08T06:30:48.287673+00:00",
+      "subscription_status": "active",
+      "subscription_expires": null,
+      "daily_usage": {},
+      "monthly_usage": {},
+      "total_usage": 0
+    },
+    "user_f1b2319ed366": {
+      "id": "user_f1b2319ed366",
+      "name": "kavv",
+      "email": "kavgam812@gmail.com",
+      "phone": "+94740654861",
+      "role": "mechanic",
+      "tier": "basic",
+      "workshop_name": "Independent Diagnostic Workshop",
+      "password_hash": "f1273e9dccfa8a18e9728b63ba7448a297c1c19249f60b0a10b5ee1d385c6d75",
+      "salt": "f71d1b8eaf4d4056",
+      "created_at": "2026-10-08T07:07:41.112522+00:00",
+      "last_active": "2026-10-08T07:08:07.419798+00:00",
+      "subscription_status": "active",
+      "subscription_expires": null,
+      "daily_usage": {
+        "2026-10-08": 2
+      },
+      "monthly_usage": {
+        "2026-10": 2
+      },
+      "total_usage": 2
+    }
+  },
+  "transactions": [
+    {
+      "transaction_ref": "AT-PAY-202610080630-DE44F7",
+      "user_id": "user_mech_001",
+      "user_email": "mechanic@workshop.com",
+      "tier": "plus",
+      "amount_lkr": 30000,
+      "payment_method": "card",
+      "status": "succeeded",
+      "timestamp": "2026-10-08T06:30:21.756924+00:00",
+      "gateway": "Developer Mock Sandbox Payment Gateway"
+    }
+  ],
+  "last_updated": "2026-10-08T07:22:50.671252+00:00"
+}
