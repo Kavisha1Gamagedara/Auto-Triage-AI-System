@@ -1314,10 +1314,10 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>AGENT LATENCIES:</span>
-                  <span style={{ color: '#00F0FF' }}>A1: <strong>{agentLatencies[1] ? `${agentLatencies[1]}ms` : '--'}</strong></span>
-                  <span style={{ color: '#3B82F6' }}>A2: <strong>{agentLatencies[2] ? `${agentLatencies[2]}ms` : '--'}</strong></span>
-                  <span style={{ color: '#10B981' }}>A3: <strong>{agentLatencies[3] ? `${agentLatencies[3]}ms` : '--'}</strong></span>
-                  <span style={{ color: '#FF5E14' }}>A4: <strong>{agentLatencies[4] ? `${agentLatencies[4]}ms` : '--'}</strong></span>
+                  <span className="hud-latency-pill a1">A1: <strong>{agentLatencies[1] ? `${agentLatencies[1]}ms` : '--'}</strong></span>
+                  <span className="hud-latency-pill a2">A2: <strong>{agentLatencies[2] ? `${agentLatencies[2]}ms` : '--'}</strong></span>
+                  <span className="hud-latency-pill a3">A3: <strong>{agentLatencies[3] ? `${agentLatencies[3]}ms` : '--'}</strong></span>
+                  <span className="hud-latency-pill a4">A4: <strong>{agentLatencies[4] ? `${agentLatencies[4]}ms` : '--'}</strong></span>
                 </div>
               </div>
 
@@ -1480,7 +1480,7 @@ export default function App() {
 
                     {/* VIN MOD-11 Checksum Verification */}
                     {triageResult.vehicle_details.vin && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: 6, padding: '8px 12px' }}>
+                      <div className="dossier-vin-banner">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <Barcode size={14} color="#00F0FF" />
                           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Decoded VIN:</span>
@@ -1540,19 +1540,19 @@ export default function App() {
                         <div className="tag-container" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {triageResult.dtc_hierarchy && triageResult.dtc_hierarchy.length > 0 ? (
                             triageResult.dtc_hierarchy.map((item, idx) => (
-                              <div key={idx} style={{ background: '#0d131f', border: '1px solid #1e293b', borderRadius: 6, padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div key={idx} className="dtc-hierarchy-row">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <span className="dtc-badge-red" style={{ margin: 0, background: 'rgba(0, 240, 255, 0.1)', borderColor: 'rgba(0, 240, 255, 0.4)', color: '#00F0FF' }}>
+                                  <span className="dtc-badge-red" style={{ margin: 0 }}>
                                     <Activity size={12} />
                                     {item.exact_code}
                                   </span>
-                                  <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>
+                                  <span className="dtc-hierarchy-desc">
                                     {item.description}
                                   </span>
                                 </div>
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
-                                  <span style={{ background: '#172033', padding: '2px 6px', borderRadius: 3 }}>Family: {item.family_code}</span>
-                                  <span style={{ background: '#172033', padding: '2px 6px', borderRadius: 3 }}>{item.system}</span>
+                                  <span className="dtc-family-chip">Family: {item.family_code}</span>
+                                  <span className="dtc-family-chip">{item.system}</span>
                                 </div>
                               </div>
                             ))
@@ -1606,7 +1606,7 @@ export default function App() {
 
                     {/* IR Canonical Query */}
                     {triageResult.canonical_query && (
-                      <div style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: 6, padding: '10px 12px' }}>
+                      <div className="canonical-query-box">
                         <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
                           <Terminal size={12} />
                           IR Canonical Query (Stopwords Stripped & Synonyms Expanded)
@@ -1784,13 +1784,13 @@ export default function App() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                             {/* Resolved Catalog Component */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                              <div style={{ background: '#120f0c', padding: '10px 12px', borderRadius: 6, border: '1px solid #2d1e13' }}>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Resolved Catalog Component</span>
-                                <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff' }}>{proc.resolved_part || 'Component Verified'}</span>
+                              <div className="procure-stat-card">
+                                <span className="procure-stat-label">Resolved Catalog Component</span>
+                                <span className="procure-stat-val">{proc.resolved_part || 'Component Verified'}</span>
                               </div>
-                              <div style={{ background: '#120f0c', padding: '10px 12px', borderRadius: 6, border: '1px solid #2d1e13' }}>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Match Strategy & Accuracy</span>
-                                <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#FF5E14' }}>
+                              <div className="procure-stat-card">
+                                <span className="procure-stat-label">Match Strategy & Accuracy</span>
+                                <span className="procure-stat-val highlight">
                                   {proc.match_method} ({Math.round((proc.match_confidence || 1) * 100)}%)
                                 </span>
                               </div>
@@ -1802,10 +1802,10 @@ export default function App() {
                                 {TIER_ORDER.filter((tier) => proc.tiers[tier] && proc.tiers[tier].parts?.length > 0).map((tier) => {
                                   const quote = proc.tiers[tier];
                                   return (
-                                    <div key={tier} style={{ background: '#0e0c0a', border: '1px solid #2d1e13', borderRadius: 8, padding: '12px 14px' }}>
+                                    <div key={tier} className="procure-quote-tier-card">
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-                                        <strong style={{ color: '#fdba74', fontSize: '0.88rem' }}>{TIER_LABELS[tier] || tier}</strong>
-                                        <strong style={{ color: 'var(--text-white)', fontFamily: 'var(--font-mono)', fontSize: '0.95rem' }}>
+                                        <strong className="tier-card-title">{TIER_LABELS[tier] || tier}</strong>
+                                        <strong className="tier-card-total">
                                           LKR {quote.tier_total_lkr?.toLocaleString()}
                                         </strong>
                                       </div>
@@ -1870,7 +1870,7 @@ export default function App() {
                     <span>{showRawJson ? '▲' : '▼'}</span>
                   </button>
                   {showRawJson && (
-                    <div style={{ padding: '14px', background: '#070707' }}>
+                    <div className="raw-json-body">
                       <pre className="a2a-code">
                         {JSON.stringify({ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }, null, 2)}
                       </pre>

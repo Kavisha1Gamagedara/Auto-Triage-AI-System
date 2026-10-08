@@ -5136,11 +5136,6 @@
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6);
 }
 
-[data-theme="light"] .holographic-graph-viewport {
-  background: radial-gradient(ellipse at 50% 50%, rgba(240, 243, 250, 0.8) 0%, rgba(225, 230, 240, 0.95) 100%);
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.05);
-}
-
 .graph-svg-layer {
   position: absolute;
   top: 0;
@@ -5202,12 +5197,6 @@
   position: relative;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-[data-theme="light"] .holo-node-disc {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .holo-node-container.selected .holo-node-disc {
@@ -5973,6 +5962,844 @@
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(255, 30, 39, 0.6);
 }
+
+/* ==========================================================================
+   SEMANTIC DOSSIER SUB-COMPONENTS (DARK BASELINE)
+   ========================================================================== */
+
+.dossier-vin-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0a0f1d;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.dtc-hierarchy-row {
+  background: #0d131f;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dtc-hierarchy-desc {
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.dtc-family-chip {
+  background: #172033;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.canonical-query-box {
+  background: #0a0f1d;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.procure-stat-card {
+  background: #120f0c;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #2d1e13;
+}
+
+.procure-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: block;
+}
+
+.procure-stat-val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.procure-stat-val.highlight {
+  color: #FF5E14;
+}
+
+.procure-quote-tier-card {
+  background: #0e0c0a;
+  border: 1px solid #2d1e13;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.tier-card-title {
+  color: #fdba74;
+  font-size: 0.88rem;
+}
+
+.tier-card-total {
+  color: var(--text-white);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.raw-json-body {
+  padding: 14px;
+  background: #070707;
+}
+
+/* ==========================================================================
+   LIGHT THEME REFINEMENT FOR CONSOLE & HOLOGRAPHIC PIPELINE
+   ========================================================================== */
+
+/* 1. Triage Console & Intake Deck */
+[data-theme="light"] .triage-console-section {
+  background: var(--bg-secondary);
+  border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .intake-card-wide {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .card-heading {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .session-chip {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .mode-toggle-bar {
+  background: #e2e8f0;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .mode-tab {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .mode-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .mode-tab.active {
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  border-bottom: 2px solid var(--accent-primary);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .preset-title {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .preset-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .preset-btn:hover {
+  background: #fff7ed;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+[data-theme="light"] .input-labels {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .console-textarea {
+  background: #ffffff;
+  border: 1px solid var(--border-bright);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .console-textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+[data-theme="light"] .form-label {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .form-input {
+  background: #ffffff;
+  border: 1px solid var(--border-bright);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] .form-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* 2. Holographic Wide Stage - Vibrant Cyber Light Theme */
+[data-theme="light"] .console-holographic-wide-stage {
+  border: 1.5px solid rgba(14, 165, 233, 0.28);
+  box-shadow: 0 16px 44px rgba(14, 165, 233, 0.08), 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .live-stage-hud-banner {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.12) 0%, rgba(59, 130, 246, 0.10) 35%, rgba(16, 185, 129, 0.10) 70%, rgba(255, 94, 20, 0.12) 100%);
+  border: 1.5px solid rgba(6, 182, 212, 0.45);
+  color: #0369a1;
+  box-shadow: 0 4px 18px rgba(6, 182, 212, 0.12);
+}
+
+[data-theme="light"] .hud-stage-dot {
+  background: #0891b2;
+  box-shadow: 0 0 10px #0891b2;
+}
+
+[data-theme="light"] .holographic-pipeline-root {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid rgba(14, 165, 233, 0.25);
+  box-shadow: 0 12px 36px rgba(14, 165, 233, 0.06);
+}
+
+[data-theme="light"] .pipeline-top-bar {
+  border-bottom: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+[data-theme="light"] .pipeline-heading {
+  color: #0f172a;
+}
+
+[data-theme="light"] .pipeline-sim-btn {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  font-weight: 800;
+}
+
+[data-theme="light"] .pipeline-sim-btn:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  color: #ffffff;
+}
+
+[data-theme="light"] .pipeline-sim-btn.simulating {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+}
+
+[data-theme="light"] .pipeline-icon-btn {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .pipeline-icon-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+[data-theme="light"] .pipeline-icon-btn.active {
+  background: #ecfeff;
+  border-color: #06b6d4;
+  color: #0891b2;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+[data-theme="light"] .pipeline-sla-pill {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+}
+
+[data-theme="light"] .pipeline-sla-pill strong {
+  color: #ea580c;
+}
+
+/* Radiant Multi-Aura Cyber Viewport */
+[data-theme="light"] .holographic-graph-viewport {
+  position: relative;
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(circle 220px at 13% 50%, rgba(6, 182, 212, 0.22), transparent 70%),
+    radial-gradient(circle 220px at 50% 25%, rgba(59, 130, 246, 0.20), transparent 70%),
+    radial-gradient(circle 220px at 50% 75%, rgba(16, 185, 129, 0.20), transparent 70%),
+    radial-gradient(circle 220px at 87% 50%, rgba(255, 94, 20, 0.24), transparent 70%),
+    linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+  border: 1.5px solid rgba(14, 165, 233, 0.3);
+  box-shadow: 0 14px 40px rgba(14, 165, 233, 0.09), inset 0 0 40px rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .graph-grid-line {
+  stroke: rgba(14, 165, 233, 0.16);
+}
+
+[data-theme="light"] .graph-flow-pill-bg {
+  fill: #ffffff;
+  stroke: #0284c7;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 4px 8px rgba(2, 132, 199, 0.2));
+}
+
+[data-theme="light"] .graph-flow-pill-text {
+  fill: #0369a1;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+/* Color-Coded Agent Node Discs in Light Theme */
+[data-theme="light"] .node-1 .holo-node-disc {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ecfeff 75%, #cffafe 100%);
+  border: 2.5px solid #06b6d4;
+  box-shadow: 0 10px 26px rgba(6, 182, 212, 0.32), 0 0 16px rgba(6, 182, 212, 0.22), inset 0 2px 4px #ffffff;
+}
+[data-theme="light"] .node-1 .node-center-icon {
+  color: #0891b2;
+}
+[data-theme="light"] .node-1 .node-stage-tag {
+  background: #cffafe;
+  border: 1px solid #67e8f9;
+  color: #0e7490;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+[data-theme="light"] .node-1 .node-agent-name {
+  color: #0e7490;
+}
+[data-theme="light"] .node-1 .node-agent-sub {
+  color: #0891b2;
+  font-weight: 600;
+}
+[data-theme="light"] .node-1 .latency-micro-badge {
+  background: #ecfeff;
+  border: 1px solid #06b6d4;
+  color: #0891b2;
+}
+[data-theme="light"] .node-1 .status-radar-ring.idle {
+  border: 2px dashed rgba(6, 182, 212, 0.45);
+}
+
+[data-theme="light"] .node-2 .holo-node-disc {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #eff6ff 75%, #dbeafe 100%);
+  border: 2.5px solid #3b82f6;
+  box-shadow: 0 10px 26px rgba(59, 130, 246, 0.32), 0 0 16px rgba(59, 130, 246, 0.22), inset 0 2px 4px #ffffff;
+}
+[data-theme="light"] .node-2 .node-center-icon {
+  color: #2563eb;
+}
+[data-theme="light"] .node-2 .node-stage-tag {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+[data-theme="light"] .node-2 .node-agent-name {
+  color: #1d4ed8;
+}
+[data-theme="light"] .node-2 .node-agent-sub {
+  color: #2563eb;
+  font-weight: 600;
+}
+[data-theme="light"] .node-2 .latency-micro-badge {
+  background: #eff6ff;
+  border: 1px solid #3b82f6;
+  color: #1d4ed8;
+}
+[data-theme="light"] .node-2 .status-radar-ring.idle {
+  border: 2px dashed rgba(59, 130, 246, 0.45);
+}
+
+[data-theme="light"] .node-3 .holo-node-disc {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ecfdf5 75%, #d1fae5 100%);
+  border: 2.5px solid #10b981;
+  box-shadow: 0 10px 26px rgba(16, 185, 129, 0.32), 0 0 16px rgba(16, 185, 129, 0.22), inset 0 2px 4px #ffffff;
+}
+[data-theme="light"] .node-3 .node-center-icon {
+  color: #059669;
+}
+[data-theme="light"] .node-3 .node-stage-tag {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  color: #047857;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+[data-theme="light"] .node-3 .node-agent-name {
+  color: #047857;
+}
+[data-theme="light"] .node-3 .node-agent-sub {
+  color: #059669;
+  font-weight: 600;
+}
+[data-theme="light"] .node-3 .latency-micro-badge {
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+  color: #047857;
+}
+[data-theme="light"] .node-3 .status-radar-ring.idle {
+  border: 2px dashed rgba(16, 185, 129, 0.45);
+}
+
+[data-theme="light"] .node-4 .holo-node-disc {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #fff7ed 75%, #ffedd5 100%);
+  border: 2.5px solid #ff5e14;
+  box-shadow: 0 10px 26px rgba(255, 94, 20, 0.35), 0 0 16px rgba(255, 94, 20, 0.25), inset 0 2px 4px #ffffff;
+}
+[data-theme="light"] .node-4 .node-center-icon {
+  color: #ea580c;
+}
+[data-theme="light"] .node-4 .node-stage-tag {
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+[data-theme="light"] .node-4 .node-agent-name {
+  color: #c2410c;
+}
+[data-theme="light"] .node-4 .node-agent-sub {
+  color: #ea580c;
+  font-weight: 600;
+}
+[data-theme="light"] .node-4 .latency-micro-badge {
+  background: #fff7ed;
+  border: 1px solid #ff5e14;
+  color: #c2410c;
+}
+[data-theme="light"] .node-4 .status-radar-ring.idle {
+  border: 2px dashed rgba(255, 94, 20, 0.45);
+}
+
+/* Selected States with Radiant Aura */
+[data-theme="light"] .holo-node-container.node-1.selected .holo-node-disc {
+  box-shadow: 0 0 32px rgba(6, 182, 212, 0.6), 0 10px 24px rgba(6, 182, 212, 0.35);
+  border-color: #0891b2;
+}
+[data-theme="light"] .holo-node-container.node-2.selected .holo-node-disc {
+  box-shadow: 0 0 32px rgba(59, 130, 246, 0.6), 0 10px 24px rgba(59, 130, 246, 0.35);
+  border-color: #2563eb;
+}
+[data-theme="light"] .holo-node-container.node-3.selected .holo-node-disc {
+  box-shadow: 0 0 32px rgba(16, 185, 129, 0.6), 0 10px 24px rgba(16, 185, 129, 0.35);
+  border-color: #059669;
+}
+[data-theme="light"] .holo-node-container.node-4.selected .holo-node-disc {
+  box-shadow: 0 0 32px rgba(255, 94, 20, 0.65), 0 10px 24px rgba(255, 94, 20, 0.35);
+  border-color: #ea580c;
+}
+
+/* Active & Complete Node States */
+[data-theme="light"] .holo-node-container.status-working .holo-node-disc {
+  border-color: #ffffff;
+  box-shadow: 0 0 40px var(--agent-glow-color), 0 12px 30px rgba(0, 0, 0, 0.15), inset 0 0 16px rgba(255, 255, 255, 0.8);
+}
+[data-theme="light"] .holo-node-container.status-working .node-center-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 0 8px var(--agent-glow-color));
+}
+[data-theme="light"] .holo-node-container.status-completed .holo-node-disc {
+  border-color: #10b981;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3), 0 0 16px rgba(16, 185, 129, 0.2);
+}
+[data-theme="light"] .holo-node-container.status-completed .node-center-icon {
+  color: #059669;
+}
+[data-theme="light"] .node-check-pip {
+  background: #10b981;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+}
+[data-theme="light"] .node-check-pip svg {
+  color: #ffffff;
+}
+
+[data-theme="light"] .status-micro-pill.idle {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="light"] .status-micro-pill.working {
+  background: linear-gradient(135deg, #0284c7, #06b6d4);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+  border: none;
+}
+
+[data-theme="light"] .status-micro-pill.completed {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  border: none;
+}
+
+/* Colorful Inspector Drawer */
+[data-theme="light"] .pipeline-inspector-drawer {
+  background: #ffffff;
+  border: 1.5px solid var(--border-medium);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+}
+[data-theme="light"] .pipeline-inspector-drawer.selected-agent-1 {
+  border-top: 4px solid #06b6d4;
+  box-shadow: 0 14px 36px rgba(6, 182, 212, 0.12);
+}
+[data-theme="light"] .pipeline-inspector-drawer.selected-agent-2 {
+  border-top: 4px solid #3b82f6;
+  box-shadow: 0 14px 36px rgba(59, 130, 246, 0.12);
+}
+[data-theme="light"] .pipeline-inspector-drawer.selected-agent-3 {
+  border-top: 4px solid #10b981;
+  box-shadow: 0 14px 36px rgba(16, 185, 129, 0.12);
+}
+[data-theme="light"] .pipeline-inspector-drawer.selected-agent-4 {
+  border-top: 4px solid #ff5e14;
+  box-shadow: 0 14px 36px rgba(255, 94, 20, 0.12);
+}
+
+[data-theme="light"] .inspector-title-box {
+  color: #0f172a;
+}
+[data-theme="light"] .inspector-tech-pill {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 700;
+}
+[data-theme="light"] .inspector-latency-chip {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+
+[data-theme="light"] .inspector-info-card:nth-child(1) {
+  background: linear-gradient(135deg, #ffffff 40%, #ecfeff 100%);
+  border: 1.5px solid #a5f3fc;
+}
+[data-theme="light"] .inspector-info-card:nth-child(1) .inspector-label {
+  color: #0891b2;
+}
+[data-theme="light"] .inspector-info-card:nth-child(2) {
+  background: linear-gradient(135deg, #ffffff 40%, #eff6ff 100%);
+  border: 1.5px solid #bfdbfe;
+}
+[data-theme="light"] .inspector-info-card:nth-child(2) .inspector-label {
+  color: #2563eb;
+}
+[data-theme="light"] .inspector-info-card:nth-child(3) {
+  background: linear-gradient(135deg, #ffffff 40%, #ecfdf5 100%);
+  border: 1.5px solid #a7f3d0;
+}
+[data-theme="light"] .inspector-info-card:nth-child(3) .inspector-label {
+  color: #059669;
+}
+
+/* 3. Executive Output Dossier */
+[data-theme="light"] .dossier-executive-header {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .dossier-vehicle-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .dossier-body-pill {
+  background: #f1f5f9;
+  border: 1px solid var(--border-medium);
+  color: #334155;
+}
+
+[data-theme="light"] .dossier-stat-chip {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+  color: #64748b;
+}
+
+[data-theme="light"] .dossier-stat-chip strong {
+  color: #0f172a;
+}
+
+[data-theme="light"] .dossier-action-btn {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+  color: #1e293b;
+}
+
+[data-theme="light"] .dossier-action-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+[data-theme="light"] .dossier-card {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .dossier-sla-tag {
+  background: #f1f5f9;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .spec-badge {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .spec-badge strong {
+  color: #0f172a;
+}
+
+[data-theme="light"] .dossier-vin-banner {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .dtc-hierarchy-row {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .dtc-hierarchy-desc {
+  color: #1e293b;
+}
+
+[data-theme="light"] .dtc-family-chip {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .canonical-query-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .canonical-query-box code {
+  color: #0f172a;
+}
+
+[data-theme="light"] .fuzzy-item {
+  background: #ffffff;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .metric-tag {
+  background: #f1f5f9;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .root-cause-hero-box {
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.08), #ffffff);
+  border-color: rgba(234, 88, 12, 0.35);
+  border-left: 5px solid var(--accent-primary);
+}
+
+[data-theme="light"] .root-cause-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .root-cause-sub {
+  color: #64748b;
+}
+
+[data-theme="light"] .diagnostic-detail-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .detail-text {
+  color: #1e293b;
+}
+
+[data-theme="light"] .dispatch-preview-box {
+  background: #f8fafc;
+  border: 1px dashed var(--border-bright);
+}
+
+[data-theme="light"] .dispatch-target-card {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .target-name {
+  color: #0f172a;
+}
+
+[data-theme="light"] .procure-stat-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .procure-stat-val {
+  color: #0f172a;
+}
+
+[data-theme="light"] .procure-quote-tier-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .tier-card-title {
+  color: #c2410c;
+}
+
+[data-theme="light"] .tier-card-total {
+  color: #0f172a;
+}
+
+[data-theme="light"] .raw-json-accordion {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .raw-json-toggle-btn {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+[data-theme="light"] .raw-json-code-box {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* 4. Error Dossier in Light Theme */
+[data-theme="light"] .dossier-error-banner {
+  background: #fef2f2;
+  border: 1px solid #ef4444;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.1);
+}
+
+[data-theme="light"] .error-badge-title {
+  color: #b91c1c;
+}
+
+[data-theme="light"] .error-lead-message {
+  color: #991b1b;
+}
+
+[data-theme="light"] .error-checklist-box {
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  color: #374151;
+}
+
+[data-theme="light"] .error-checklist-box strong {
+  color: #b91c1c;
+}
+
+[data-theme="light"] .btn-outline-error {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+[data-theme="light"] .btn-outline-error:hover {
+  background: #fef2f2;
+}
+
+/* 5. Idle Empty Scanner Card in Light Theme */
+[data-theme="light"] .results-empty {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+}
+
+[data-theme="light"] .empty-scanner-icon {
+  background: #f1f5f9;
+  border: 1px solid var(--border-medium);
+}
+
+/* 6. High-Contrast Latency & Card Headings */
+.hud-latency-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s ease;
+}
+.hud-latency-pill.a1 { color: #00F0FF; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.35); }
+.hud-latency-pill.a2 { color: #3B82F6; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); }
+.hud-latency-pill.a3 { color: #10B981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); }
+.hud-latency-pill.a4 { color: #FF5E14; background: rgba(255, 94, 20, 0.12); border: 1px solid rgba(255, 94, 20, 0.35); }
+
+[data-theme="light"] .hud-latency-pill.a1 {
+  color: #0891b2;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  box-shadow: 0 1px 4px rgba(6, 182, 212, 0.15);
+}
+[data-theme="light"] .hud-latency-pill.a2 {
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15);
+}
+[data-theme="light"] .hud-latency-pill.a3 {
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.15);
+}
+[data-theme="light"] .hud-latency-pill.a4 {
+  color: #ea580c;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  box-shadow: 0 1px 4px rgba(255, 94, 20, 0.15);
+}
+
+[data-theme="light"] .card-agent1 .dossier-agent-title { color: #0284c7; }
+[data-theme="light"] .card-agent2 .dossier-agent-title { color: #2563eb; }
+[data-theme="light"] .card-agent3 .dossier-agent-title { color: #059669; }
+[data-theme="light"] .card-agent4 .dossier-agent-title { color: #ea580c; }
+
+[data-theme="light"] .dtc-badge-red {
+  background: rgba(234, 88, 12, 0.08);
+  border-color: rgba(234, 88, 12, 0.35);
+  color: #c2410c;
+}
+
+
 
 
 
