@@ -194,6 +194,40 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // Admin: Create a new custom subscription tier
+  const adminCreateTier = async (tierPayload) => {
+    if (!token) throw new Error('Admin authorization required.');
+    const res = await fetch(`${API_BASE_URL}/api/v1/admin/tiers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(tierPayload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to create subscription tier.');
+    await fetchTiers();
+    await refreshUser();
+    return data;
+  };
+
+  // Admin: Delete a custom subscription tier
+  const adminDeleteTier = async (tierId) => {
+    if (!token) throw new Error('Admin authorization required.');
+    const res = await fetch(`${API_BASE_URL}/api/v1/admin/tiers/${tierId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to delete subscription tier.');
+    await fetchTiers();
+    await refreshUser();
+    return data;
+  };
+
   const value = {
     user,
     token,
@@ -204,6 +238,8 @@ export function AuthProvider({ children }) {
     tiers,
     fetchTiers,
     adminUpdateTier,
+    adminCreateTier,
+    adminDeleteTier,
     login,
     register,
     logout,

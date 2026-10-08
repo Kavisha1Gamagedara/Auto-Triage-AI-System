@@ -200,11 +200,75 @@ class SubscriptionStore:
         if tier_id not in self.tiers:
             raise ValueError(f"Subscription tier '{tier_id}' does not exist.")
         tier = self.tiers[tier_id]
-        for field in ["price_lkr", "limit", "period", "description", "badge", "name", "is_unlimited"]:
+        for field in ["price_lkr", "limit", "period", "description", "badge", "name", "is_unlimited", "color", "features"]:
             if field in updates and updates[field] is not None:
                 tier[field] = updates[field]
-        self._save()
+        self._save(tier=tier)
         return tier
+
+    def create_tier(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Admin override: Creates a brand new tier and persists to MongoDB."""
+        import re
+        name = (payload.get("name") or "").strip()
+        if not name:
+            raise ValueError("Tier name is required.")
+
+        raw_id = payload.get("id")
+        if not raw_id or not str(raw_id).strip():
+            tier_id = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+        else:
+            tier_id = re.sub(r'[^a-z0-9_-]+', '_', str(raw_id).strip().lower()).strip('_')
+
+        if not tier_id:
+            tier_id = f"tier_{uuid.uuid4().hex[:6]}"
+
+        if tier_id in self.tiers:
+            raise ValueError(f"A tier with ID '{tier_id}' already exists. Please choose a unique name or ID.")
+
+        is_unlimited = bool(payload.get("is_unlimited", False))
+        limit = 999999 if is_unlimited else max(1, int(payload.get("limit", 100)))
+
+        features = payload.get("features")
+        if not features or not isinstance(features, list) or len(features) == 0:
+            features = [
+                f"{'Unlimited' if is_unlimited else limit} Diagnoses per {payload.get('period', 'monthly').capitalize()}",
+                "Full Multi-Agent Particle Pipeline",
+                "SAE DTC Cascade Diagnostics",
+                "OEM Workshop Manual Dense Vector RAG",
+                "Automated BOM Catalog & Parts Resolver"
+            ]
+
+        new_tier = {
+            "id": tier_id,
+            "name": name,
+            "price_lkr": max(0, int(payload.get("price_lkr", 0))),
+            "limit": limit,
+            "period": payload.get("period", "monthly"),
+            "description": payload.get("description") or f"Custom {name} diagnostic capacity tier.",
+            "features": features,
+            "badge": (payload.get("badge") or "CUSTOM").upper(),
+            "is_unlimited": is_unlimited,
+            "color": payload.get("color") or "#00F0FF"
+        }
+
+        self.tiers[tier_id] = new_tier
+        self._save(tier=new_tier)
+        return new_tier
+
+    def delete_tier(self, tier_id: str) -> bool:
+        """Admin override: Deletes a custom tier (cannot delete standard core tiers)."""
+        if tier_id in ["basic", "plus", "pro", "ultra"]:
+            raise ValueError("Cannot delete standard core system tiers (Basic, Plus, Pro, Ultra).")
+        if tier_id not in self.tiers:
+            raise ValueError(f"Tier '{tier_id}' not found.")
+        del self.tiers[tier_id]
+        if self.mongo_db is not None:
+            try:
+                self.mongo_db.tiers.delete_one({"id": tier_id})
+            except Exception as e:
+                print(f"[SubscriptionStore] Error deleting tier from MongoDB: {e}")
+        self._save()
+        return True
 
     def _seed_default_accounts(self):
         """Seeds initial accounts for quick demo and testing if not existing."""
