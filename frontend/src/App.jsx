@@ -974,7 +974,7 @@ export default function App() {
                       }}
                     >
                       <CreditCard size={13} color="#10B981" />
-                      <span>Developer Payment Sandbox</span>
+                      <span>Payment Gateway</span>
                     </button>
 
                     {isAdmin && (
@@ -1822,35 +1822,6 @@ export default function App() {
 
             {/* Full-Width Panoramic Holographic 4-Agent Particle DAG Stage */}
             <div id="holographic-flow-stage" className="console-holographic-wide-stage">
-              {/* Live Execution HUD Ticker Banner */}
-              <div className="live-stage-hud-banner">
-                <div className="hud-ticker-left">
-                  <span className="hud-stage-dot" />
-                  <span style={{ fontWeight: 800 }}>
-                    {loading ? (
-                      pipelineStage === 'agent1' ? 'STAGE 01/04: AGENT 1 INGESTION & NHTSA VPIC VALIDATION IN FLIGHT' :
-                      pipelineStage === 'agent2' ? 'STAGE 02/04: AGENT 2 GROQ LLAMA-3 CAUSAL REASONING IN FLIGHT' :
-                      pipelineStage === 'agent3' ? 'STAGE 03/04: AGENT 3 DENSE VECTOR OEM MANUAL RAG IN FLIGHT' :
-                      pipelineStage === 'agent4' ? 'STAGE 04/04: AGENT 4 BOM CATALOG PROCUREMENT IN FLIGHT' :
-                      'AUTONOMOUS MULTI-AGENT SYNTHESIS IN PROGRESS...'
-                    ) : pipelineStage === 'complete' ? (
-                      'WORKFLOW CONCLUDED // ALL 4 AGENTS SYNCHRONIZED & SYNTHESIZED'
-                    ) : pipelineStage === 'error' || error ? (
-                      'EXECUTION HALTED // EXCEPTION CAUGHT IN GATEWAY PIPELINE'
-                    ) : (
-                      'HOLOGRAPHIC PIPELINE READY // AWAITING VEHICLE DIAGNOSTIC COMPLAINT'
-                    )}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>AGENT LATENCIES:</span>
-                  <span className="hud-latency-pill a1">A1: <strong>{agentLatencies[1] ? `${agentLatencies[1]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a2">A2: <strong>{agentLatencies[2] ? `${agentLatencies[2]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a3">A3: <strong>{agentLatencies[3] ? `${agentLatencies[3]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a4">A4: <strong>{agentLatencies[4] ? `${agentLatencies[4]}ms` : '--'}</strong></span>
-                </div>
-              </div>
-
               {/* Full-Width Panoramic 4-Agent Holographic Particle Canvas */}
               <HolographicAgentPipelineGraph 
                 activeStage={pipelineStage} 
@@ -2442,9 +2413,6 @@ export default function App() {
       {/* Diagnostic & DTC Coverage Matrix (#matrix) */}
       <section id="matrix" className="matrix-section">
         <h2 className="section-title">Diagnostic Trouble Code Matrix</h2>
-        <p style={{ color: 'var(--text-gray)', maxWidth: 640, marginTop: -12 }}>
-          Agent 1 continuously parses all standard SAE J2012 OBD-II diagnostic fault categories.
-        </p>
 
         <div className="matrix-grid">
           {/* Powertrain Card */}

@@ -123,7 +123,7 @@ export default function SubscriptionTiersModal({
         {/* Modal Header */}
         <div className="tiers-modal-header">
           <div>
-            <div className="section-tag" style={{ marginBottom: 4 }}>// WORKSHOP CAPACITY & SUBSCRIPTION PLANS</div>
+           
             <h2 className="tiers-modal-title">
               <Sparkles size={22} color="var(--accent-primary)" />
               Choose Your Auto-Triage Diagnostic Capacity
@@ -245,11 +245,11 @@ export default function SubscriptionTiersModal({
           })}
         </div>
 
-        {/* Developer Payment Notice */}
+        {/* Secure Payment Notice */}
         <div className="tiers-modal-footer-notice">
           <CreditCard size={15} color="var(--accent-primary)" />
           <span>
-            Upgrades utilize the <strong>Developer Sandbox Payment Gateway</strong> supporting instant mock card checkout & test decline simulations in LKR.
+            Transactions are secured by <strong>256-Bit SSL Encryption</strong>. Instant subscription activation supporting Visa, Mastercard, LankaQR & Direct Bank Settlement in LKR.
           </span>
         </div>
       </div>

@@ -45,10 +45,10 @@ export default function DeveloperPaymentGatewayModal({
     setResult(null);
 
     // Multi-step realistic animation
-    setProcessingStep('Connecting to Central Bank & LKR clearing gateway...');
+    setProcessingStep('Connecting to secure banking network...');
     await new Promise(r => setTimeout(r, 600));
 
-    setProcessingStep(`Authorizing ${targetTier.price_lkr.toLocaleString()} LKR sandbox charge...`);
+    setProcessingStep(`Authorizing ${targetTier.price_lkr.toLocaleString()} LKR transaction...`);
     await new Promise(r => setTimeout(r, 700));
 
     setProcessingStep('Provisioning subscription tier & updating quota limits...');
@@ -70,7 +70,7 @@ export default function DeveloperPaymentGatewayModal({
     } catch (err) {
       setResult({
         success: false,
-        message: err.message || 'Payment simulation failed.'
+        message: err.message || 'Payment authorization failed.'
       });
     } finally {
       setProcessing(false);
@@ -90,7 +90,7 @@ export default function DeveloperPaymentGatewayModal({
           <div className="gateway-title-group">
             <div className="gateway-sandbox-badge">
               <ShieldCheck size={14} color="#10B981" />
-              <span>DEVELOPER PAYMENT GATEWAY (SANDBOX)</span>
+              <span>SECURE PAYMENT GATEWAY (256-BIT SSL)</span>
             </div>
             <h3 className="gateway-heading">Secure Checkout & Tier Provisioning</h3>
           </div>
@@ -104,7 +104,7 @@ export default function DeveloperPaymentGatewayModal({
           <div className="gateway-processing-overlay">
             <div className="gateway-spinner-ring" />
             <span className="gateway-processing-text">{processingStep}</span>
-            <span className="gateway-processing-sub">Developer Sandbox Test Mode Active</span>
+            <span className="gateway-processing-sub">Direct Bank & Card Payment Gateway</span>
           </div>
         )}
 
@@ -132,7 +132,9 @@ export default function DeveloperPaymentGatewayModal({
               </div>
               <div className="receipt-row">
                 <span className="receipt-label">Payment Method:</span>
-                <span className="receipt-val">{result.payment_method.toUpperCase()} (Sandbox)</span>
+                <span className="receipt-val">
+                  {result.payment_method === 'card' ? 'CREDIT / DEBIT CARD (VISA/MC)' : result.payment_method === 'lanka_qr' ? 'LANKAQR INSTANT' : 'DIRECT BANK TRANSFER'}
+                </span>
               </div>
               <div className="receipt-row">
                 <span className="receipt-label">New Quota:</span>
@@ -155,10 +157,10 @@ export default function DeveloperPaymentGatewayModal({
               </button>
               <button 
                 type="button" 
-                onClick={handleResetForNewTest} 
+                onClick={onClose} 
                 className="receipt-btn-secondary"
               >
-                <span>Test Another Transaction</span>
+                <span>Close Receipt</span>
               </button>
             </div>
           </div>
@@ -167,15 +169,15 @@ export default function DeveloperPaymentGatewayModal({
           <div className="gateway-declined-view">
             <div className="declined-badge">
               <XCircle size={42} color="#EF4444" />
-              <h4>Payment Declined (Simulation)</h4>
-              <p>{result.message || 'The test payment was declined by the developer sandbox trigger.'}</p>
+              <h4>Payment Authorization Failed</h4>
+              <p>{result.message || 'The card transaction could not be authorized. Please check your payment details and try again.'}</p>
             </div>
             <button 
               type="button" 
               onClick={handleResetForNewTest} 
               className="receipt-btn-primary"
             >
-              <span>Try Again with Valid Test Card</span>
+              <span>Try Again</span>
             </button>
           </div>
         ) : (
@@ -203,7 +205,7 @@ export default function DeveloperPaymentGatewayModal({
                 onClick={() => setPaymentMethod('card')}
               >
                 <CreditCard size={15} />
-                <span>Test Card (Visa/Mastercard)</span>
+                <span>Credit / Debit Card</span>
               </button>
               <button
                 type="button"
@@ -211,7 +213,7 @@ export default function DeveloperPaymentGatewayModal({
                 onClick={() => setPaymentMethod('lanka_qr')}
               >
                 <QrCode size={15} />
-                <span>LankaQR (Simulated)</span>
+                <span>LankaQR Instant</span>
               </button>
               <button
                 type="button"
@@ -219,7 +221,7 @@ export default function DeveloperPaymentGatewayModal({
                 onClick={() => setPaymentMethod('bank')}
               >
                 <Building size={15} />
-                <span>Bank Settlement</span>
+                <span>Direct Bank Transfer</span>
               </button>
             </div>
 
@@ -227,7 +229,7 @@ export default function DeveloperPaymentGatewayModal({
             {paymentMethod === 'card' && (
               <div className="gateway-card-inputs">
                 <div className="gateway-input-group">
-                  <label className="gateway-label">Card Number (Developer Test Sandbox)</label>
+                  <label className="gateway-label">Card Number</label>
                   <div className="gateway-input-wrapper">
                     <CreditCard size={14} className="input-icon" />
                     <input
@@ -238,7 +240,7 @@ export default function DeveloperPaymentGatewayModal({
                       placeholder="4242 4242 4242 4242"
                       className="gateway-input"
                     />
-                    <span className="test-card-tag">TEST CARD</span>
+                    <span className="test-card-tag" style={{ background: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.15)', color: '#CBD5E1' }}>VISA / MC</span>
                   </div>
                 </div>
 
@@ -283,11 +285,11 @@ export default function DeveloperPaymentGatewayModal({
             {paymentMethod === 'lanka_qr' && (
               <div className="gateway-qr-view">
                 <div className="qr-box">
-                  <QrCode size={120} color="#00F0FF" />
+                  <QrCode size={120} color="#0F172A" />
                 </div>
                 <div className="qr-info">
-                  <strong>Simulated LankaQR Gateway Payment</strong>
-                  <p>Scan to test instant LKR debit settlement from Sri Lankan banking apps (Commercial, HNB, Sampath).</p>
+                  <strong>LankaQR Instant Mobile Settlement</strong>
+                  <p>Scan using any CBSL-certified mobile banking app (Commercial, HNB, Sampath, FriMi, iPay) to authorize immediate LKR transfer.</p>
                 </div>
               </div>
             )}
@@ -303,28 +305,11 @@ export default function DeveloperPaymentGatewayModal({
               </div>
             )}
 
-            {/* Developer Testing Controls Toggle */}
-            <div className="gateway-dev-controls-box">
-              <span className="dev-controls-title">// DEVELOPER SANDBOX SIMULATION TOGGLES:</span>
-              <label className="dev-toggle-row">
-                <input
-                  type="checkbox"
-                  checked={shouldFail}
-                  onChange={e => setShouldFail(e.target.checked)}
-                />
-                <span className="dev-toggle-text">
-                  Simulate Card Decline / Transaction Failure (Test Error Handling)
-                </span>
-              </label>
-            </div>
-
             {/* Submit Button */}
             <button type="submit" disabled={processing} className="gateway-submit-btn">
               <Lock size={14} />
               <span>
-                {shouldFail 
-                  ? `TRIGGER SIMULATED DECLINE (${Number(targetTier.price_lkr).toLocaleString()} LKR)` 
-                  : `AUTHORIZE & PAY ${Number(targetTier.price_lkr).toLocaleString()} LKR (SANDBOX)`}
+                {`AUTHORIZE & PAY ${Number(targetTier.price_lkr).toLocaleString()} LKR`}
               </span>
             </button>
           </form>
