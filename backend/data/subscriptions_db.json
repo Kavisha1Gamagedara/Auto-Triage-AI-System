@@ -11,12 +11,16 @@
       "password_hash": "b77c1b300a816ab072700455aa10a55514da70d99c5192db8cd85d7569778d10",
       "salt": "324dc8e4caee4cc2",
       "created_at": "2026-10-08T06:12:10.618131+00:00",
-      "last_active": "2026-10-08T09:17:23.677836+00:00",
+      "last_active": "2026-10-08T14:46:18.112369+00:00",
       "subscription_status": "active",
       "subscription_expires": null,
-      "daily_usage": {},
-      "monthly_usage": {},
-      "total_usage": 0
+      "daily_usage": {
+        "2026-10-08": 1
+      },
+      "monthly_usage": {
+        "2026-10": 1
+      },
+      "total_usage": 1
     },
     "user_mech_001": {
       "id": "user_mech_001",
@@ -99,30 +103,7 @@
       "total_usage": 2
     }
   },
-  "transactions": [
-    {
-      "transaction_ref": "AT-PAY-202610080630-DE44F7",
-      "user_id": "user_mech_001",
-      "user_email": "mechanic@workshop.com",
-      "tier": "plus",
-      "amount_lkr": 30000,
-      "payment_method": "card",
-      "status": "succeeded",
-      "timestamp": "2026-10-08T06:30:21.756924+00:00",
-      "gateway": "Developer Mock Sandbox Payment Gateway"
-    },
-    {
-      "transaction_ref": "AT-PAY-202610080912-47CDA2",
-      "user_id": "user_f1b2319ed366",
-      "user_email": "kavgam812@gmail.com",
-      "tier": "plus",
-      "amount_lkr": 30000,
-      "payment_method": "card",
-      "status": "succeeded",
-      "timestamp": "2026-10-08T09:12:26.588781+00:00",
-      "gateway": "Developer Mock Sandbox Payment Gateway"
-    }
-  ],
+  "transactions": [],
   "tiers": {
     "basic": {
       "id": "basic",
@@ -196,5 +177,5 @@
       "is_unlimited": true
     }
   },
-  "last_updated": "2026-10-08T09:32:46.831142+00:00"
+  "last_updated": "2026-10-08T14:46:19.289420+00:00"
 }

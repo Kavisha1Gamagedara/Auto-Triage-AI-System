@@ -28,7 +28,8 @@ import {
   Tag,
   CreditCard,
   Plus,
-  Minus
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { TIERS_DATA } from './SubscriptionTiersModal';
@@ -39,6 +40,8 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
     fetchAdminMetrics, 
     adminUpdateSubscription, 
     adminUpdateTier, 
+    adminCreateTier,
+    adminDeleteTier,
     tiers, 
     fetchTiers, 
     user: currentUser, 
@@ -69,6 +72,21 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
   const [tierDescription, setTierDescription] = useState('');
   const [tierBadge, setTierBadge] = useState('');
   const [tierSaving, setTierSaving] = useState(false);
+
+  // Create New Tier Modal state
+  const [showCreateTierModal, setShowCreateTierModal] = useState(false);
+  const [newTierName, setNewTierName] = useState('');
+  const [newTierId, setNewTierId] = useState('');
+  const [newTierPrice, setNewTierPrice] = useState(45000);
+  const [newTierLimit, setNewTierLimit] = useState(500);
+  const [newTierPeriod, setNewTierPeriod] = useState('monthly');
+  const [newTierUnlimited, setNewTierUnlimited] = useState(false);
+  const [newTierBadge, setNewTierBadge] = useState('CUSTOM TIER');
+  const [newTierColor, setNewTierColor] = useState('#8B5CF6');
+  const [newTierDesc, setNewTierDesc] = useState('');
+  const [newTierFeatures, setNewTierFeatures] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [deletingTierId, setDeletingTierId] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -171,6 +189,140 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
     }
   };
 
+  const allTiers = React.useMemo(() => {
+    if (!tiers || tiers.length === 0) {
+      return TIERS_DATA.map(t => ({ ...t, isCore: true }));
+    }
+    return tiers.map(live => {
+      const standard = TIERS_DATA.find(t => t.id === live.id);
+      if (standard) {
+        return {
+          ...standard,
+          name: live.name || standard.name,
+          price_lkr: live.price_lkr,
+          price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
+          limit: live.limit,
+          period: live.period,
+          cadence: live.period === 'daily' ? 'Daily' : '/ month',
+          limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
+          limit_description: live.description || standard.limit_description,
+          description: live.description || standard.limit_description,
+          badge: live.badge || standard.badge,
+          color: live.color || standard.color,
+          features: (live.features && live.features.length > 0) ? live.features : standard.features,
+          is_unlimited: live.is_unlimited,
+          isCore: true
+        };
+      }
+      return {
+        id: live.id,
+        name: live.name,
+        price_lkr: live.price_lkr,
+        price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
+        limit: live.limit,
+        period: live.period || 'monthly',
+        cadence: live.period === 'daily' ? 'Daily' : '/ month',
+        limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
+        limit_description: live.description || 'Custom tailored diagnostic capacity tier.',
+        description: live.description || 'Custom tailored diagnostic capacity tier.',
+        badge: live.badge || 'CUSTOM',
+        color: live.color || '#8B5CF6',
+        features: (live.features && live.features.length > 0) ? live.features : [
+          `${live.is_unlimited ? 'Unlimited' : live.limit} Autonomous Diagnoses / ${live.period || 'monthly'}`,
+          'Multi-Agent Diagnostic Pipeline Access',
+          'SAE DTC Cascade Isolation'
+        ],
+        is_unlimited: live.is_unlimited,
+        isCore: false
+      };
+    });
+  }, [tiers]);
+
+  const handleOpenCreateTier = () => {
+    setNewTierName('');
+    setNewTierId('');
+    setNewTierPrice(45000);
+    setNewTierLimit(500);
+    setNewTierPeriod('monthly');
+    setNewTierUnlimited(false);
+    setNewTierBadge('ENTERPRISE FLEET');
+    setNewTierColor('#8B5CF6');
+    setNewTierDesc('Dedicated capacity tier for multi-bay fleet workshops & specialty tuning centers.');
+    setNewTierFeatures('500 Autonomous Diagnoses per Month\nPriority Multi-Agent LangGraph Pipeline\nChromaDB Dense Semantic Manual Chunk Retrieval\nAutomated BOM Catalog & Multi-Distributor Quoting\nDedicated Engineering SLA Support');
+    setShowCreateTierModal(true);
+    setFeedback(null);
+  };
+
+  const handleCreateTierSubmit = async (e) => {
+    e.preventDefault();
+    if (!newTierName.trim()) {
+      setFeedback({ type: 'error', message: 'Tier name is required.' });
+      return;
+    }
+    setCreateLoading(true);
+    setFeedback(null);
+    try {
+      const featList = newTierFeatures
+        .split('\n')
+        .map(f => f.trim())
+        .filter(Boolean);
+
+      const created = await adminCreateTier({
+        id: newTierId.trim() || undefined,
+        name: newTierName.trim(),
+        price_lkr: Number(newTierPrice),
+        limit: newTierUnlimited ? 999999 : Number(newTierLimit),
+        period: newTierPeriod,
+        is_unlimited: newTierUnlimited,
+        badge: newTierBadge.trim() || 'CUSTOM',
+        color: newTierColor,
+        description: newTierDesc.trim(),
+        features: featList
+      });
+
+      setShowCreateTierModal(false);
+      setFeedback({
+        type: 'success',
+        message: `Successfully created new tier "${created.name}" (${Number(created.price_lkr).toLocaleString()} LKR / ${created.period})!`
+      });
+      await loadData();
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to create new subscription tier.'
+      });
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleDeleteTier = async (tierDef) => {
+    if (tierDef.isCore || ['basic', 'plus', 'pro', 'ultra'].includes(tierDef.id)) {
+      setFeedback({ type: 'error', message: 'Standard core system tiers (Basic, Plus, Pro, Ultra) cannot be deleted.' });
+      return;
+    }
+    const confirmed = window.confirm(`Are you sure you want to permanently delete tier "${tierDef.name}" (${tierDef.id})? This will remove it from all pricing options.`);
+    if (!confirmed) return;
+
+    setDeletingTierId(tierDef.id);
+    setFeedback(null);
+    try {
+      await adminDeleteTier(tierDef.id);
+      setFeedback({
+        type: 'success',
+        message: `Tier "${tierDef.name}" was successfully removed from the system.`
+      });
+      await loadData();
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to delete subscription tier.'
+      });
+    } finally {
+      setDeletingTierId(null);
+    }
+  };
+
   // Access Protection Guard
   if (!isAuthenticated || !isAdmin) {
     return (
@@ -265,9 +417,9 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
               <div className="kpi-info">
                 <span className="kpi-label">ACTIVE PAID SUBSCRIBERS</span>
                 <strong className="kpi-value">
-                  {(metrics.tier_distribution.plus || 0) + (metrics.tier_distribution.pro || 0) + (metrics.tier_distribution.ultra || 0)}
+                  {Object.entries(metrics.tier_distribution || {}).reduce((acc, [tId, count]) => (tId === 'basic' ? acc : acc + count), 0)}
                 </strong>
-                <span className="kpi-subtext">Plus, Pro, & Ultra tiers</span>
+                <span className="kpi-subtext">Active accounts across paid tiers</span>
               </div>
             </div>
 
@@ -354,10 +506,9 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                     className="admin-tier-select"
                   >
                     <option value="">All Tiers</option>
-                    <option value="basic">Basic Free</option>
-                    <option value="plus">Plus</option>
-                    <option value="pro">Pro</option>
-                    <option value="ultra">Ultra</option>
+                    {allTiers.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -409,7 +560,7 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                       users.map(u => {
                         const quota = u.quota;
                         const isUltra = u.tier === 'ultra';
-                        const tierDef = TIERS_DATA.find(t => t.id === u.tier) || { color: '#06B6D4' };
+                        const tierDef = allTiers.find(t => t.id === u.tier) || { color: '#06B6D4', name: u.tier };
 
                         return (
                           <tr key={u.id} className="admin-user-row">
@@ -520,19 +671,30 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                 </div>
                 <h3 className="pricing-section-title">Configure Tier Prices (LKR) & Quotas</h3>
                 <p className="pricing-section-desc">
-                  Update subscription fees and diagnosis quotas for all tiers. 
+                  Update subscription fees, create tailored workshop tiers, and calibrate diagnostic quotas. 
                   Price updates immediately recalculate MRR and apply to future and current checkouts.
                   Quota changes immediately update active capacity across all workshops.
                 </p>
               </div>
-              <div className="pricing-section-status-pill">
-                <ShieldCheck size={14} color="#10B981" />
-                <span>Admin Authority Verified</span>
+              <div className="pricing-header-actions-group">
+                <div className="pricing-section-status-pill">
+                  <ShieldCheck size={14} color="#10B981" />
+                  <span>Admin Authority Verified</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateTier}
+                  className="create-tier-cta-btn"
+                  id="create-new-tier-btn"
+                >
+                  <Plus size={15} />
+                  <span>Create New Tier</span>
+                </button>
               </div>
             </div>
 
             <div className="admin-tiers-grid">
-              {TIERS_DATA.map(tierDef => {
+              {allTiers.map(tierDef => {
                 const live = tiers?.find(t => t.id === tierDef.id) || tierDef;
                 const subscriberCount = metrics?.tier_distribution?.[tierDef.id] || 0;
                 const tierMrr = (live.price_lkr || 0) * subscriberCount;
@@ -540,9 +702,14 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                 return (
                   <div key={tierDef.id} className="admin-tier-card" style={{ '--tier-accent': tierDef.color }}>
                     <div className="admin-tier-top-row">
-                      <span className="admin-tier-badge" style={{ color: tierDef.color, borderColor: tierDef.color }}>
-                        {live.badge || tierDef.badge}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="admin-tier-badge" style={{ color: tierDef.color, borderColor: tierDef.color }}>
+                          {live.badge || tierDef.badge}
+                        </span>
+                        {!tierDef.isCore && (
+                          <span className="admin-tier-custom-tag">CUSTOM TIER</span>
+                        )}
+                      </div>
                       <div className="admin-tier-indicator" style={{ background: tierDef.color }} />
                     </div>
 
@@ -580,17 +747,45 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditTier(tierDef)}
-                      className="admin-tier-edit-btn"
-                    >
-                      <Sliders size={13} />
-                      <span>Change Price & Quota</span>
-                    </button>
+                    <div className="admin-tier-card-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditTier(tierDef)}
+                        className="admin-tier-edit-btn"
+                      >
+                        <Sliders size={13} />
+                        <span>Change Price & Quota</span>
+                      </button>
+
+                      {!tierDef.isCore && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTier(tierDef)}
+                          disabled={deletingTierId === tierDef.id}
+                          className="admin-tier-delete-btn"
+                          title={`Permanently delete ${tierDef.name}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
+
+              {/* Add New Tier Interactive Card Slot */}
+              <button
+                type="button"
+                onClick={handleOpenCreateTier}
+                className="add-tier-card-slot"
+                id="add-tier-card-slot-btn"
+              >
+                <div className="add-tier-icon-circle">
+                  <Plus size={24} />
+                </div>
+                <strong className="add-tier-title">Add New Tier</strong>
+                <p className="add-tier-sub">Create custom pricing, diagnostic quotas, and tailored feature sets for specialized workshops.</p>
+              </button>
             </div>
           </div>
         )}
@@ -617,7 +812,7 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                 <div className="drawer-input-group">
                   <label className="drawer-label">Assign Subscription Tier</label>
                   <div className="tier-select-options">
-                    {TIERS_DATA.map(t => (
+                    {allTiers.map(t => (
                       <label 
                         key={t.id} 
                         className={`tier-option-card ${selectedTier === t.id ? 'selected' : ''}`}
@@ -854,6 +1049,275 @@ export default function AdminDashboardPage({ onSwitchToConsole, onSwitchToWorkfl
                     style={{ background: '#10B981', color: '#FFFFFF' }}
                   >
                     {tierSaving ? 'Applying Changes...' : 'Save & Update Tier Platform-Wide'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* CREATE NEW TIER MODAL DRAWER */}
+        {showCreateTierModal && (
+          <div className="admin-edit-drawer-backdrop" onClick={() => setShowCreateTierModal(false)}>
+            <div className="admin-edit-drawer-card tier-edit-card create-tier-drawer-card" onClick={e => e.stopPropagation()}>
+              <div className="drawer-header">
+                <div className="drawer-title-group">
+                  <div className="drawer-badge" style={{ color: newTierColor, borderColor: `${newTierColor}55`, background: `${newTierColor}15` }}>
+                    <Plus size={13} color={newTierColor} />
+                    <span>NEW SUBSCRIPTION TIER // ADMIN CONFIG</span>
+                  </div>
+                  <h3 className="drawer-title">Create New Diagnostic Tier</h3>
+                  <span className="drawer-sub">Configure a custom pricing plan, diagnostic capacity limit, and feature permissions.</span>
+                </div>
+                <button type="button" onClick={() => setShowCreateTierModal(false)} className="auth-close-btn" title="Close drawer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateTierSubmit} className="drawer-form">
+                {/* Tier Name */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Tier Display Name <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={newTierName}
+                    onChange={e => {
+                      const name = e.target.value;
+                      setNewTierName(name);
+                      const autoSlug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                      if (!newTierId || newTierId.startsWith('tier_') || newTierId.includes('_')) {
+                        setNewTierId(autoSlug);
+                      }
+                    }}
+                    placeholder="e.g. Fleet Pro, Performance Hub, Commercial Express"
+                    className="gateway-input"
+                    style={{ fontSize: '1rem', fontWeight: 700 }}
+                  />
+                </div>
+
+                {/* Tier ID / Slug */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">
+                    Tier Identifier Slug <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(Unique system ID, e.g. fleet_pro)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newTierId}
+                    onChange={e => setNewTierId(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    placeholder="Auto-generated from name if left empty"
+                    className="gateway-input"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                {/* Accent Color Palette */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Brand Theme Accent Color</label>
+                  <div className="color-picker-grid">
+                    {[
+                      { hex: '#8B5CF6', name: 'Violet' },
+                      { hex: '#EC4899', name: 'Rose Pink' },
+                      { hex: '#10B981', name: 'Emerald' },
+                      { hex: '#F59E0B', name: 'Amber' },
+                      { hex: '#00F0FF', name: 'Cyan' },
+                      { hex: '#3B82F6', name: 'Electric Blue' },
+                      { hex: '#FF5E14', name: 'Racing Coral' },
+                      { hex: '#14B8A6', name: 'Teal' }
+                    ].map(col => (
+                      <button
+                        key={col.hex}
+                        type="button"
+                        onClick={() => setNewTierColor(col.hex)}
+                        className={`color-chip-btn ${newTierColor === col.hex ? 'selected' : ''}`}
+                        style={{ background: col.hex }}
+                        title={col.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Badge Tag */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Badge Tag Label</label>
+                  <input
+                    type="text"
+                    value={newTierBadge}
+                    onChange={e => setNewTierBadge(e.target.value)}
+                    placeholder="e.g. FLEET SPECIALIST, ENTERPRISE, RECOMMENDED"
+                    className="gateway-input"
+                  />
+                </div>
+
+                {/* Price in LKR */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Subscription Rate in LKR</label>
+                  <div className="drawer-number-input-wrap">
+                    <input
+                      type="number"
+                      min="0"
+                      step="500"
+                      required
+                      value={newTierPrice}
+                      onChange={e => setNewTierPrice(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="gateway-input"
+                      style={{ fontSize: '1.05rem', fontWeight: 800 }}
+                    />
+                    <span className="currency-unit-tag">LKR</span>
+                  </div>
+                  <div className="quick-presets-row">
+                    <span className="presets-label">Quick Adjust:</span>
+                    <button type="button" onClick={() => setNewTierPrice(0)} className="preset-pill">Set Free (0 LKR)</button>
+                    <button type="button" onClick={() => setNewTierPrice(25000)} className="preset-pill">25,000</button>
+                    <button type="button" onClick={() => setNewTierPrice(45000)} className="preset-pill">45,000</button>
+                    <button type="button" onClick={() => setNewTierPrice(75000)} className="preset-pill">75,000</button>
+                    <button type="button" onClick={() => setNewTierPrice(120000)} className="preset-pill">120,000</button>
+                  </div>
+                </div>
+
+                {/* Diagnostic Quota */}
+                <div className="drawer-input-group">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <label className="drawer-label" style={{ margin: 0 }}>Diagnostic Quota Limit</label>
+                    <label className="unlimited-toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={newTierUnlimited}
+                        onChange={e => setNewTierUnlimited(e.target.checked)}
+                      />
+                      <span>Unlimited (∞)</span>
+                    </label>
+                  </div>
+
+                  {!newTierUnlimited ? (
+                    <>
+                      <div className="drawer-number-input-wrap">
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          required
+                          value={newTierLimit}
+                          onChange={e => setNewTierLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="gateway-input"
+                          style={{ fontSize: '1.05rem', fontWeight: 800 }}
+                        />
+                        <span className="currency-unit-tag">tries</span>
+                      </div>
+                      <div className="quick-presets-row">
+                        <span className="presets-label">Presets:</span>
+                        <button type="button" onClick={() => setNewTierLimit(100)} className="preset-pill">100</button>
+                        <button type="button" onClick={() => setNewTierLimit(250)} className="preset-pill">250</button>
+                        <button type="button" onClick={() => setNewTierLimit(500)} className="preset-pill">500</button>
+                        <button type="button" onClick={() => setNewTierLimit(1000)} className="preset-pill">1,000</button>
+                        <button type="button" onClick={() => setNewTierLimit(2500)} className="preset-pill">2,500</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="unlimited-quota-notice">
+                      <Sparkles size={15} color="#FFB800" />
+                      <span>Technicians on this plan will have unrestricted autonomous diagnoses with zero quota caps.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Reset Cadence */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Billing & Quota Cadence</label>
+                  <div className="cadence-radio-group">
+                    <label className={`cadence-option ${newTierPeriod === 'monthly' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="newTierPeriod"
+                        value="monthly"
+                        checked={newTierPeriod === 'monthly'}
+                        onChange={e => setNewTierPeriod(e.target.value)}
+                      />
+                      <div>
+                        <strong>Monthly Billing & Reset</strong>
+                        <span>Renews and resets quota monthly</span>
+                      </div>
+                    </label>
+                    <label className={`cadence-option ${newTierPeriod === 'daily' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="newTierPeriod"
+                        value="daily"
+                        checked={newTierPeriod === 'daily'}
+                        onChange={e => setNewTierPeriod(e.target.value)}
+                      />
+                      <div>
+                        <strong>Daily Reset</strong>
+                        <span>Quota resets daily at 00:00 UTC</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">Plan Description</label>
+                  <textarea
+                    value={newTierDesc}
+                    onChange={e => setNewTierDesc(e.target.value)}
+                    placeholder="Short summary displayed on the checkout and tiers modal..."
+                    className="gateway-input"
+                    rows={2}
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Features (One per line) */}
+                <div className="drawer-input-group">
+                  <label className="drawer-label">
+                    Features Included <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(One feature per line)</span>
+                  </label>
+                  <textarea
+                    value={newTierFeatures}
+                    onChange={e => setNewTierFeatures(e.target.value)}
+                    placeholder="500 Autonomous Diagnoses per Month&#10;Full Multi-Agent Particle Pipeline&#10;SAE DTC Cascade Isolation&#10;Automated BOM Catalog & Parts Resolver"
+                    className="gateway-input"
+                    rows={4}
+                    style={{ resize: 'vertical', fontSize: '0.8rem', lineHeight: 1.5 }}
+                  />
+                </div>
+
+                {/* Live Card Preview Box */}
+                <div className="tier-impact-summary-box" style={{ borderColor: `${newTierColor}55`, background: `${newTierColor}0c` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: newTierColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {newTierBadge || 'CUSTOM TIER'}
+                    </span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: newTierColor }} />
+                  </div>
+                  <div className="impact-row">
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#FFFFFF' }}>{newTierName || 'New Tier Preview'}</span>
+                    <strong style={{ color: '#10B981', fontSize: '0.9rem' }}>
+                      {newTierPrice === 0 ? 'FREE' : `${Number(newTierPrice).toLocaleString()} LKR`}
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 400 }}> / {newTierPeriod === 'daily' ? 'day' : 'mo'}</span>
+                    </strong>
+                  </div>
+                  <div className="impact-row">
+                    <span>Diagnostic Allowance:</span>
+                    <strong>{newTierUnlimited ? 'Unlimited (∞)' : `${newTierLimit} tries / ${newTierPeriod}`}</strong>
+                  </div>
+                </div>
+
+                <div className="drawer-footer-actions">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateTierModal(false)}
+                    className="drawer-btn cancel"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createLoading}
+                    className="drawer-btn save"
+                    style={{ background: newTierColor || '#10B981', color: '#FFFFFF' }}
+                  >
+                    {createLoading ? 'Deploying Tier to System...' : 'Create & Launch Tier'}
                   </button>
                 </div>
               </form>

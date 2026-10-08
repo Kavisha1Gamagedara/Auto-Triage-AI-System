@@ -106,19 +106,46 @@ export default function SubscriptionTiersModal({
   const currentTierId = user?.tier || 'basic';
   const quota = user?.quota;
 
-  const effectiveTiers = TIERS_DATA.map(t => {
-    const live = tiers?.find(lt => lt.id === t.id);
-    if (!live) return t;
-    return {
-      ...t,
-      name: live.name || t.name,
-      price_lkr: live.price_lkr,
-      price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
-      limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
-      badge: live.badge || t.badge,
-      description: live.description || t.description
-    };
-  });
+  const effectiveTiers = React.useMemo(() => {
+    if (!tiers || tiers.length === 0) {
+      return TIERS_DATA;
+    }
+    return tiers.map(live => {
+      const standard = TIERS_DATA.find(t => t.id === live.id);
+      if (standard) {
+        return {
+          ...standard,
+          name: live.name || standard.name,
+          price_lkr: live.price_lkr,
+          price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
+          cadence: live.period === 'daily' ? 'Daily' : '/ month',
+          limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
+          limit_description: live.description || standard.limit_description,
+          badge: live.badge || standard.badge,
+          color: live.color || standard.color,
+          features: (live.features && live.features.length > 0) ? live.features : standard.features
+        };
+      }
+      return {
+        id: live.id,
+        name: live.name,
+        badge: live.badge || 'CUSTOM',
+        price_lkr: live.price_lkr,
+        price_display: live.price_lkr === 0 ? 'FREE' : `${Number(live.price_lkr).toLocaleString()} LKR`,
+        cadence: live.period === 'daily' ? 'Daily' : '/ month',
+        limit_display: live.is_unlimited ? 'UNLIMITED tries' : `${live.limit} tries / ${live.period === 'daily' ? 'day' : 'month'}`,
+        limit_description: live.description || 'Custom tailored diagnostic capacity tier.',
+        color: live.color || '#A855F7',
+        popular: false,
+        features: (live.features && live.features.length > 0) ? live.features : [
+          `${live.is_unlimited ? 'Unlimited' : live.limit} Autonomous Diagnoses / ${live.period}`,
+          'Multi-Agent Diagnostic Pipeline Access',
+          'SAE DTC Cascade Isolation',
+          'OEM Knowledge Retrieval'
+        ]
+      };
+    });
+  }, [tiers]);
 
   const handleTierAction = (tier) => {
     if (!isAuthenticated) {

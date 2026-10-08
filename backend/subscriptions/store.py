@@ -61,12 +61,63 @@ class SubscriptionStore:
         self.users: Dict[str, Dict[str, Any]] = {}
         self.transactions: List[Dict[str, Any]] = []
         self.tiers: Dict[str, Dict[str, Any]] = copy.deepcopy(SUBSCRIPTION_TIERS)
+        self.mongo_db = None
+        self._init_mongo()
         self._load()
         self._seed_default_accounts()
 
+    def _init_mongo(self):
+        """Initializes connection to dedicated subscriptions MongoDB database."""
+        try:
+            from core.db import get_subscriptions_db
+            db = get_subscriptions_db()
+            db.command("ping")
+            self.mongo_db = db
+            self.mongo_db.users.create_index("email", unique=True)
+            self.mongo_db.users.create_index("id", unique=True)
+            self.mongo_db.tiers.create_index("id", unique=True)
+            self.mongo_db.transactions.create_index("transaction_ref", unique=True, sparse=True)
+            print(f"[SubscriptionStore] Connected to dedicated MongoDB database: '{self.mongo_db.name}'")
+        except Exception as e:
+            print(f"[SubscriptionStore] MongoDB unavailable ({e}), using local file fallback.")
+            self.mongo_db = None
+
     def _load(self):
-        """Loads data from persistent JSON file."""
-        if os.path.exists(STORE_FILE_PATH):
+        """Loads data from dedicated MongoDB database, with fallback to persistent JSON file."""
+        loaded_from_mongo = False
+        if self.mongo_db is not None:
+            try:
+                user_count = self.mongo_db.users.count_documents({})
+                tier_count = self.mongo_db.tiers.count_documents({})
+                if user_count > 0:
+                    for doc in self.mongo_db.users.find():
+                        doc.pop("_id", None)
+                        uid = doc.get("id")
+                        if uid:
+                            self.users[uid] = doc
+                    loaded_from_mongo = True
+
+                if tier_count > 0:
+                    for doc in self.mongo_db.tiers.find():
+                        doc.pop("_id", None)
+                        tid = doc.get("id")
+                        if tid:
+                            self.tiers[tid] = doc
+
+                tx_docs = []
+                for doc in self.mongo_db.transactions.find():
+                    doc.pop("_id", None)
+                    tx_docs.append(doc)
+                if tx_docs:
+                    self.transactions = tx_docs
+
+                if loaded_from_mongo:
+                    print(f"[SubscriptionStore] Loaded {len(self.users)} users and {len(self.tiers)} tiers from MongoDB database '{self.mongo_db.name}'.")
+            except Exception as me:
+                print(f"[SubscriptionStore] Error reading from MongoDB: {me}")
+
+        # If MongoDB was empty or offline, load from local file
+        if not loaded_from_mongo and os.path.exists(STORE_FILE_PATH):
             try:
                 with open(STORE_FILE_PATH, 'r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -79,13 +130,51 @@ class SubscriptionStore:
                                 self.tiers[k].update(v)
                             else:
                                 self.tiers[k] = v
+                print(f"[SubscriptionStore] Loaded {len(self.users)} users from local fallback file.")
             except Exception as e:
                 print(f"[SubscriptionStore] Error loading local file: {e}")
                 self.users = {}
                 self.transactions = []
 
-    def _save(self):
-        """Persists data to disk atomically."""
+    def _save(self, user: Optional[Dict[str, Any]] = None, tier: Optional[Dict[str, Any]] = None, transaction: Optional[Dict[str, Any]] = None):
+        """Persists data to dedicated MongoDB database and mirrors to local backup file."""
+        # 1. Persist directly to MongoDB if available
+        if self.mongo_db is not None:
+            try:
+                if user and user.get("id"):
+                    doc = copy.deepcopy(user)
+                    doc.pop("_id", None)
+                    self.mongo_db.users.replace_one({"id": doc["id"]}, doc, upsert=True)
+                elif tier and tier.get("id"):
+                    doc = copy.deepcopy(tier)
+                    doc.pop("_id", None)
+                    self.mongo_db.tiers.replace_one({"id": doc["id"]}, doc, upsert=True)
+                elif transaction:
+                    doc = copy.deepcopy(transaction)
+                    doc.pop("_id", None)
+                    tx_ref = doc.get("transaction_ref") or doc.get("id")
+                    if tx_ref:
+                        self.mongo_db.transactions.replace_one({"transaction_ref": tx_ref}, doc, upsert=True)
+                else:
+                    # Full sync of all records
+                    for u in self.users.values():
+                        ud = copy.deepcopy(u)
+                        ud.pop("_id", None)
+                        self.mongo_db.users.replace_one({"id": ud["id"]}, ud, upsert=True)
+                    for t in self.tiers.values():
+                        td = copy.deepcopy(t)
+                        td.pop("_id", None)
+                        self.mongo_db.tiers.replace_one({"id": td["id"]}, td, upsert=True)
+                    for tx in self.transactions:
+                        txd = copy.deepcopy(tx)
+                        txd.pop("_id", None)
+                        tx_ref = txd.get("transaction_ref") or txd.get("id")
+                        if tx_ref:
+                            self.mongo_db.transactions.replace_one({"transaction_ref": tx_ref}, txd, upsert=True)
+            except Exception as me:
+                print(f"[SubscriptionStore] MongoDB write error: {me}")
+
+        # 2. Mirror to local JSON file for backup & offline safety
         try:
             os.makedirs(os.path.dirname(STORE_FILE_PATH), exist_ok=True)
             with open(STORE_FILE_PATH, 'w', encoding='utf-8') as f:
@@ -96,7 +185,7 @@ class SubscriptionStore:
                     "last_updated": datetime.now(timezone.utc).isoformat()
                 }, f, indent=2)
         except Exception as e:
-            print(f"[SubscriptionStore] Failed to save database: {e}")
+            print(f"[SubscriptionStore] Failed to save backup JSON: {e}")
 
     def get_tiers(self) -> List[Dict[str, Any]]:
         """Returns current list of active subscription tiers."""
@@ -111,11 +200,75 @@ class SubscriptionStore:
         if tier_id not in self.tiers:
             raise ValueError(f"Subscription tier '{tier_id}' does not exist.")
         tier = self.tiers[tier_id]
-        for field in ["price_lkr", "limit", "period", "description", "badge", "name", "is_unlimited"]:
+        for field in ["price_lkr", "limit", "period", "description", "badge", "name", "is_unlimited", "color", "features"]:
             if field in updates and updates[field] is not None:
                 tier[field] = updates[field]
-        self._save()
+        self._save(tier=tier)
         return tier
+
+    def create_tier(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Admin override: Creates a brand new tier and persists to MongoDB."""
+        import re
+        name = (payload.get("name") or "").strip()
+        if not name:
+            raise ValueError("Tier name is required.")
+
+        raw_id = payload.get("id")
+        if not raw_id or not str(raw_id).strip():
+            tier_id = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+        else:
+            tier_id = re.sub(r'[^a-z0-9_-]+', '_', str(raw_id).strip().lower()).strip('_')
+
+        if not tier_id:
+            tier_id = f"tier_{uuid.uuid4().hex[:6]}"
+
+        if tier_id in self.tiers:
+            raise ValueError(f"A tier with ID '{tier_id}' already exists. Please choose a unique name or ID.")
+
+        is_unlimited = bool(payload.get("is_unlimited", False))
+        limit = 999999 if is_unlimited else max(1, int(payload.get("limit", 100)))
+
+        features = payload.get("features")
+        if not features or not isinstance(features, list) or len(features) == 0:
+            features = [
+                f"{'Unlimited' if is_unlimited else limit} Diagnoses per {payload.get('period', 'monthly').capitalize()}",
+                "Full Multi-Agent Particle Pipeline",
+                "SAE DTC Cascade Diagnostics",
+                "OEM Workshop Manual Dense Vector RAG",
+                "Automated BOM Catalog & Parts Resolver"
+            ]
+
+        new_tier = {
+            "id": tier_id,
+            "name": name,
+            "price_lkr": max(0, int(payload.get("price_lkr", 0))),
+            "limit": limit,
+            "period": payload.get("period", "monthly"),
+            "description": payload.get("description") or f"Custom {name} diagnostic capacity tier.",
+            "features": features,
+            "badge": (payload.get("badge") or "CUSTOM").upper(),
+            "is_unlimited": is_unlimited,
+            "color": payload.get("color") or "#00F0FF"
+        }
+
+        self.tiers[tier_id] = new_tier
+        self._save(tier=new_tier)
+        return new_tier
+
+    def delete_tier(self, tier_id: str) -> bool:
+        """Admin override: Deletes a custom tier (cannot delete standard core tiers)."""
+        if tier_id in ["basic", "plus", "pro", "ultra"]:
+            raise ValueError("Cannot delete standard core system tiers (Basic, Plus, Pro, Ultra).")
+        if tier_id not in self.tiers:
+            raise ValueError(f"Tier '{tier_id}' not found.")
+        del self.tiers[tier_id]
+        if self.mongo_db is not None:
+            try:
+                self.mongo_db.tiers.delete_one({"id": tier_id})
+            except Exception as e:
+                print(f"[SubscriptionStore] Error deleting tier from MongoDB: {e}")
+        self._save()
+        return True
 
     def _seed_default_accounts(self):
         """Seeds initial accounts for quick demo and testing if not existing."""

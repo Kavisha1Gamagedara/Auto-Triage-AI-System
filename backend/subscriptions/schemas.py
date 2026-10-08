@@ -176,4 +176,20 @@ class TierUpdatePayload(BaseModel):
     badge: Optional[str] = None
     name: Optional[str] = None
     is_unlimited: Optional[bool] = None
+    color: Optional[str] = None
+    features: Optional[List[str]] = None
+
+
+class TierCreatePayload(BaseModel):
+    id: Optional[str] = Field(None, max_length=50)
+    name: str = Field(..., min_length=2, max_length=80)
+    price_lkr: int = Field(0, ge=0)
+    limit: int = Field(100, ge=1)
+    period: str = Field("monthly", pattern="^(daily|monthly|unlimited)$")
+    description: str = Field(..., min_length=3, max_length=300)
+    badge: Optional[str] = "CUSTOM"
+    is_unlimited: bool = False
+    color: Optional[str] = "#00F0FF"
+    features: Optional[List[str]] = []
+
 

@@ -10521,7 +10521,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px 16px;
+  overflow-y: auto;
 }
 
 .admin-edit-drawer-card {
@@ -10530,9 +10531,14 @@
   background: #11141D;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 14px;
-  padding: 26px;
+  padding: 24px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
   animation: adminModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
 }
 
 @keyframes adminModalIn {
@@ -10544,7 +10550,8 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .drawer-badge {
@@ -10578,6 +10585,31 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -4px;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.drawer-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drawer-form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawer-form::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.drawer-form::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .drawer-input-group {
@@ -10689,7 +10721,15 @@
 .drawer-footer-actions {
   display: flex;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 10px;
+  position: sticky;
+  bottom: 0;
+  background: #11141D;
+  padding-top: 14px;
+  padding-bottom: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .drawer-btn {
@@ -10849,6 +10889,42 @@
   font-size: 0.75rem;
   font-weight: 800;
   flex-shrink: 0;
+}
+
+.pricing-header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.create-tier-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #FFFFFF;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.create-tier-cta-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #10B981;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.create-tier-cta-btn:active {
+  transform: translateY(0);
 }
 
 /* 4-Tier Grid in Admin */
@@ -11013,6 +11089,142 @@
   background: rgba(16, 185, 129, 0.15);
   border-color: #10B981;
   color: #10B981;
+}
+
+.admin-tier-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-tier-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px;
+  border-radius: 7px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #EF4444;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.admin-tier-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #EF4444;
+  color: #FF6B6B;
+  transform: translateY(-1px);
+}
+
+.admin-tier-custom-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.15);
+  color: #C084FC;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+/* Add New Tier Interactive Card Slot in Grid */
+.add-tier-card-slot {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  min-height: 280px;
+  transition: all 0.2s ease;
+  color: inherit;
+  outline: none;
+}
+
+.add-tier-card-slot:hover {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.12);
+}
+
+.add-tier-icon-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10B981;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.add-tier-card-slot:hover .add-tier-icon-circle {
+  transform: scale(1.1);
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10B981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.add-tier-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.add-tier-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted, #94A3B8);
+  line-height: 1.45;
+  max-width: 200px;
+  margin: 0;
+}
+
+/* Color Picker Chips Grid */
+.color-picker-grid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-chip-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.color-chip-btn:hover {
+  transform: scale(1.1);
+}
+
+.color-chip-btn.selected {
+  border-color: #FFFFFF;
+  transform: scale(1.18);
+  box-shadow: 0 0 12px currentColor;
+}
+
+.create-tier-drawer-card {
+  max-width: 560px;
 }
 
 /* Tier Edit Modal Controls */
@@ -11595,6 +11807,23 @@
   color: #0F172A;
 }
 
+[data-theme="light"] .drawer-footer-actions {
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+}
+
+[data-theme="light"] .drawer-form {
+  scrollbar-color: rgba(15, 23, 42, 0.25) transparent;
+}
+
+[data-theme="light"] .drawer-form::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+[data-theme="light"] .drawer-form::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.35);
+}
+
 /* VIEW B: Subscription Tier Pricing & Quota Controls */
 [data-theme="light"] .pricing-section-header-card {
   background: #FFFFFF;
@@ -11692,6 +11921,74 @@
   border-color: #059669;
   color: #047857;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+}
+
+[data-theme="light"] .create-tier-cta-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+[data-theme="light"] .create-tier-cta-btn:hover {
+  background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
+}
+
+[data-theme="light"] .admin-tier-delete-btn {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #DC2626;
+}
+
+[data-theme="light"] .admin-tier-delete-btn:hover {
+  background: #FEE2E2;
+  border-color: #EF4444;
+  color: #B91C1C;
+}
+
+[data-theme="light"] .admin-tier-custom-tag {
+  background: #F3E8FF;
+  border-color: #D8B4FE;
+  color: #7E22CE;
+}
+
+[data-theme="light"] .add-tier-card-slot {
+  background: #F8FAFC;
+  border: 2px dashed #CBD5E1;
+}
+
+[data-theme="light"] .add-tier-card-slot:hover {
+  border-color: #059669;
+  background: #F0FDF4;
+  box-shadow: 0 12px 28px rgba(5, 150, 105, 0.08);
+}
+
+[data-theme="light"] .add-tier-icon-circle {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #059669;
+}
+
+[data-theme="light"] .add-tier-card-slot:hover .add-tier-icon-circle {
+  background: #D1FAE5;
+  border-color: #059669;
+  box-shadow: 0 0 16px rgba(5, 150, 105, 0.25);
+}
+
+[data-theme="light"] .add-tier-title {
+  color: #0F172A;
+}
+
+[data-theme="light"] .add-tier-sub {
+  color: #64748B;
+}
+
+[data-theme="light"] .color-chip-btn {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .color-chip-btn.selected {
+  border-color: #0F172A;
 }
 
 /* Tier Edit Modal Form */
