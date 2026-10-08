@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Car, 
-  ShieldCheck, 
-  AlertTriangle, 
-  Cpu, 
-  ArrowRight, 
-  RefreshCw, 
-  Copy, 
-  Check, 
-  Wrench, 
-  Sparkles, 
-  Activity, 
-  Layers, 
+import {
+  Car,
+  ShieldCheck,
+  AlertTriangle,
+  Cpu,
+  ArrowRight,
+  RefreshCw,
+  Copy,
+  Check,
+  Wrench,
+  Sparkles,
+  Activity,
+  Layers,
   GitMerge,
   ChevronDown,
   ChevronUp,
@@ -434,8 +434,8 @@ export default function App() {
     setAgent2Year(String(result.vehicle_details.year));
     setAgent2Dtcs(result.dtc_codes.join(', '));
     setAgent2Notes(
-      result.user_note || 
-      (result.damaged_parts.length > 0 
+      result.user_note ||
+      (result.damaged_parts.length > 0
         ? `Damage noted: ${result.damaged_parts.join(', ')}. Discovered DTCs: ${result.dtc_codes.join(', ')}.`
         : `Vehicle verified by Agent 1 gateway. Trouble codes: ${result.dtc_codes.join(', ')}.`
       )
@@ -806,9 +806,9 @@ export default function App() {
       <header className="site-header floating-glass-nav">
         <div className="nav-container">
           {/* Left Brand Badge with Circular Glyph */}
-          <div 
-            className="nav-brand" 
-            onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+          <div
+            className="nav-brand"
+            onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             style={{ cursor: 'pointer' }}
             title="Auto-Triage AI Universal Automotive Diagnostic System"
           >
@@ -822,7 +822,7 @@ export default function App() {
 
           {/* Central Nav Links */}
           <nav className="floating-nav-links">
-            <button 
+            <button
               type="button"
               className={`floating-nav-link ${activePage === 'triage' ? 'active' : ''}`}
               onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -831,31 +831,32 @@ export default function App() {
               Diagnostic Hub
             </button>
             {isAdmin && (
-              <button 
+              <button
                 type="button"
-                className={`floating-nav-link ${activePage === 'admin' ? 'active' : ''}`}
+                className={`floating-nav-link admin-nav-tab ${activePage === 'admin' ? 'active' : ''}`}
                 onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 id="nav-btn-admin-tab"
+                title="Open Dedicated Admin Dashboard"
               >
-                <Crown size={12} color="#FFB800" style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                Admin HQ
+                <Crown size={12} color="#FFB800" style={{ marginRight: 5, verticalAlign: 'middle' }} />
+                <span>Admin HQ</span>
               </button>
             )}
-            <a 
-              href="#showcase" 
+            <a
+              href="#showcase"
               className="floating-nav-link"
               onClick={(e) => handleNavAnchor(e, 'showcase')}
             >
               Architecture
             </a>
-            <a 
-              href="#matrix" 
+            <a
+              href="#matrix"
               className="floating-nav-link"
               onClick={(e) => handleNavAnchor(e, 'matrix')}
             >
               DTC Matrix
             </a>
-            <button 
+            <button
               type="button"
               className="floating-nav-link"
               onClick={() => setTiersModalOpen(true)}
@@ -873,9 +874,9 @@ export default function App() {
             </div>
 
             {/* Theme Toggle Button */}
-            <button 
-              type="button" 
-              onClick={toggleTheme} 
+            <button
+              type="button"
+              onClick={toggleTheme}
               className="floating-theme-toggle-btn"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               id="theme-toggle-btn"
@@ -884,20 +885,6 @@ export default function App() {
             </button>
 
             <div className="nav-action-divider" />
-
-            {/* ADMIN ONLY BADGE (Switches to Dedicated Admin Page) */}
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className={`nav-admin-badge-btn ${activePage === 'admin' ? 'active' : ''}`}
-                title="Open Dedicated Admin Dashboard"
-                id="nav-btn-admin-badge"
-              >
-                <Crown size={12} color="#FFB800" />
-                <span>Admin HQ</span>
-              </button>
-            )}
 
             {/* AUTHENTICATED USER */}
             {isAuthenticated ? (
@@ -974,16 +961,16 @@ export default function App() {
                       }}
                     >
                       <CreditCard size={13} color="#10B981" />
-                      <span>Developer Payment Sandbox</span>
+                      <span>Payment Gateway</span>
                     </button>
 
                     {isAdmin && (
                       <button
                         type="button"
                         className="dropdown-item-btn"
-                        onClick={() => { 
-                          setUserDropdownOpen(false); 
-                          setActivePage('admin'); 
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          setActivePage('admin');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                       >
@@ -1030,25 +1017,25 @@ export default function App() {
 
             {/* PRIMARY CTA */}
             {activePage === 'admin' ? (
-              <button 
-                type="button" 
-                onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+              <button
+                type="button"
+                onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className="floating-pill-cta"
               >
                 <span>Launch Triage</span>
               </button>
             ) : activePage === 'workflow' ? (
-              <button 
-                type="button" 
-                onClick={() => { setActivePage('triage'); }} 
+              <button
+                type="button"
+                onClick={() => { setActivePage('triage'); }}
                 className="floating-pill-cta"
               >
                 <span>Diagnostic Console</span>
               </button>
             ) : (
-              <a 
-                href="#console" 
-                onClick={(e) => handleNavAnchor(e, 'console')} 
+              <a
+                href="#console"
+                onClick={(e) => handleNavAnchor(e, 'console')}
                 className="floating-pill-cta"
               >
                 <span>Launch Triage</span>
@@ -1062,7 +1049,7 @@ export default function App() {
       {activePage === 'workflow' ? (
         <WorkflowDashboard onSwitchToConsole={() => setActivePage('triage')} />
       ) : activePage === 'admin' ? (
-        <AdminDashboardPage 
+        <AdminDashboardPage
           onSwitchToConsole={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           onSwitchToWorkflow={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
@@ -1070,7 +1057,7 @@ export default function App() {
         <>
           {/* 1. CINEMATIC 3D HYPERCAR ATMOSPHERIC HERO BACKGROUND & DIAGNOSTIC STAGE */}
           <section className="cinematic-system-hero-stage">
-            <HypercarHeadlightCanvas 
+            <HypercarHeadlightCanvas
               onSelectVehicle={handleSelectHeroVehicle}
               onLaunchTriage={handleLaunchTriageScroll}
               onSwitchToWorkflow={() => setActivePage('workflow')}
@@ -1348,10 +1335,10 @@ export default function App() {
                 <div className="model-visual-stage">
                   <div className="model-hero-card">
                     <span className="model-floating-badge">UNIVERSAL DIAGNOSTIC COVERAGE // ALL VEHICLE TYPES</span>
-                    <img 
-                      src={mechanicDiagnostics} 
-                      alt="Universal Multi-Make Automotive Diagnostic Station" 
-                      className="model-car-image" 
+                    <img
+                      src={mechanicDiagnostics}
+                      alt="Universal Multi-Make Automotive Diagnostic Station"
+                      className="model-car-image"
                     />
                   </div>
 
@@ -1421,1164 +1408,1132 @@ export default function App() {
             </div>
           </section>
 
-      {/* Live Diagnostic Command Console (#console) */}
-      <section id="console" className="triage-console-section">
-        <div className="console-container">
-          <div className="console-header">
-            <div>
-              <h2 className="section-title">Triage & Validation Console</h2>
-            </div>
-            <div className="session-chip">
-              <Terminal size={14} color="var(--red-primary)" />
-              <span>{sessionId}</span>
-              <button 
-                onClick={handleNewSession} 
-                className="icon-btn" 
-                title="Generate New Session ID"
-              >
-                <RefreshCw size={12} />
-              </button>
-            </div>
-          </div>
-
-          {/* Full-Width Panoramic Intake Card */}
-          <div className="intake-card-wide">
-              <div className="card-top-row">
-                <div className="card-heading">
-                  <Activity size={18} color="var(--red-primary)" />
-                  Mechanic Diagnostic Intake
+          {/* Live Diagnostic Command Console (#console) */}
+          <section id="console" className="triage-console-section">
+            <div className="console-container">
+              <div className="console-header">
+                <div>
+                  <h2 className="section-title">Triage & Validation Console</h2>
+                </div>
+                <div className="session-chip">
+                  <Terminal size={14} color="var(--red-primary)" />
+                  <span>{sessionId}</span>
+                  <button
+                    onClick={handleNewSession}
+                    className="icon-btn"
+                    title="Generate New Session ID"
+                  >
+                    <RefreshCw size={12} />
+                  </button>
                 </div>
               </div>
 
-              {/* Role-Based Diagnostic Quota & Access Status Ribbon */}
-              <div className="console-user-quota-banner">
-                {isAuthenticated ? (
-                  <div className="quota-banner-logged-in">
-                    <div className="banner-left">
-                      <span className={`banner-tier-tag ${user?.tier}`}>{user?.tier?.toUpperCase()} TIER</span>
-                      <span className="banner-welcome">Technician: <strong>{user?.name}</strong></span>
-                      <span className="banner-workshop">({user?.workshop_name || 'Independent Bay'})</span>
+              {/* Full-Width Panoramic Intake Card */}
+              <div className="intake-card-wide">
+                <div className="card-top-row">
+                  <div className="card-heading">
+                    <Activity size={18} color="var(--red-primary)" />
+                    Mechanic Diagnostic Intake
+                  </div>
+                </div>
+
+                {/* Role-Based Diagnostic Quota & Access Status Ribbon */}
+                <div className="console-user-quota-banner">
+                  {isAuthenticated ? (
+                    <div className="quota-banner-logged-in">
+                      <div className="banner-left">
+                        <span className={`banner-tier-tag ${user?.tier}`}>{user?.tier?.toUpperCase()} TIER</span>
+                        <span className="banner-welcome">Technician: <strong>{user?.name}</strong></span>
+                        <span className="banner-workshop">({user?.workshop_name || 'Independent Bay'})</span>
+                      </div>
+                      <div className="banner-right">
+                        <div className="quota-counter-box">
+                          <Clock size={13} />
+                          <span>
+                            {quota?.is_unlimited ? (
+                              'Unlimited Autonomous Runs'
+                            ) : (
+                              <>Tries Left {quota?.period === 'daily' ? 'Today' : 'This Month'}: <strong>{quota?.remaining}</strong> / {quota?.limit}</>
+                            )}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setTiersModalOpen(true)}
+                          className="banner-upgrade-btn"
+                        >
+                          <Sparkles size={12} />
+                          <span>{user?.tier === 'ultra' ? 'View Plans' : 'Upgrade Capacity'}</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="banner-right">
-                      <div className="quota-counter-box">
-                        <Clock size={13} />
-                        <span>
-                          {quota?.is_unlimited ? (
-                            'Unlimited Autonomous Runs'
-                          ) : (
-                            <>Tries Left {quota?.period === 'daily' ? 'Today' : 'This Month'}: <strong>{quota?.remaining}</strong> / {quota?.limit}</>
-                          )}
+                  ) : (
+                    <div className="quota-banner-guest">
+                      <div className="banner-guest-left">
+                        <span className="banner-guest-pill">GUEST PREVIEW</span>
+                        <span>You are in guest preview. Sign in to execute vehicle diagnoses (Includes <strong>2 Free Tries/Day</strong> on Basic Tier).</span>
+                      </div>
+                      <div className="banner-guest-right">
+                        <button
+                          type="button"
+                          onClick={() => { setAuthModalTab('login'); setAuthModalOpen(true); }}
+                          className="banner-guest-btn login"
+                        >
+                          <LogIn size={13} />
+                          <span>Sign In</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setAuthModalTab('register'); setAuthModalOpen(true); }}
+                          className="banner-guest-btn register"
+                        >
+                          <span>Register Free</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mode Toggle Control */}
+                <div className="mode-toggle-bar">
+                  <button
+                    type="button"
+                    className={`mode-tab ${intakeMode === 'smart' ? 'active' : ''}`}
+                    onClick={() => { setIntakeMode('smart'); setError(null); }}
+                  >
+                    <Sparkles size={14} />
+                    Smart NLP Intake
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-tab ${intakeMode === 'manual' ? 'active' : ''}`}
+                    onClick={() => { setIntakeMode('manual'); setError(null); }}
+                  >
+                    <Wrench size={14} />
+                    Manual Spec Entry
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-tab ${intakeMode === 'vin' ? 'active' : ''}`}
+                    onClick={() => { setIntakeMode('vin'); setError(null); }}
+                  >
+                    <Barcode size={14} />
+                    VIN Decoder Intake
+                  </button>
+                </div>
+
+                {/* MODE A: SMART NLP INTAKE */}
+                {intakeMode === 'smart' && (
+                  <>
+                    <div className="preset-group">
+                      <span className="preset-title">Quick Scenario Presets:</span>
+                      <div className="preset-buttons">
+                        {PRESETS.map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="preset-btn"
+                            onClick={() => handlePresetClick(preset.text)}
+                          >
+                            <Sparkles size={12} color="var(--red-primary)" />
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleRunTriage} className="input-group">
+                      <div className="input-labels">
+                        <span>Diagnostic Complaint Text:</span>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{rawText.length} chars</span>
+                      </div>
+
+                      <textarea
+                        className="console-textarea"
+                        value={rawText}
+                        onChange={(e) => setRawText(e.target.value)}
+                        placeholder="e.g. 2019 Honda Civic with crashed bumper and trouble code P0171..."
+                      />
+
+                      <button
+                        type="submit"
+                        className="btn-red"
+                        disabled={loading || !rawText.trim()}
+                        style={{ width: '100%', marginTop: 8 }}
+                      >
+                        {loading ? (
+                          <>
+                            <RefreshCw size={16} className="spin-icon" />
+                            {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Ingesting & NHTSA Validation...'}
+                            {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Cognitive Causal Reasoning...'}
+                            {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Dense Vector Manual RAG...'}
+                            {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
+                            {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={16} />
+                            Execute Autonomous Workflow (4-Agent Flow)
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {/* MODE B: MANUAL SPEC ENTRY */}
+                {intakeMode === 'manual' && (
+                  <>
+                    <div className="preset-group">
+                      <span className="preset-title">Fill Quick Spec Preset:</span>
+                      <div className="preset-buttons">
+                        {MANUAL_PRESETS.map((p, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="preset-btn"
+                            onClick={() => handleManualPresetClick(p)}
+                          >
+                            <Car size={12} color="var(--red-primary)" />
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleRunTriage} className="manual-spec-form">
+                      <div className="form-row">
+                        <div className="form-field">
+                          <label className="form-label">Vehicle Make *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Honda, Toyota, Ford"
+                            value={manualMake}
+                            onChange={(e) => setManualMake(e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <div className="form-field">
+                          <label className="form-label">Vehicle Model *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Civic, Camry, F-150"
+                            value={manualModel}
+                            onChange={(e) => setManualModel(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-field">
+                          <label className="form-label">Production Year *</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            placeholder="1980 - 2026"
+                            value={manualYear}
+                            onChange={(e) => setManualYear(e.target.value)}
+                            min="1980"
+                            max="2026"
+                            required
+                          />
+                        </div>
+
+                        <div className="form-field">
+                          <label className="form-label">OBD-II DTC Trouble Codes</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. P0171, P0300"
+                            value={manualDtcs}
+                            onChange={(e) => setManualDtcs(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-field">
+                        <label className="form-label">Observed Damaged Components / Collision Notes</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. crashed bumper, cracked headlight, leaking radiator"
+                          value={manualParts}
+                          onChange={(e) => setManualParts(e.target.value)}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn-red"
+                        disabled={loading || !manualMake || !manualModel || !manualYear}
+                        style={{ width: '100%', marginTop: 8 }}
+                      >
+                        {loading ? (
+                          <>
+                            <RefreshCw size={16} className="spin-icon" />
+                            {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Validating Spec with NHTSA...'}
+                            {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Groq Causal Reasoning...'}
+                            {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Chroma Dense RAG...'}
+                            {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
+                            {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={16} />
+                            Validate Spec & Run Complete 4-Agent Flow
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {/* MODE C: VIN DECODER & CHECKSUM INTAKE */}
+                {intakeMode === 'vin' && (
+                  <>
+                    <div className="preset-group">
+                      <span className="preset-title">Test 17-Char VIN Presets:</span>
+                      <div className="preset-buttons">
+                        {VIN_PRESETS.map((p, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="preset-btn"
+                            onClick={() => handleVinPresetClick(p)}
+                          >
+                            <Barcode size={12} color="var(--red-primary)" />
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleRunTriage} className="manual-spec-form">
+                      <div className="form-field">
+                        <div className="input-labels">
+                          <label className="form-label">17-Character ISO 3779 VIN Barcode / String *</label>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>{vinInput.length} / 17 chars</span>
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. 1HGCR2F85HA000000"
+                          value={vinInput}
+                          onChange={(e) => setVinInput(e.target.value.toUpperCase())}
+                          maxLength={17}
+                          style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.12em', fontSize: '1.05rem', fontWeight: 700 }}
+                          required
+                        />
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                          Offline MOD-11 Checksum (9th digit) verification executes immediately in 0.1ms before querying NHTSA.
                         </span>
                       </div>
+
+                      <div className="form-row">
+                        <div className="form-field">
+                          <label className="form-label">OBD-II DTC Codes (Optional)</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. P0171, P0420"
+                            value={vinDtcs}
+                            onChange={(e) => setVinDtcs(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="form-field">
+                          <label className="form-label">Damaged Components (Optional)</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. intake leak, dented bumper"
+                            value={vinParts}
+                            onChange={(e) => setVinParts(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
                       <button
-                        type="button"
-                        onClick={() => setTiersModalOpen(true)}
-                        className="banner-upgrade-btn"
+                        type="submit"
+                        className="btn-red"
+                        disabled={loading || !vinInput.trim()}
+                        style={{ width: '100%', marginTop: 8 }}
                       >
-                        <Sparkles size={12} />
-                        <span>{user?.tier === 'ultra' ? 'View Plans' : 'Upgrade Capacity'}</span>
+                        {loading ? (
+                          <>
+                            <RefreshCw size={16} className="spin-icon" />
+                            {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Decoding VIN via NHTSA vPIC...'}
+                            {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Groq Causal Reasoning...'}
+                            {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Dense Vector Manual RAG...'}
+                            {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
+                            {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
+                          </>
+                        ) : (
+                          <>
+                            <Barcode size={16} />
+                            Decode VIN & Run Autonomous 4-Agent Flow
+                          </>
+                        )}
                       </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="quota-banner-guest">
-                    <div className="banner-guest-left">
-                      <span className="banner-guest-pill">GUEST PREVIEW</span>
-                      <span>You are in guest preview. Sign in to execute vehicle diagnoses (Includes <strong>2 Free Tries/Day</strong> on Basic Tier).</span>
-                    </div>
-                    <div className="banner-guest-right">
-                      <button
-                        type="button"
-                        onClick={() => { setAuthModalTab('login'); setAuthModalOpen(true); }}
-                        className="banner-guest-btn login"
-                      >
-                        <LogIn size={13} />
-                        <span>Sign In</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setAuthModalTab('register'); setAuthModalOpen(true); }}
-                        className="banner-guest-btn register"
-                      >
-                        <span>Register Free</span>
-                      </button>
+                    </form>
+                  </>
+                )}
+
+                {/* Error Banner */}
+                {error && (
+                  <div style={{
+                    background: 'rgba(255, 30, 39, 0.1)',
+                    border: '1px solid var(--red-primary)',
+                    padding: '14px 16px',
+                    borderRadius: 'var(--radius-sharp)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    color: '#ff999d',
+                    fontSize: '0.88rem'
+                  }}>
+                    <AlertTriangle size={18} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong style={{ color: 'var(--red-primary)', display: 'block', marginBottom: 2 }}>
+                        Validation Rejected
+                      </strong>
+                      {error}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Mode Toggle Control */}
-              <div className="mode-toggle-bar">
-                <button
-                  type="button"
-                  className={`mode-tab ${intakeMode === 'smart' ? 'active' : ''}`}
-                  onClick={() => { setIntakeMode('smart'); setError(null); }}
-                >
-                  <Sparkles size={14} />
-                  Smart NLP Intake
-                </button>
-                <button
-                  type="button"
-                  className={`mode-tab ${intakeMode === 'manual' ? 'active' : ''}`}
-                  onClick={() => { setIntakeMode('manual'); setError(null); }}
-                >
-                  <Wrench size={14} />
-                  Manual Spec Entry
-                </button>
-                <button
-                  type="button"
-                  className={`mode-tab ${intakeMode === 'vin' ? 'active' : ''}`}
-                  onClick={() => { setIntakeMode('vin'); setError(null); }}
-                >
-                  <Barcode size={14} />
-                  VIN Decoder Intake
-                </button>
+              {/* Full-Width Panoramic Holographic 4-Agent Particle DAG Stage */}
+              <div id="holographic-flow-stage" className="console-holographic-wide-stage">
+                {/* Full-Width Panoramic 4-Agent Holographic Particle Canvas */}
+                <HolographicAgentPipelineGraph
+                  activeStage={pipelineStage}
+                  liveLatencies={agentLatencies}
+                  liveData={{ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }}
+                  embedded={false}
+                  isLiveDiagnosis={loading}
+                  onRunActualDiagnosis={handleRunTriage}
+                />
               </div>
 
-              {/* MODE A: SMART NLP INTAKE */}
-              {intakeMode === 'smart' && (
-                <>
-                  <div className="preset-group">
-                    <span className="preset-title">Quick Scenario Presets:</span>
-                    <div className="preset-buttons">
-                      {PRESETS.map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className="preset-btn"
-                          onClick={() => handlePresetClick(preset.text)}
-                        >
-                          <Sparkles size={12} color="var(--red-primary)" />
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleRunTriage} className="input-group">
-                    <div className="input-labels">
-                      <span>Diagnostic Complaint Text:</span>
-                      <span style={{ fontFamily: 'var(--font-mono)' }}>{rawText.length} chars</span>
-                    </div>
-
-                    <textarea
-                      className="console-textarea"
-                      value={rawText}
-                      onChange={(e) => setRawText(e.target.value)}
-                      placeholder="e.g. 2019 Honda Civic with crashed bumper and trouble code P0171..."
-                    />
-
-                    <button 
-                      type="submit" 
-                      className="btn-red" 
-                      disabled={loading || !rawText.trim()}
-                      style={{ width: '100%', marginTop: 8 }}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw size={16} className="spin-icon" />
-                          {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Ingesting & NHTSA Validation...'}
-                          {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Cognitive Causal Reasoning...'}
-                          {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Dense Vector Manual RAG...'}
-                          {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
-                          {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
-                        </>
-                      ) : (
-                        <>
-                          <Zap size={16} />
-                          Execute Autonomous Workflow (4-Agent Flow)
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* MODE B: MANUAL SPEC ENTRY */}
-              {intakeMode === 'manual' && (
-                <>
-                  <div className="preset-group">
-                    <span className="preset-title">Fill Quick Spec Preset:</span>
-                    <div className="preset-buttons">
-                      {MANUAL_PRESETS.map((p, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className="preset-btn"
-                          onClick={() => handleManualPresetClick(p)}
-                        >
-                          <Car size={12} color="var(--red-primary)" />
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleRunTriage} className="manual-spec-form">
-                    <div className="form-row">
-                      <div className="form-field">
-                        <label className="form-label">Vehicle Make *</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Honda, Toyota, Ford"
-                          value={manualMake}
-                          onChange={(e) => setManualMake(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label className="form-label">Vehicle Model *</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Civic, Camry, F-150"
-                          value={manualModel}
-                          onChange={(e) => setManualModel(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-field">
-                        <label className="form-label">Production Year *</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          placeholder="1980 - 2026"
-                          value={manualYear}
-                          onChange={(e) => setManualYear(e.target.value)}
-                          min="1980"
-                          max="2026"
-                          required
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label className="form-label">OBD-II DTC Trouble Codes</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. P0171, P0300"
-                          value={manualDtcs}
-                          onChange={(e) => setManualDtcs(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-field">
-                      <label className="form-label">Observed Damaged Components / Collision Notes</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. crashed bumper, cracked headlight, leaking radiator"
-                        value={manualParts}
-                        onChange={(e) => setManualParts(e.target.value)}
-                      />
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      className="btn-red" 
-                      disabled={loading || !manualMake || !manualModel || !manualYear}
-                      style={{ width: '100%', marginTop: 8 }}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw size={16} className="spin-icon" />
-                          {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Validating Spec with NHTSA...'}
-                          {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Groq Causal Reasoning...'}
-                          {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Chroma Dense RAG...'}
-                          {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
-                          {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
-                        </>
-                      ) : (
-                        <>
-                          <Zap size={16} />
-                          Validate Spec & Run Complete 4-Agent Flow
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* MODE C: VIN DECODER & CHECKSUM INTAKE */}
-              {intakeMode === 'vin' && (
-                <>
-                  <div className="preset-group">
-                    <span className="preset-title">Test 17-Char VIN Presets:</span>
-                    <div className="preset-buttons">
-                      {VIN_PRESETS.map((p, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className="preset-btn"
-                          onClick={() => handleVinPresetClick(p)}
-                        >
-                          <Barcode size={12} color="var(--red-primary)" />
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleRunTriage} className="manual-spec-form">
-                    <div className="form-field">
-                      <div className="input-labels">
-                        <label className="form-label">17-Character ISO 3779 VIN Barcode / String *</label>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{vinInput.length} / 17 chars</span>
-                      </div>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. 1HGCR2F85HA000000"
-                        value={vinInput}
-                        onChange={(e) => setVinInput(e.target.value.toUpperCase())}
-                        maxLength={17}
-                        style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.12em', fontSize: '1.05rem', fontWeight: 700 }}
-                        required
-                      />
-                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        Offline MOD-11 Checksum (9th digit) verification executes immediately in 0.1ms before querying NHTSA.
-                      </span>
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-field">
-                        <label className="form-label">OBD-II DTC Codes (Optional)</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. P0171, P0420"
-                          value={vinDtcs}
-                          onChange={(e) => setVinDtcs(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label className="form-label">Damaged Components (Optional)</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. intake leak, dented bumper"
-                          value={vinParts}
-                          onChange={(e) => setVinParts(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      className="btn-red" 
-                      disabled={loading || !vinInput.trim()}
-                      style={{ width: '100%', marginTop: 8 }}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw size={16} className="spin-icon" />
-                          {pipelineStage === 'agent1' && 'Stage 1/4: Agent 1 Decoding VIN via NHTSA vPIC...'}
-                          {pipelineStage === 'agent2' && 'Stage 2/4: Agent 2 Groq Causal Reasoning...'}
-                          {pipelineStage === 'agent3' && 'Stage 3/4: Agent 3 Dense Vector Manual RAG...'}
-                          {pipelineStage === 'agent4' && 'Stage 4/4: Agent 4 BOM Catalog Procurement...'}
-                          {pipelineStage === 'complete' && 'Synthesizing Diagnostic Dossier...'}
-                        </>
-                      ) : (
-                        <>
-                          <Barcode size={16} />
-                          Decode VIN & Run Autonomous 4-Agent Flow
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* Error Banner */}
+              {/* MISSION CRITICAL ERROR DOSSIER */}
               {error && (
-                <div style={{
-                  background: 'rgba(255, 30, 39, 0.1)',
-                  border: '1px solid var(--red-primary)',
-                  padding: '14px 16px',
-                  borderRadius: 'var(--radius-sharp)',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  color: '#ff999d',
-                  fontSize: '0.88rem'
-                }}>
-                  <AlertTriangle size={18} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <strong style={{ color: 'var(--red-primary)', display: 'block', marginBottom: 2 }}>
-                      Validation Rejected
-                    </strong>
-                    {error}
+                <div className="dossier-error-banner">
+                  <div className="error-banner-top">
+                    <AlertTriangle size={32} color="var(--red-primary)" style={{ flexShrink: 0 }} />
+                    <div>
+                      <div className="error-badge-title">Autonomous Pipeline Rejection // HTTP 422 Unprocessable Entity</div>
+                      <div className="error-lead-message">{error}</div>
+                    </div>
+                  </div>
+
+                  <div className="error-checklist-box">
+                    <strong>Pre-Flight Mechanic Diagnostic Checklist:</strong>
+                    <ul>
+                      <li>Ensure vehicle make and model exist in US DOT NHTSA database (1980–2026).</li>
+                      <li>When utilizing 17-character VIN barcode, verify the 9th position MOD-11 checksum digit.</li>
+                      <li>Include at least 3 descriptive mechanical symptom tokens or valid OBD-II trouble codes (e.g., P0171, P0300).</li>
+                    </ul>
+                  </div>
+
+                  <div className="error-actions-row">
+                    <button
+                      type="button"
+                      className="btn-outline-error"
+                      onClick={() => { setError(null); setPipelineStage('idle'); }}
+                    >
+                      <RefreshCw size={14} />
+                      Reset Diagnostic Gateway
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-accent-preset"
+                      onClick={() => {
+                        setError(null);
+                        handlePresetClick('2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance');
+                      }}
+                    >
+                      <Sparkles size={14} />
+                      Load Certified Universal Preset (P0171 + P0300)
+                    </button>
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Full-Width Panoramic Holographic 4-Agent Particle DAG Stage */}
-            <div id="holographic-flow-stage" className="console-holographic-wide-stage">
-              {/* Live Execution HUD Ticker Banner */}
-              <div className="live-stage-hud-banner">
-                <div className="hud-ticker-left">
-                  <span className="hud-stage-dot" />
-                  <span style={{ fontWeight: 800 }}>
-                    {loading ? (
-                      pipelineStage === 'agent1' ? 'STAGE 01/04: AGENT 1 INGESTION & NHTSA VPIC VALIDATION IN FLIGHT' :
-                      pipelineStage === 'agent2' ? 'STAGE 02/04: AGENT 2 GROQ LLAMA-3 CAUSAL REASONING IN FLIGHT' :
-                      pipelineStage === 'agent3' ? 'STAGE 03/04: AGENT 3 DENSE VECTOR OEM MANUAL RAG IN FLIGHT' :
-                      pipelineStage === 'agent4' ? 'STAGE 04/04: AGENT 4 BOM CATALOG PROCUREMENT IN FLIGHT' :
-                      'AUTONOMOUS MULTI-AGENT SYNTHESIS IN PROGRESS...'
-                    ) : pipelineStage === 'complete' ? (
-                      'WORKFLOW CONCLUDED // ALL 4 AGENTS SYNCHRONIZED & SYNTHESIZED'
-                    ) : pipelineStage === 'error' || error ? (
-                      'EXECUTION HALTED // EXCEPTION CAUGHT IN GATEWAY PIPELINE'
-                    ) : (
-                      'HOLOGRAPHIC PIPELINE READY // AWAITING VEHICLE DIAGNOSTIC COMPLAINT'
-                    )}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>AGENT LATENCIES:</span>
-                  <span className="hud-latency-pill a1">A1: <strong>{agentLatencies[1] ? `${agentLatencies[1]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a2">A2: <strong>{agentLatencies[2] ? `${agentLatencies[2]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a3">A3: <strong>{agentLatencies[3] ? `${agentLatencies[3]}ms` : '--'}</strong></span>
-                  <span className="hud-latency-pill a4">A4: <strong>{agentLatencies[4] ? `${agentLatencies[4]}ms` : '--'}</strong></span>
-                </div>
-              </div>
-
-              {/* Full-Width Panoramic 4-Agent Holographic Particle Canvas */}
-              <HolographicAgentPipelineGraph 
-                activeStage={pipelineStage} 
-                liveLatencies={agentLatencies}
-                liveData={{ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }}
-                embedded={false}
-                isLiveDiagnosis={loading}
-                onRunActualDiagnosis={handleRunTriage}
-              />
-            </div>
-
-            {/* MISSION CRITICAL ERROR DOSSIER */}
-            {error && (
-              <div className="dossier-error-banner">
-                <div className="error-banner-top">
-                  <AlertTriangle size={32} color="var(--red-primary)" style={{ flexShrink: 0 }} />
-                  <div>
-                    <div className="error-badge-title">Autonomous Pipeline Rejection // HTTP 422 Unprocessable Entity</div>
-                    <div className="error-lead-message">{error}</div>
-                  </div>
-                </div>
-
-                <div className="error-checklist-box">
-                  <strong>Pre-Flight Mechanic Diagnostic Checklist:</strong>
-                  <ul>
-                    <li>Ensure vehicle make and model exist in US DOT NHTSA database (1980–2026).</li>
-                    <li>When utilizing 17-character VIN barcode, verify the 9th position MOD-11 checksum digit.</li>
-                    <li>Include at least 3 descriptive mechanical symptom tokens or valid OBD-II trouble codes (e.g., P0171, P0300).</li>
-                  </ul>
-                </div>
-
-                <div className="error-actions-row">
-                  <button 
-                    type="button" 
-                    className="btn-outline-error"
-                    onClick={() => { setError(null); setPipelineStage('idle'); }}
-                  >
-                    <RefreshCw size={14} />
-                    Reset Diagnostic Gateway
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn-accent-preset"
-                    onClick={() => {
-                      setError(null);
-                      handlePresetClick('2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance');
-                    }}
-                  >
-                    <Sparkles size={14} />
-                    Load Certified Universal Preset (P0171 + P0300)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* FULL-WIDTH EXECUTIVE DIAGNOSTIC OUTPUT DOSSIER */}
-            {triageResult && (
-              <div className="executive-dossier-root">
-                {/* Executive Header Banner */}
-                <div className="dossier-executive-header">
-                  <div>
-                    <div className="dossier-tag">
-                      <ShieldCheck size={14} />
-                      AUTONOMOUS MULTI-AGENT DIAGNOSTIC REPORT // DOSSIER # {sessionId.slice(0, 8)}
-                    </div>
-                    <div className="dossier-vehicle-title">
-                      {triageResult.vehicle_details.year} {triageResult.vehicle_details.make} {triageResult.vehicle_details.model}
-                      {triageResult.vehicle_details.is_verified && (
-                        <span className="nhtsa-shield-pill" style={{ fontSize: '0.78rem' }}>
-                          <ShieldCheck size={13} />
-                          NHTSA Verified Road-Legal
-                        </span>
-                      )}
-                      {triageResult.vehicle_details.vin && (
-                        <span className="dossier-body-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <Barcode size={13} color="var(--red-primary)" />
-                          VIN: {triageResult.vehicle_details.vin}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="dossier-quick-stats">
-                    <div className="dossier-stat-chip">
-                      <span>DTCs:</span>
-                      <strong>{triageResult.dtc_codes?.length || 0} Codes</strong>
-                    </div>
-                    <div className="dossier-stat-chip">
-                      <span>Root Cause:</span>
-                      <strong style={{ color: '#00F0FF' }}>{agent2Result?.root_cause_component || 'Deduced'}</strong>
-                    </div>
-                    <div className="dossier-stat-chip">
-                      <span>Severity:</span>
-                      <strong style={{ color: agent2Result?.severity === 'High' ? 'var(--red-primary)' : '#10B981' }}>
-                        {(agent2Result?.severity || 'MEDIUM').toUpperCase()}
-                      </strong>
-                    </div>
-                    <div className="dossier-stat-chip">
-                      <span>Latency:</span>
-                      <strong>{Object.values(agentLatencies).reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) || 7546} ms</strong>
-                    </div>
-
-                    <button 
-                      type="button" 
-                      className="dossier-action-btn"
-                      onClick={() => window.print()}
-                      title="Print or Export Diagnostic Report"
-                    >
-                      <ExternalLink size={13} />
-                      Export Report
-                    </button>
-                    <button 
-                      type="button" 
-                      className="dossier-action-btn"
-                      onClick={handleNewSession}
-                      title="Start Fresh Diagnostic Session"
-                    >
-                      <RefreshCw size={13} />
-                      New Session
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4 Modular Executive Cards Grid */}
-                <div className="dossier-grid">
-                  {/* CARD 1: AGENT 1 // INGESTION & NHTSA VALIDATION */}
-                  <div className="dossier-card card-agent1">
-                    <div className="dossier-card-header">
-                      <div className="dossier-agent-title" style={{ color: '#00F0FF' }}>
-                        <Activity size={18} />
-                        Agent 1 // Ingestion & NHTSA VPIC Telemetry
-                      </div>
-                      <span className="dossier-sla-tag">
-                        {agentLatencies[1] ? `${agentLatencies[1]} ms` : '1360 ms'} · SPA-CY NLP
-                      </span>
-                    </div>
-
-                    {/* Vehicle Specifications */}
-                    <div className="telemetry-specs">
-                      <div className="spec-badge">Make: <strong>{triageResult.vehicle_details.make}</strong></div>
-                      <div className="spec-badge">Model: <strong>{triageResult.vehicle_details.model}</strong></div>
-                      <div className="spec-badge">Year: <strong>{triageResult.vehicle_details.year}</strong></div>
-                      <div className="spec-badge">Status: <strong>ROAD-LEGAL</strong></div>
-                      {triageResult.vehicle_details.engine && (
-                        <div className="spec-badge">Engine: <strong>{triageResult.vehicle_details.engine}</strong></div>
-                      )}
-                      {triageResult.vehicle_details.fuel_type && (
-                        <div className="spec-badge">Fuel: <strong>{triageResult.vehicle_details.fuel_type}</strong></div>
-                      )}
-                      {triageResult.vehicle_details.drive_type && (
-                        <div className="spec-badge">Drive: <strong>{triageResult.vehicle_details.drive_type}</strong></div>
-                      )}
-                      {triageResult.vehicle_details.body_class && (
-                        <div className="spec-badge">Body: <strong>{triageResult.vehicle_details.body_class}</strong></div>
-                      )}
-                    </div>
-
-                    {/* VIN MOD-11 Checksum Verification */}
-                    {triageResult.vehicle_details.vin && (
-                      <div className="dossier-vin-banner">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Barcode size={14} color="#00F0FF" />
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Decoded VIN:</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-white)', letterSpacing: '0.08em' }}>
-                            {triageResult.vehicle_details.vin}
-                          </span>
-                        </div>
-                        {triageResult.vehicle_details.vin_checksum_valid ? (
-                          <span className="checksum-valid-pill">
-                            <Check size={11} />
-                            MOD-11 Checksum: Valid
-                          </span>
-                        ) : (
-                          <span className="checksum-invalid-pill">
-                            <AlertTriangle size={11} />
-                            MOD-11 Checksum: Warning
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* IR RapidFuzz Typo Corrections */}
-                    {triageResult.fuzzy_corrections && triageResult.fuzzy_corrections.length > 0 && (
-                      <div className="fuzzy-correction-box">
-                        <div className="fuzzy-correction-header">
-                          <div className="fuzzy-correction-title">
-                            <Sparkles size={14} color="#f59e0b" />
-                            <span>IR Typo-Tolerant Normalization (RapidFuzz / Levenshtein)</span>
-                          </div>
-                          <span className="fuzzy-pill">AUTO-CORRECTED</span>
-                        </div>
-                        <div className="fuzzy-items-list">
-                          {triageResult.fuzzy_corrections.map((corr, idx) => (
-                            <div key={idx} className="fuzzy-item">
-                              <div className="fuzzy-item-left">
-                                <span className="fuzzy-field-tag">{corr.field.toUpperCase()}:</span>
-                                <span className="fuzzy-raw-text">"{corr.raw}"</span>
-                                <span className="fuzzy-arrow">➔</span>
-                                <span className="fuzzy-corrected-text">"{corr.corrected}"</span>
-                              </div>
-                              <div className="fuzzy-metrics">
-                                <span className="metric-tag">Dist: {corr.levenshtein_distance}</span>
-                                <span className="metric-tag score">{corr.similarity}% Similarity</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Discovered OBD-II Trouble Codes */}
+              {/* FULL-WIDTH EXECUTIVE DIAGNOSTIC OUTPUT DOSSIER */}
+              {triageResult && (
+                <div className="executive-dossier-root">
+                  {/* Executive Header Banner */}
+                  <div className="dossier-executive-header">
                     <div>
-                      <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
-                        Discovered OBD-II Codes ({triageResult.dtc_codes?.length || 0})
+                      <div className="dossier-tag">
+                        <ShieldCheck size={14} />
+                        AUTONOMOUS MULTI-AGENT DIAGNOSTIC REPORT // DOSSIER # {sessionId.slice(0, 8)}
                       </div>
-                      {triageResult.dtc_codes && triageResult.dtc_codes.length > 0 ? (
-                        <div className="tag-container" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {triageResult.dtc_hierarchy && triageResult.dtc_hierarchy.length > 0 ? (
-                            triageResult.dtc_hierarchy.map((item, idx) => (
-                              <div key={idx} className="dtc-hierarchy-row">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <span className="dtc-badge-red" style={{ margin: 0 }}>
-                                    <Activity size={12} />
-                                    {item.exact_code}
-                                  </span>
-                                  <span className="dtc-hierarchy-desc">
-                                    {item.description}
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
-                                  <span className="dtc-family-chip">Family: {item.family_code}</span>
-                                  <span className="dtc-family-chip">{item.system}</span>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {triageResult.dtc_codes.map((code, idx) => (
-                                <div key={idx} className="dtc-badge-red" style={{ background: 'rgba(0, 240, 255, 0.1)', borderColor: 'rgba(0, 240, 255, 0.4)', color: '#00F0FF' }}>
-                                  <Activity size={12} />
-                                  <span>{code}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No DTC codes detected in intake.</span>
-                      )}
-                    </div>
-
-                    {/* Multi-DTC Causal Cascade Analysis */}
-                    {triageResult.dtc_cascade && triageResult.dtc_cascade.has_cascade && (
-                      <div className="dtc-cascade-box">
-                        <div className="dtc-cascade-header">
-                          <div className="dtc-cascade-title">
-                            <GitMerge size={15} color="#00F0FF" />
-                            <span>Multi-DTC Causal Cascade Detected</span>
-                          </div>
-                          <span className="dtc-cascade-pill" style={{ color: '#00F0FF', borderColor: 'rgba(0, 240, 255, 0.4)' }}>
-                            <Zap size={11} />
-                            ROOT TRIGGER ISOLATED
+                      <div className="dossier-vehicle-title">
+                        {triageResult.vehicle_details.year} {triageResult.vehicle_details.make} {triageResult.vehicle_details.model}
+                        {triageResult.vehicle_details.is_verified && (
+                          <span className="nhtsa-shield-pill" style={{ fontSize: '0.78rem' }}>
+                            <ShieldCheck size={13} />
+                            NHTSA Verified Road-Legal
                           </span>
-                        </div>
-                        <div className="dtc-cascade-flow">
-                          <span className="cascade-node-root" style={{ borderColor: '#00F0FF', color: '#00F0FF' }}>
-                            ROOT: {triageResult.dtc_cascade.primary_code}
+                        )}
+                        {triageResult.vehicle_details.vin && (
+                          <span className="dossier-body-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Barcode size={13} color="var(--red-primary)" />
+                            VIN: {triageResult.vehicle_details.vin}
                           </span>
-                          {triageResult.dtc_cascade.cascade_codes.map((cc, idx) => (
-                            <React.Fragment key={idx}>
-                              <span className="cascade-arrow">➔</span>
-                              <span className="cascade-node-secondary">
-                                CASCADE: {cc}
-                              </span>
-                            </React.Fragment>
-                          ))}
-                        </div>
-                        <div className="dtc-cascade-summary">
-                          {triageResult.dtc_cascade.diagnostic_summary}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* IR Canonical Query */}
-                    {triageResult.canonical_query && (
-                      <div className="canonical-query-box">
-                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Terminal size={12} />
-                          IR Canonical Query (Stopwords Stripped & Synonyms Expanded)
-                        </div>
-                        <code style={{ fontSize: '0.82rem', color: '#e2e8f0', background: 'transparent' }}>
-                          {triageResult.canonical_query}
-                        </code>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* CARD 2: AGENT 2 // COGNITIVE CAUSAL REASONING */}
-                  <div className="dossier-card card-agent2">
-                    <div className="dossier-card-header">
-                      <div className="dossier-agent-title" style={{ color: '#3B82F6' }}>
-                        <Brain size={18} />
-                        Agent 2 // Cognitive Causal Reasoning (Groq LLM)
-                      </div>
-                      <span className="dossier-sla-tag">
-                        {agentLatencies[2] ? `${agentLatencies[2]} ms` : '5171 ms'} · LLAMA-3-70B
-                      </span>
-                    </div>
-
-                    {agent2Result ? (
-                      <>
-                        <div className="result-header-row">
-                          <div className="result-status-text">
-                            <CheckCircle2 size={16} color="var(--emerald)" />
-                            CAUSAL REASONING CONCLUDED
-                          </div>
-                          <div className={`severity-pill severity-${(agent2Result.severity || 'medium').toLowerCase()}`}>
-                            <AlertOctagon size={13} />
-                            SEVERITY: {agent2Result.severity?.toUpperCase()}
-                          </div>
-                        </div>
-
-                        {/* Root Cause Component Hero Box */}
-                        <div className="root-cause-hero-box" style={{ borderColor: 'rgba(59, 130, 246, 0.4)' }}>
-                          <div className="root-cause-tag" style={{ color: '#3B82F6' }}>
-                            <Wrench size={13} />
-                            Deduce Root-Cause Failed Component
-                          </div>
-                          <div className="root-cause-title">
-                            {agent2Result.root_cause_component}
-                          </div>
-                          <div className="root-cause-sub">
-                            Single physical component isolated by Groq LLM for replacement / bench testing
-                          </div>
-                        </div>
-
-                        {/* Mechanical Failure Mode */}
-                        <div className="diagnostic-detail-card">
-                          <div className="detail-label" style={{ color: '#3B82F6' }}>
-                            <Radio size={13} color="#3B82F6" />
-                            Mechanical Failure Mode & Physics
-                          </div>
-                          <div className="detail-text">
-                            {agent2Result.failure_mode}
-                          </div>
-                        </div>
-
-                        {/* Safety Warning */}
-                        {agent2Result.safety_warning && (
-                          <div className="safety-warning-banner">
-                            <AlertTriangle size={20} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
-                            <div>
-                              <h4>MECHANIC SAFETY HAZARD & PROTOCOL</h4>
-                              <p>{agent2Result.safety_warning}</p>
-                            </div>
-                          </div>
                         )}
-
-                        {/* Downstream Fork Status */}
-                        <div className="dispatch-preview-box">
-                          <div className="dispatch-header">
-                            <span className="dispatch-title">Downstream Dispatch: LangGraph Fork-Join</span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800 }}>FORKED & JOINED</span>
-                          </div>
-                          <div className="dispatch-flow-grid">
-                            <div className="dispatch-target-card">
-                              <div className="target-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-                                <Layers size={16} color="#10B981" />
-                              </div>
-                              <div>
-                                <span className="target-name">Agent 3: Manual RAG</span>
-                                <span className="target-sub">ChromaDB OEM Manual</span>
-                              </div>
-                            </div>
-                            <div className="dispatch-target-card">
-                              <div className="target-icon-wrap" style={{ background: 'rgba(255, 94, 20, 0.1)', borderColor: 'rgba(255, 94, 20, 0.3)' }}>
-                                <Database size={16} color="#FF5E14" />
-                              </div>
-                              <div>
-                                <span className="target-name">Agent 4: Parts Catalog</span>
-                                <span className="target-sub">3-Tier Multi-Pricing</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="results-empty" style={{ padding: '24px 16px' }}>
-                        <RefreshCw size={24} className="spin-icon" color="#3B82F6" />
-                        <span>Awaiting Groq LLM inference handoff...</span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* CARD 3: AGENT 3 // OEM WORKSHOP MANUAL RAG */}
-                  <div className="dossier-card card-agent3">
-                    <div className="dossier-card-header">
-                      <div className="dossier-agent-title" style={{ color: '#10B981' }}>
-                        <Layers size={18} />
-                        Agent 3 // OEM Workshop Manual RAG (ChromaDB)
-                      </div>
-                      <span className="dossier-sla-tag">
-                        {agentLatencies[3] ? `${agentLatencies[3]} ms` : '1657 ms'} · DENSE VECTOR
-                      </span>
                     </div>
 
-                    {repairPlan ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div>
-                          <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
-                            OEM Step-by-Step Replacement Procedure ({repairPlan.steps?.length || 0} Steps)
-                          </div>
-                          <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.88rem', lineHeight: '1.65', color: '#f1f5f9' }}>
-                            {repairPlan.steps?.map((step, idx) => (
-                              <li key={idx} style={{ marginBottom: '8px' }}>{step}</li>
-                            ))}
-                          </ol>
-                        </div>
-
-                        {repairPlan.torque_specs && (
-                          <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 6, padding: '12px 14px' }}>
-                            <div style={{ color: '#34d399', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <Wrench size={13} />
-                              OEM Factory Torque Specifications & Tolerances
-                            </div>
-                            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                              {repairPlan.torque_specs}
-                            </div>
-                          </div>
-                        )}
-
-                        <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-subtle)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <ExternalLink size={12} color="#10B981" />
-                          <span>Vector Reference: <strong>{repairPlan.citation}</strong></span>
-                        </div>
+                    <div className="dossier-quick-stats">
+                      <div className="dossier-stat-chip">
+                        <span>DTCs:</span>
+                        <strong>{triageResult.dtc_codes?.length || 0} Codes</strong>
                       </div>
-                    ) : (
-                      <div className="results-empty" style={{ padding: '24px 16px' }}>
-                        <Layers size={24} color="#10B981" />
-                        <span>Querying dense vector database for workshop repair manual...</span>
+                      <div className="dossier-stat-chip">
+                        <span>Root Cause:</span>
+                        <strong style={{ color: '#00F0FF' }}>{agent2Result?.root_cause_component || 'Deduced'}</strong>
                       </div>
-                    )}
-                  </div>
-
-                  {/* CARD 4: AGENT 4 // BOM CATALOG & MULTI-TIER PROCUREMENT */}
-                  <div className="dossier-card card-agent4">
-                    <div className="dossier-card-header">
-                      <div className="dossier-agent-title" style={{ color: '#FF5E14' }}>
-                        <ShoppingBag size={18} />
-                        Agent 4 // BOM Catalog & Multi-Tier Pricing
+                      <div className="dossier-stat-chip">
+                        <span>Severity:</span>
+                        <strong style={{ color: agent2Result?.severity === 'High' ? 'var(--red-primary)' : '#10B981' }}>
+                          {(agent2Result?.severity || 'MEDIUM').toUpperCase()}
+                        </strong>
                       </div>
-                      <span className="dossier-sla-tag">
-                        {agentLatencies[4] ? `${agentLatencies[4]} ms` : '18 ms'} · MOTOR / MITCHELL
-                      </span>
-                    </div>
-
-                    {(procurement || procurementPlan) ? (
-                      (() => {
-                        const proc = procurement || procurementPlan;
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            {/* Resolved Catalog Component */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                              <div className="procure-stat-card">
-                                <span className="procure-stat-label">Resolved Catalog Component</span>
-                                <span className="procure-stat-val">{proc.resolved_part || 'Component Verified'}</span>
-                              </div>
-                              <div className="procure-stat-card">
-                                <span className="procure-stat-label">Match Strategy & Accuracy</span>
-                                <span className="procure-stat-val highlight">
-                                  {proc.match_method} ({Math.round((proc.match_confidence || 1) * 100)}%)
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 3-Tier Multi-Pricing Quotes */}
-                            {proc.tiers && Object.keys(proc.tiers).length > 0 && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {TIER_ORDER.filter((tier) => proc.tiers[tier] && proc.tiers[tier].parts?.length > 0).map((tier) => {
-                                  const quote = proc.tiers[tier];
-                                  return (
-                                    <div key={tier} className="procure-quote-tier-card">
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-                                        <strong className="tier-card-title">{TIER_LABELS[tier] || tier}</strong>
-                                        <strong className="tier-card-total">
-                                          LKR {quote.tier_total_lkr?.toLocaleString()}
-                                        </strong>
-                                      </div>
-
-                                      <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0', fontSize: '0.82rem', color: 'var(--text-gray)' }}>
-                                        {quote.parts?.map((part) => (
-                                          <li key={part.part_number} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-                                            <span>
-                                              {part.part_name}{' '}
-                                              <span style={{ color: 'var(--text-muted)' }}>
-                                                ({part.brand} · {part.part_number})
-                                              </span>
-                                            </span>
-                                            <span style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', color: '#f1f5f9' }}>
-                                              LKR {part.price_lkr?.toLocaleString()}
-                                            </span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            {proc.suppressed_tiers?.length > 0 && (
-                              <div style={{ fontSize: '0.8rem', color: '#ff999d', background: 'rgba(255, 30, 39, 0.08)', padding: '8px 12px', borderRadius: 6 }}>
-                                <strong>Withheld for safety:</strong> {proc.suppressed_tiers.map((tier) => TIER_LABELS[tier] || tier).join(', ')}
-                              </div>
-                            )}
-
-                            {proc.warnings?.length > 0 && (
-                              <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.78rem', color: '#fbbf24' }}>
-                                {proc.warnings.map((w, idx) => (
-                                  <li key={idx}>{w}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="results-empty" style={{ padding: '24px 16px' }}>
-                        <ShoppingBag size={24} color="#FF5E14" />
-                        <span>Pricing cross-catalog components & inventory...</span>
+                      <div className="dossier-stat-chip">
+                        <span>Latency:</span>
+                        <strong>{Object.values(agentLatencies).reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) || 7546} ms</strong>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Collapsible A2A Handshake JSON Payload */}
-                <div className="raw-json-accordion" style={{ marginTop: 8 }}>
-                  <button 
-                    type="button" 
-                    className="raw-json-toggle-btn"
-                    onClick={() => setShowRawJson(!showRawJson)}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Terminal size={13} color="var(--red-primary)" />
-                      {showRawJson ? 'Hide A2A Contract JSON' : 'Inspect Verified A2A Contract JSON (Multi-Agent Telemetry)'}
-                    </span>
-                    <span>{showRawJson ? '▲' : '▼'}</span>
-                  </button>
-                  {showRawJson && (
-                    <div className="raw-json-body">
-                      <pre className="a2a-code">
-                        {JSON.stringify({ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }, null, 2)}
-                      </pre>
-                      <button 
-                        type="button" 
-                        onClick={handleCopyPayload} 
-                        className="icon-btn" 
-                        style={{ fontSize: '0.72rem', gap: 4, marginTop: 8 }}
+                      <button
+                        type="button"
+                        className="dossier-action-btn"
+                        onClick={() => window.print()}
+                        title="Print or Export Diagnostic Report"
                       >
-                        {copied ? <><Check size={12} color="var(--emerald)" /><span style={{ color: 'var(--emerald)' }}>Copied</span></> : <><Copy size={12} /><span>Copy JSON</span></>}
+                        <ExternalLink size={13} />
+                        Export Report
+                      </button>
+                      <button
+                        type="button"
+                        className="dossier-action-btn"
+                        onClick={handleNewSession}
+                        title="Start Fresh Diagnostic Session"
+                      >
+                        <RefreshCw size={13} />
+                        New Session
                       </button>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  </div>
 
-            {/* INITIAL IDLE STATE: Mechanic Quick-Start Guide */}
-            {!triageResult && !loading && !error && (
-              <div className="results-empty" style={{ padding: '36px 24px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
-                <div className="empty-scanner-icon" style={{ width: 60, height: 60 }}>
-                  <Car size={32} color="#00F0FF" />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', color: 'var(--text-white)', fontWeight: 800 }}>
-                    Auto-Triage Autonomous Multi-Agent Command Deck Ready
-                  </h3>
-                  <p style={{ fontSize: '0.9rem', marginTop: 8, color: 'var(--text-muted)', maxWidth: 640, lineHeight: 1.6 }}>
-                    Select any quick preset above or type a customer complaint. The system will launch the 
-                    <strong> full wide-screen holographic particle DAG</strong> across all 4 agents in real-time, then render your 
-                    <strong> complete Executive Diagnostic Dossier</strong> with OEM repair procedures and 3-tier LKR procurement quotes.
-                  </p>
-                </div>
-              </div>
-            )}
-        </div>
-      </section>
+                  {/* 4 Modular Executive Cards Grid */}
+                  <div className="dossier-grid">
+                    {/* CARD 1: AGENT 1 // INGESTION & NHTSA VALIDATION */}
+                    <div className="dossier-card card-agent1">
+                      <div className="dossier-card-header">
+                        <div className="dossier-agent-title" style={{ color: '#00F0FF' }}>
+                          <Activity size={18} />
+                          Agent 1 // Ingestion & NHTSA VPIC Telemetry
+                        </div>
+                        <span className="dossier-sla-tag">
+                          {agentLatencies[1] ? `${agentLatencies[1]} ms` : '1360 ms'} · SPA-CY NLP
+                        </span>
+                      </div>
 
-      {/* Diagnostic & DTC Coverage Matrix (#matrix) */}
-      <section id="matrix" className="matrix-section">
-        <h2 className="section-title">Diagnostic Trouble Code Matrix</h2>
-        <p style={{ color: 'var(--text-gray)', maxWidth: 640, marginTop: -12 }}>
-          Agent 1 continuously parses all standard SAE J2012 OBD-II diagnostic fault categories.
-        </p>
+                      {/* Vehicle Specifications */}
+                      <div className="telemetry-specs">
+                        <div className="spec-badge">Make: <strong>{triageResult.vehicle_details.make}</strong></div>
+                        <div className="spec-badge">Model: <strong>{triageResult.vehicle_details.model}</strong></div>
+                        <div className="spec-badge">Year: <strong>{triageResult.vehicle_details.year}</strong></div>
+                        <div className="spec-badge">Status: <strong>ROAD-LEGAL</strong></div>
+                        {triageResult.vehicle_details.engine && (
+                          <div className="spec-badge">Engine: <strong>{triageResult.vehicle_details.engine}</strong></div>
+                        )}
+                        {triageResult.vehicle_details.fuel_type && (
+                          <div className="spec-badge">Fuel: <strong>{triageResult.vehicle_details.fuel_type}</strong></div>
+                        )}
+                        {triageResult.vehicle_details.drive_type && (
+                          <div className="spec-badge">Drive: <strong>{triageResult.vehicle_details.drive_type}</strong></div>
+                        )}
+                        {triageResult.vehicle_details.body_class && (
+                          <div className="spec-badge">Body: <strong>{triageResult.vehicle_details.body_class}</strong></div>
+                        )}
+                      </div>
 
-        <div className="matrix-grid">
-          {/* Powertrain Card */}
-          <div className="matrix-card">
-            <div className="matrix-card-header">
-              <div className="matrix-category">
-                <Activity size={16} color="var(--red-primary)" />
-                POWERTRAIN <span>// P-CODES</span>
-              </div>
-            </div>
-            <ul className="matrix-list">
-              <li className="matrix-item"><span>System Too Lean (Bank 1)</span><code>P0171</code></li>
-              <li className="matrix-item"><span>Random/Multiple Misfire</span><code>P0300</code></li>
-              <li className="matrix-item"><span>Catalyst System Efficiency</span><code>P0420</code></li>
-              <li className="matrix-item"><span>EVAP System Leak Detected</span><code>P0455</code></li>
-              <li className="matrix-item"><span>Coolant Thermostat Malfunction</span><code>P0128</code></li>
-            </ul>
-          </div>
+                      {/* VIN MOD-11 Checksum Verification */}
+                      {triageResult.vehicle_details.vin && (
+                        <div className="dossier-vin-banner">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Barcode size={14} color="#00F0FF" />
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Decoded VIN:</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-white)', letterSpacing: '0.08em' }}>
+                              {triageResult.vehicle_details.vin}
+                            </span>
+                          </div>
+                          {triageResult.vehicle_details.vin_checksum_valid ? (
+                            <span className="checksum-valid-pill">
+                              <Check size={11} />
+                              MOD-11 Checksum: Valid
+                            </span>
+                          ) : (
+                            <span className="checksum-invalid-pill">
+                              <AlertTriangle size={11} />
+                              MOD-11 Checksum: Warning
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-          {/* Chassis Card */}
-          <div className="matrix-card">
-            <div className="matrix-card-header">
-              <div className="matrix-category">
-                <Gauge size={16} color="var(--red-primary)" />
-                CHASSIS <span>// C-CODES</span>
-              </div>
-            </div>
-            <ul className="matrix-list">
-              <li className="matrix-item"><span>Front Left Wheel Speed Sensor</span><code>C0035</code></li>
-              <li className="matrix-item"><span>Front Right Wheel Speed Sensor</span><code>C0040</code></li>
-              <li className="matrix-item"><span>Electronic Stability Control</span><code>C0121</code></li>
-              <li className="matrix-item"><span>ABS Return Pump Relay Failure</span><code>C0265</code></li>
-              <li className="matrix-item"><span>Electronic Brake Module Malfunction</span><code>C0550</code></li>
-            </ul>
-          </div>
+                      {/* IR RapidFuzz Typo Corrections */}
+                      {triageResult.fuzzy_corrections && triageResult.fuzzy_corrections.length > 0 && (
+                        <div className="fuzzy-correction-box">
+                          <div className="fuzzy-correction-header">
+                            <div className="fuzzy-correction-title">
+                              <Sparkles size={14} color="#f59e0b" />
+                              <span>IR Typo-Tolerant Normalization (RapidFuzz / Levenshtein)</span>
+                            </div>
+                            <span className="fuzzy-pill">AUTO-CORRECTED</span>
+                          </div>
+                          <div className="fuzzy-items-list">
+                            {triageResult.fuzzy_corrections.map((corr, idx) => (
+                              <div key={idx} className="fuzzy-item">
+                                <div className="fuzzy-item-left">
+                                  <span className="fuzzy-field-tag">{corr.field.toUpperCase()}:</span>
+                                  <span className="fuzzy-raw-text">"{corr.raw}"</span>
+                                  <span className="fuzzy-arrow">➔</span>
+                                  <span className="fuzzy-corrected-text">"{corr.corrected}"</span>
+                                </div>
+                                <div className="fuzzy-metrics">
+                                  <span className="metric-tag">Dist: {corr.levenshtein_distance}</span>
+                                  <span className="metric-tag score">{corr.similarity}% Similarity</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-          {/* Body Card */}
-          <div className="matrix-card">
-            <div className="matrix-card-header">
-              <div className="matrix-category">
-                <ShieldCheck size={16} color="var(--red-primary)" />
-                BODY <span>// B-CODES</span>
-              </div>
-            </div>
-            <ul className="matrix-list">
-              <li className="matrix-item"><span>Driver Frontal Airbag Circuit</span><code>B0001</code></li>
-              <li className="matrix-item"><span>Passenger Side Airbag Circuit</span><code>B0028</code></li>
-              <li className="matrix-item"><span>ECU Internal Malfunction</span><code>B1000</code></li>
-              <li className="matrix-item"><span>Power Window Control Circuit</span><code>B1325</code></li>
-              <li className="matrix-item"><span>HVAC Blend Door Actuator Fault</span><code>B1402</code></li>
-            </ul>
-          </div>
+                      {/* Discovered OBD-II Trouble Codes */}
+                      <div>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
+                          Discovered OBD-II Codes ({triageResult.dtc_codes?.length || 0})
+                        </div>
+                        {triageResult.dtc_codes && triageResult.dtc_codes.length > 0 ? (
+                          <div className="tag-container" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {triageResult.dtc_hierarchy && triageResult.dtc_hierarchy.length > 0 ? (
+                              triageResult.dtc_hierarchy.map((item, idx) => (
+                                <div key={idx} className="dtc-hierarchy-row">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span className="dtc-badge-red" style={{ margin: 0 }}>
+                                      <Activity size={12} />
+                                      {item.exact_code}
+                                    </span>
+                                    <span className="dtc-hierarchy-desc">
+                                      {item.description}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
+                                    <span className="dtc-family-chip">Family: {item.family_code}</span>
+                                    <span className="dtc-family-chip">{item.system}</span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {triageResult.dtc_codes.map((code, idx) => (
+                                  <div key={idx} className="dtc-badge-red" style={{ background: 'rgba(0, 240, 255, 0.1)', borderColor: 'rgba(0, 240, 255, 0.4)', color: '#00F0FF' }}>
+                                    <Activity size={12} />
+                                    <span>{code}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No DTC codes detected in intake.</span>
+                        )}
+                      </div>
 
-          {/* Network Card */}
-          <div className="matrix-card">
-            <div className="matrix-card-header">
-              <div className="matrix-category">
-                <Cpu size={16} color="var(--red-primary)" />
-                NETWORK <span>// U-CODES</span>
-              </div>
-            </div>
-            <ul className="matrix-list">
-              <li className="matrix-item"><span>Lost Communication with ECM</span><code>U0100</code></li>
-              <li className="matrix-item"><span>Lost Communication with TCM</span><code>U0101</code></li>
-              <li className="matrix-item"><span>Lost Communication with ABS Module</span><code>U0121</code></li>
-              <li className="matrix-item"><span>Lost Communication with IPC</span><code>U0155</code></li>
-              <li className="matrix-item"><span>CAN Controller Bus Failure</span><code>U1000</code></li>
-            </ul>
-          </div>
-        </div>
-      </section>
+                      {/* Multi-DTC Causal Cascade Analysis */}
+                      {triageResult.dtc_cascade && triageResult.dtc_cascade.has_cascade && (
+                        <div className="dtc-cascade-box">
+                          <div className="dtc-cascade-header">
+                            <div className="dtc-cascade-title">
+                              <GitMerge size={15} color="#00F0FF" />
+                              <span>Multi-DTC Causal Cascade Detected</span>
+                            </div>
+                            <span className="dtc-cascade-pill" style={{ color: '#00F0FF', borderColor: 'rgba(0, 240, 255, 0.4)' }}>
+                              <Zap size={11} />
+                              ROOT TRIGGER ISOLATED
+                            </span>
+                          </div>
+                          <div className="dtc-cascade-flow">
+                            <span className="cascade-node-root" style={{ borderColor: '#00F0FF', color: '#00F0FF' }}>
+                              ROOT: {triageResult.dtc_cascade.primary_code}
+                            </span>
+                            {triageResult.dtc_cascade.cascade_codes.map((cc, idx) => (
+                              <React.Fragment key={idx}>
+                                <span className="cascade-arrow">➔</span>
+                                <span className="cascade-node-secondary">
+                                  CASCADE: {cc}
+                                </span>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                          <div className="dtc-cascade-summary">
+                            {triageResult.dtc_cascade.diagnostic_summary}
+                          </div>
+                        </div>
+                      )}
 
-      {/* FAQ Accordion Section (#faq) */}
-      <section id="faq" className="faq-section">
-        <div style={{ textAlign: 'center' }}>
-          <h2 className="section-title">Frequently Asked Questions</h2>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: 620, margin: '12px auto 0', fontSize: '0.95rem', lineHeight: 1.6 }}>
-            Common questions from drivers, mechanics, and workshop managers regarding diagnostics, 3-tier parts sourcing, and subscription plans.
-          </p>
-
-          <div className="faq-filter-pills">
-            <button 
-              type="button" 
-              className={`faq-filter-btn ${faqCategoryFilter === 'all' ? 'active' : ''}`}
-              onClick={() => { setFaqCategoryFilter('all'); setOpenFaq(0); }}
-            >
-              All Questions ({FAQ_ITEMS.length})
-            </button>
-            <button 
-              type="button" 
-              className={`faq-filter-btn ${faqCategoryFilter === 'system' ? 'active' : ''}`}
-              onClick={() => { setFaqCategoryFilter('system'); setOpenFaq(0); }}
-            >
-              System & Diagnostics
-            </button>
-            <button 
-              type="button" 
-              className={`faq-filter-btn ${faqCategoryFilter === 'pricing' ? 'active' : ''}`}
-              onClick={() => { setFaqCategoryFilter('pricing'); setOpenFaq(0); }}
-            >
-              Pricing & Subscriptions
-            </button>
-          </div>
-        </div>
-
-        <div className="faq-list">
-          {FAQ_ITEMS
-            .filter(item => faqCategoryFilter === 'all' || item.categoryKey === faqCategoryFilter)
-            .map((item, index) => {
-              const isOpen = openFaq === index;
-              return (
-                <div key={index} className={`faq-item ${isOpen ? 'open' : ''}`}>
-                  <button 
-                    className="faq-question" 
-                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <span className={`faq-category-pill ${item.categoryKey}`}>
-                        {item.category}
-                      </span>
-                      <span>{item.q}</span>
-                    </span>
-                    {isOpen ? <ChevronUp size={18} color="var(--accent-primary, #FF5E14)" /> : <ChevronDown size={18} />}
-                  </button>
-                  {isOpen && (
-                    <div className="faq-answer">
-                      {item.a}
+                      {/* IR Canonical Query */}
+                      {triageResult.canonical_query && (
+                        <div className="canonical-query-box">
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <Terminal size={12} />
+                            IR Canonical Query (Stopwords Stripped & Synonyms Expanded)
+                          </div>
+                          <code style={{ fontSize: '0.82rem', color: '#e2e8f0', background: 'transparent' }}>
+                            {triageResult.canonical_query}
+                          </code>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* CARD 2: AGENT 2 // COGNITIVE CAUSAL REASONING */}
+                    <div className="dossier-card card-agent2">
+                      <div className="dossier-card-header">
+                        <div className="dossier-agent-title" style={{ color: '#3B82F6' }}>
+                          <Brain size={18} />
+                          Agent 2 // Cognitive Causal Reasoning (Groq LLM)
+                        </div>
+                        <span className="dossier-sla-tag">
+                          {agentLatencies[2] ? `${agentLatencies[2]} ms` : '5171 ms'} · LLAMA-3-70B
+                        </span>
+                      </div>
+
+                      {agent2Result ? (
+                        <>
+                          <div className="result-header-row">
+                            <div className="result-status-text">
+                              <CheckCircle2 size={16} color="var(--emerald)" />
+                              CAUSAL REASONING CONCLUDED
+                            </div>
+                            <div className={`severity-pill severity-${(agent2Result.severity || 'medium').toLowerCase()}`}>
+                              <AlertOctagon size={13} />
+                              SEVERITY: {agent2Result.severity?.toUpperCase()}
+                            </div>
+                          </div>
+
+                          {/* Root Cause Component Hero Box */}
+                          <div className="root-cause-hero-box" style={{ borderColor: 'rgba(59, 130, 246, 0.4)' }}>
+                            <div className="root-cause-tag" style={{ color: '#3B82F6' }}>
+                              <Wrench size={13} />
+                              Deduce Root-Cause Failed Component
+                            </div>
+                            <div className="root-cause-title">
+                              {agent2Result.root_cause_component}
+                            </div>
+                            <div className="root-cause-sub">
+                              Single physical component isolated by Groq LLM for replacement / bench testing
+                            </div>
+                          </div>
+
+                          {/* Mechanical Failure Mode */}
+                          <div className="diagnostic-detail-card">
+                            <div className="detail-label" style={{ color: '#3B82F6' }}>
+                              <Radio size={13} color="#3B82F6" />
+                              Mechanical Failure Mode & Physics
+                            </div>
+                            <div className="detail-text">
+                              {agent2Result.failure_mode}
+                            </div>
+                          </div>
+
+                          {/* Safety Warning */}
+                          {agent2Result.safety_warning && (
+                            <div className="safety-warning-banner">
+                              <AlertTriangle size={20} color="var(--red-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                              <div>
+                                <h4>MECHANIC SAFETY HAZARD & PROTOCOL</h4>
+                                <p>{agent2Result.safety_warning}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Downstream Fork Status */}
+                          <div className="dispatch-preview-box">
+                            <div className="dispatch-header">
+                              <span className="dispatch-title">Downstream Dispatch: LangGraph Fork-Join</span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800 }}>FORKED & JOINED</span>
+                            </div>
+                            <div className="dispatch-flow-grid">
+                              <div className="dispatch-target-card">
+                                <div className="target-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+                                  <Layers size={16} color="#10B981" />
+                                </div>
+                                <div>
+                                  <span className="target-name">Agent 3: Manual RAG</span>
+                                  <span className="target-sub">ChromaDB OEM Manual</span>
+                                </div>
+                              </div>
+                              <div className="dispatch-target-card">
+                                <div className="target-icon-wrap" style={{ background: 'rgba(255, 94, 20, 0.1)', borderColor: 'rgba(255, 94, 20, 0.3)' }}>
+                                  <Database size={16} color="#FF5E14" />
+                                </div>
+                                <div>
+                                  <span className="target-name">Agent 4: Parts Catalog</span>
+                                  <span className="target-sub">3-Tier Multi-Pricing</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="results-empty" style={{ padding: '24px 16px' }}>
+                          <RefreshCw size={24} className="spin-icon" color="#3B82F6" />
+                          <span>Awaiting Groq LLM inference handoff...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CARD 3: AGENT 3 // OEM WORKSHOP MANUAL RAG */}
+                    <div className="dossier-card card-agent3">
+                      <div className="dossier-card-header">
+                        <div className="dossier-agent-title" style={{ color: '#10B981' }}>
+                          <Layers size={18} />
+                          Agent 3 // OEM Workshop Manual RAG (ChromaDB)
+                        </div>
+                        <span className="dossier-sla-tag">
+                          {agentLatencies[3] ? `${agentLatencies[3]} ms` : '1657 ms'} · DENSE VECTOR
+                        </span>
+                      </div>
+
+                      {repairPlan ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          <div>
+                            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
+                              OEM Step-by-Step Replacement Procedure ({repairPlan.steps?.length || 0} Steps)
+                            </div>
+                            <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '0.88rem', lineHeight: '1.65', color: '#f1f5f9' }}>
+                              {repairPlan.steps?.map((step, idx) => (
+                                <li key={idx} style={{ marginBottom: '8px' }}>{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+
+                          {repairPlan.torque_specs && (
+                            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 6, padding: '12px 14px' }}>
+                              <div style={{ color: '#34d399', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Wrench size={13} />
+                                OEM Factory Torque Specifications & Tolerances
+                              </div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                                {repairPlan.torque_specs}
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-subtle)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <ExternalLink size={12} color="#10B981" />
+                            <span>Vector Reference: <strong>{repairPlan.citation}</strong></span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="results-empty" style={{ padding: '24px 16px' }}>
+                          <Layers size={24} color="#10B981" />
+                          <span>Querying dense vector database for workshop repair manual...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CARD 4: AGENT 4 // BOM CATALOG & MULTI-TIER PROCUREMENT */}
+                    <div className="dossier-card card-agent4">
+                      <div className="dossier-card-header">
+                        <div className="dossier-agent-title" style={{ color: '#FF5E14' }}>
+                          <ShoppingBag size={18} />
+                          Agent 4 // BOM Catalog & Multi-Tier Pricing
+                        </div>
+                        <span className="dossier-sla-tag">
+                          {agentLatencies[4] ? `${agentLatencies[4]} ms` : '18 ms'} · MOTOR / MITCHELL
+                        </span>
+                      </div>
+
+                      {(procurement || procurementPlan) ? (
+                        (() => {
+                          const proc = procurement || procurementPlan;
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                              {/* Resolved Catalog Component */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                                <div className="procure-stat-card">
+                                  <span className="procure-stat-label">Resolved Catalog Component</span>
+                                  <span className="procure-stat-val">{proc.resolved_part || 'Component Verified'}</span>
+                                </div>
+                                <div className="procure-stat-card">
+                                  <span className="procure-stat-label">Match Strategy & Accuracy</span>
+                                  <span className="procure-stat-val highlight">
+                                    {proc.match_method} ({Math.round((proc.match_confidence || 1) * 100)}%)
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 3-Tier Multi-Pricing Quotes */}
+                              {proc.tiers && Object.keys(proc.tiers).length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                  {TIER_ORDER.filter((tier) => proc.tiers[tier] && proc.tiers[tier].parts?.length > 0).map((tier) => {
+                                    const quote = proc.tiers[tier];
+                                    return (
+                                      <div key={tier} className="procure-quote-tier-card">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                                          <strong className="tier-card-title">{TIER_LABELS[tier] || tier}</strong>
+                                          <strong className="tier-card-total">
+                                            LKR {quote.tier_total_lkr?.toLocaleString()}
+                                          </strong>
+                                        </div>
+
+                                        <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0', fontSize: '0.82rem', color: 'var(--text-gray)' }}>
+                                          {quote.parts?.map((part) => (
+                                            <li key={part.part_number} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                                              <span>
+                                                {part.part_name}{' '}
+                                                <span style={{ color: 'var(--text-muted)' }}>
+                                                  ({part.brand} · {part.part_number})
+                                                </span>
+                                              </span>
+                                              <span style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', color: '#f1f5f9' }}>
+                                                LKR {part.price_lkr?.toLocaleString()}
+                                              </span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {proc.suppressed_tiers?.length > 0 && (
+                                <div style={{ fontSize: '0.8rem', color: '#ff999d', background: 'rgba(255, 30, 39, 0.08)', padding: '8px 12px', borderRadius: 6 }}>
+                                  <strong>Withheld for safety:</strong> {proc.suppressed_tiers.map((tier) => TIER_LABELS[tier] || tier).join(', ')}
+                                </div>
+                              )}
+
+                              {proc.warnings?.length > 0 && (
+                                <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.78rem', color: '#fbbf24' }}>
+                                  {proc.warnings.map((w, idx) => (
+                                    <li key={idx}>{w}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <div className="results-empty" style={{ padding: '24px 16px' }}>
+                          <ShoppingBag size={24} color="#FF5E14" />
+                          <span>Pricing cross-catalog components & inventory...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Collapsible A2A Handshake JSON Payload */}
+                  <div className="raw-json-accordion" style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="raw-json-toggle-btn"
+                      onClick={() => setShowRawJson(!showRawJson)}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Terminal size={13} color="var(--red-primary)" />
+                        {showRawJson ? 'Hide A2A Contract JSON' : 'Inspect Verified A2A Contract JSON (Multi-Agent Telemetry)'}
+                      </span>
+                      <span>{showRawJson ? '▲' : '▼'}</span>
+                    </button>
+                    {showRawJson && (
+                      <div className="raw-json-body">
+                        <pre className="a2a-code">
+                          {JSON.stringify({ triageResult, agent2Result, repairPlan, procurement: procurement || procurementPlan }, null, 2)}
+                        </pre>
+                        <button
+                          type="button"
+                          onClick={handleCopyPayload}
+                          className="icon-btn"
+                          style={{ fontSize: '0.72rem', gap: 4, marginTop: 8 }}
+                        >
+                          {copied ? <><Check size={12} color="var(--emerald)" /><span style={{ color: 'var(--emerald)' }}>Copied</span></> : <><Copy size={12} /><span>Copy JSON</span></>}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
-        </div>
-      </section>
+              )}
+
+              {/* INITIAL IDLE STATE: Mechanic Quick-Start Guide */}
+              {!triageResult && !loading && !error && (
+                <div className="results-empty" style={{ padding: '36px 24px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                  <div className="empty-scanner-icon" style={{ width: 60, height: 60 }}>
+                    <Car size={32} color="#00F0FF" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', color: 'var(--text-white)', fontWeight: 800 }}>
+                      Auto-Triage Autonomous Multi-Agent Command Deck Ready
+                    </h3>
+                    <p style={{ fontSize: '0.9rem', marginTop: 8, color: 'var(--text-muted)', maxWidth: 640, lineHeight: 1.6 }}>
+                      Select any quick preset above or type a customer complaint. The system will launch the
+                      <strong> full wide-screen holographic particle DAG</strong> across all 4 agents in real-time, then render your
+                      <strong> complete Executive Diagnostic Dossier</strong> with OEM repair procedures and 3-tier LKR procurement quotes.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Diagnostic & DTC Coverage Matrix (#matrix) */}
+          <section id="matrix" className="matrix-section">
+            <h2 className="section-title">Diagnostic Trouble Code Matrix</h2>
+
+            <div className="matrix-grid">
+              {/* Powertrain Card */}
+              <div className="matrix-card">
+                <div className="matrix-card-header">
+                  <div className="matrix-category">
+                    <Activity size={16} color="var(--red-primary)" />
+                    POWERTRAIN <span>// P-CODES</span>
+                  </div>
+                </div>
+                <ul className="matrix-list">
+                  <li className="matrix-item"><span>System Too Lean (Bank 1)</span><code>P0171</code></li>
+                  <li className="matrix-item"><span>Random/Multiple Misfire</span><code>P0300</code></li>
+                  <li className="matrix-item"><span>Catalyst System Efficiency</span><code>P0420</code></li>
+                  <li className="matrix-item"><span>EVAP System Leak Detected</span><code>P0455</code></li>
+                  <li className="matrix-item"><span>Coolant Thermostat Malfunction</span><code>P0128</code></li>
+                </ul>
+              </div>
+
+              {/* Chassis Card */}
+              <div className="matrix-card">
+                <div className="matrix-card-header">
+                  <div className="matrix-category">
+                    <Gauge size={16} color="var(--red-primary)" />
+                    CHASSIS <span>// C-CODES</span>
+                  </div>
+                </div>
+                <ul className="matrix-list">
+                  <li className="matrix-item"><span>Front Left Wheel Speed Sensor</span><code>C0035</code></li>
+                  <li className="matrix-item"><span>Front Right Wheel Speed Sensor</span><code>C0040</code></li>
+                  <li className="matrix-item"><span>Electronic Stability Control</span><code>C0121</code></li>
+                  <li className="matrix-item"><span>ABS Return Pump Relay Failure</span><code>C0265</code></li>
+                  <li className="matrix-item"><span>Electronic Brake Module Malfunction</span><code>C0550</code></li>
+                </ul>
+              </div>
+
+              {/* Body Card */}
+              <div className="matrix-card">
+                <div className="matrix-card-header">
+                  <div className="matrix-category">
+                    <ShieldCheck size={16} color="var(--red-primary)" />
+                    BODY <span>// B-CODES</span>
+                  </div>
+                </div>
+                <ul className="matrix-list">
+                  <li className="matrix-item"><span>Driver Frontal Airbag Circuit</span><code>B0001</code></li>
+                  <li className="matrix-item"><span>Passenger Side Airbag Circuit</span><code>B0028</code></li>
+                  <li className="matrix-item"><span>ECU Internal Malfunction</span><code>B1000</code></li>
+                  <li className="matrix-item"><span>Power Window Control Circuit</span><code>B1325</code></li>
+                  <li className="matrix-item"><span>HVAC Blend Door Actuator Fault</span><code>B1402</code></li>
+                </ul>
+              </div>
+
+              {/* Network Card */}
+              <div className="matrix-card">
+                <div className="matrix-card-header">
+                  <div className="matrix-category">
+                    <Cpu size={16} color="var(--red-primary)" />
+                    NETWORK <span>// U-CODES</span>
+                  </div>
+                </div>
+                <ul className="matrix-list">
+                  <li className="matrix-item"><span>Lost Communication with ECM</span><code>U0100</code></li>
+                  <li className="matrix-item"><span>Lost Communication with TCM</span><code>U0101</code></li>
+                  <li className="matrix-item"><span>Lost Communication with ABS Module</span><code>U0121</code></li>
+                  <li className="matrix-item"><span>Lost Communication with IPC</span><code>U0155</code></li>
+                  <li className="matrix-item"><span>CAN Controller Bus Failure</span><code>U1000</code></li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* FAQ Accordion Section (#faq) */}
+          <section id="faq" className="faq-section">
+            <div style={{ textAlign: 'center' }}>
+              <h2 className="section-title">Frequently Asked Questions</h2>
+              <p style={{ color: 'var(--text-secondary)', maxWidth: 620, margin: '12px auto 0', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                Common questions from drivers, mechanics, and workshop managers regarding diagnostics, 3-tier parts sourcing, and subscription plans.
+              </p>
+
+              <div className="faq-filter-pills">
+                <button
+                  type="button"
+                  className={`faq-filter-btn ${faqCategoryFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => { setFaqCategoryFilter('all'); setOpenFaq(0); }}
+                >
+                  All Questions ({FAQ_ITEMS.length})
+                </button>
+                <button
+                  type="button"
+                  className={`faq-filter-btn ${faqCategoryFilter === 'system' ? 'active' : ''}`}
+                  onClick={() => { setFaqCategoryFilter('system'); setOpenFaq(0); }}
+                >
+                  System & Diagnostics
+                </button>
+                <button
+                  type="button"
+                  className={`faq-filter-btn ${faqCategoryFilter === 'pricing' ? 'active' : ''}`}
+                  onClick={() => { setFaqCategoryFilter('pricing'); setOpenFaq(0); }}
+                >
+                  Pricing & Subscriptions
+                </button>
+              </div>
+            </div>
+
+            <div className="faq-list">
+              {FAQ_ITEMS
+                .filter(item => faqCategoryFilter === 'all' || item.categoryKey === faqCategoryFilter)
+                .map((item, index) => {
+                  const isOpen = openFaq === index;
+                  return (
+                    <div key={index} className={`faq-item ${isOpen ? 'open' : ''}`}>
+                      <button
+                        className="faq-question"
+                        onClick={() => setOpenFaq(isOpen ? -1 : index)}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span className={`faq-category-pill ${item.categoryKey}`}>
+                            {item.category}
+                          </span>
+                          <span>{item.q}</span>
+                        </span>
+                        {isOpen ? <ChevronUp size={18} color="var(--accent-primary, #FF5E14)" /> : <ChevronDown size={18} />}
+                      </button>
+                      {isOpen && (
+                        <div className="faq-answer">
+                          {item.a}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </section>
         </>
       )}
 
@@ -2593,9 +2548,9 @@ export default function App() {
               Autonomous Vehicle Diagnostic Gateway & Multi-Tier Parts Procurement Engine for modern workshops and technicians.
             </p>
             <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
-              <button 
-                type="button" 
-                onClick={toggleTheme} 
+              <button
+                type="button"
+                onClick={toggleTheme}
                 className="theme-toggle-btn"
                 style={{ fontSize: '0.72rem' }}
               >
@@ -2606,16 +2561,13 @@ export default function App() {
           </div>
 
           <ul className="footer-links">
-            <li><button type="button" onClick={() => { setActivePage('triage'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}>Diagnostic Console</button></li>
-            <li><button type="button" onClick={() => { setActivePage('workflow'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}>Diagnostic Workflow</button></li>
             {isAdmin && (
               <li><button type="button" onClick={() => { setActivePage('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', color: '#FFB800', cursor: 'pointer', font: 'inherit', fontWeight: 700 }}>Admin Dashboard</button></li>
             )}
             <li><a href="#showcase">Universal Architecture</a></li>
             <li><a href="#matrix">Telemetry Matrix</a></li>
-            <li><a href="https://github.com/Kavisha1Gamagedara/Auto-Triage-AI-System" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              GitHub Repo <ExternalLink size={12} />
-            </a></li>
+
+
           </ul>
         </div>
 
@@ -2626,19 +2578,19 @@ export default function App() {
       </footer>
 
       {/* Role-Based Authentication Modal */}
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
-        initialTab={authModalTab} 
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab={authModalTab}
         onAuthSuccess={() => {
           refreshUser();
-        }} 
+        }}
       />
 
       {/* 4 Subscription Tiers Comparison & Upgrade Modal */}
-      <SubscriptionTiersModal 
-        isOpen={tiersModalOpen} 
-        onClose={() => setTiersModalOpen(false)} 
+      <SubscriptionTiersModal
+        isOpen={tiersModalOpen}
+        onClose={() => setTiersModalOpen(false)}
         onSelectTierToUpgrade={(tier) => {
           setSelectedUpgradeTier(tier);
           setGatewayModalOpen(true);
@@ -2650,29 +2602,29 @@ export default function App() {
       />
 
       {/* Developer Sandbox Payment Gateway Modal */}
-      <DeveloperPaymentGatewayModal 
-        isOpen={gatewayModalOpen} 
-        onClose={() => setGatewayModalOpen(false)} 
-        targetTier={selectedUpgradeTier} 
+      <DeveloperPaymentGatewayModal
+        isOpen={gatewayModalOpen}
+        onClose={() => setGatewayModalOpen(false)}
+        targetTier={selectedUpgradeTier}
         onPaymentSuccess={() => {
           refreshUser();
-        }} 
+        }}
       />
 
       {/* Admin User & Subscription Management Console */}
-      <AdminDashboardModal 
-        isOpen={adminModalOpen} 
-        onClose={() => setAdminModalOpen(false)} 
+      <AdminDashboardModal
+        isOpen={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
       />
 
       {/* Quota Exceeded Notification Modal */}
-      <QuotaExceededModal 
-        isOpen={quotaExceededModalOpen} 
-        onClose={() => setQuotaExceededModalOpen(false)} 
+      <QuotaExceededModal
+        isOpen={quotaExceededModalOpen}
+        onClose={() => setQuotaExceededModalOpen(false)}
         onOpenTiers={() => {
           setQuotaExceededModalOpen(false);
           setTiersModalOpen(true);
-        }} 
+        }}
       />
     </div>
   );
