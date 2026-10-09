@@ -16,7 +16,9 @@ from core.models import (
     FreezeFrameAnalysis,
     RepairRequest,
     ProcurementRequest, 
-    ProcurementResponse
+    ProcurementResponse,
+    ComplaintSummary,
+    ComplaintSummarizeRequest
 )
 
 # Role-Based Access Control & Subscriptions
@@ -45,7 +47,8 @@ from agents.agent1_ingestion import (
     get_vehicle_history,
     record_vehicle_visit,
     get_fleet_store_status,
-    lookup_jdm_chassis_specs
+    lookup_jdm_chassis_specs,
+    summarize_complaint
 )
 
 
@@ -164,6 +167,7 @@ async def ingest_diagnostic(
     vin = (request.vin or "").strip().upper() if request.vin else None
     vin_data = None
     fuzzy_corrections: List[Dict[str, Any]] = []
+    extracted: Dict[str, Any] = {}
 
     # Check Mode 1: Direct VIN Intake Mode
     if vin:
@@ -322,6 +326,11 @@ async def ingest_diagnostic(
             technician_notes=raw_user_note
         )
 
+    # 6. NLP Customer & Technician Complaint Summarization (Abstractive & Extractive)
+    complaint_summary = extracted.get("complaint_summary")
+    if not complaint_summary and raw_user_note:
+        complaint_summary = summarize_complaint(raw_user_note, dtc_codes)
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -338,7 +347,8 @@ async def ingest_diagnostic(
         sl_plate=sl_plate,
         jdm_specs=jdm_specs,
         plate_compatibility=plate_compatibility,
-        fleet_history=fleet_history
+        fleet_history=fleet_history,
+        complaint_summary=complaint_summary
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -357,7 +367,8 @@ async def ingest_diagnostic(
         sl_plate=sl_plate,
         jdm_specs=jdm_specs,
         plate_compatibility=plate_compatibility,
-        fleet_history=fleet_history
+        fleet_history=fleet_history,
+        complaint_summary=complaint_summary
     )
 
 
@@ -397,6 +408,18 @@ async def api_get_fleet_history_status():
     Returns the active operational mode (MongoDB Atlas vs Local JSON Fallback) of the Fleet History store.
     """
     return get_fleet_store_status()
+
+
+@app.post(
+    "/api/v1/summarize-complaint",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_summarize_complaint(data: ComplaintSummarizeRequest):
+    """
+    NLP Customer & Technician Complaint Abstractive & Extractive Summarization.
+    Directly satisfies SLIIT requirements for NLP techniques (NER & Summarization) and LLM deployment.
+    """
+    return summarize_complaint(data.complaint, data.dtc_codes)
 
 
 

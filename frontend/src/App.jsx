@@ -2723,6 +2723,64 @@ export default function App() {
                         );
                       })()}
 
+                      {/* NLP Executive Complaint Summary (Abstractive & Extractive) */}
+                      {(triageResult.complaint_summary || triageResult.vehicle_details?.complaint_summary) && (() => {
+                        const summary = triageResult.complaint_summary || triageResult.vehicle_details.complaint_summary;
+                        const isCritical = summary.severity_level?.toLowerCase() === 'critical' || summary.severity_level?.toLowerCase() === 'high';
+                        const isModerate = summary.severity_level?.toLowerCase() === 'moderate';
+                        const isLlm = summary.method === 'hybrid_llm_abstractive';
+
+                        return (
+                          <div className={`complaint-summary-dossier-box ${isCritical ? 'critical' : isModerate ? 'moderate' : 'minor'}`}>
+                            <div className="summary-box-header">
+                              <div className="summary-box-title">
+                                <Brain size={15} color={isCritical ? '#EF4444' : isModerate ? '#F59E0B' : '#00F0FF'} />
+                                <span>NLP Complaint Summary // Triage Abstract</span>
+                              </div>
+                              <div className="summary-header-badges">
+                                <span className={`summary-severity-pill ${isCritical ? 'critical' : isModerate ? 'moderate' : 'minor'}`}>
+                                  {summary.severity_level?.toUpperCase()} · {summary.urgency_score}/10 URGENCY
+                                </span>
+                                <span className="summary-method-pill">
+                                  {isLlm ? '🤖 Hybrid LLM Abstractive' : '⚡ spaCy Linguistic Extractive'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="summary-abstract-text">
+                              "{summary.executive_summary}"
+                            </div>
+
+                            <div className="summary-chips-row">
+                              {summary.chief_complaints && summary.chief_complaints.length > 0 && (
+                                <div className="summary-subgroup">
+                                  <span className="summary-subgroup-label">Chief Symptoms:</span>
+                                  <div className="summary-pills-list">
+                                    {summary.chief_complaints.map((sym, idx) => (
+                                      <span key={idx} className="summary-symptom-chip">
+                                        • {sym}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {summary.operational_conditions && summary.operational_conditions.length > 0 && (
+                                <div className="summary-subgroup">
+                                  <span className="summary-subgroup-label">Operating Conditions:</span>
+                                  <div className="summary-pills-list">
+                                    {summary.operational_conditions.map((cond, idx) => (
+                                      <span key={idx} className="summary-condition-chip">
+                                        📍 {cond}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* IR RapidFuzz Typo Corrections */}
                       {triageResult.fuzzy_corrections && triageResult.fuzzy_corrections.length > 0 && (

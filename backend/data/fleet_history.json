@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 6,
+    "total_visits": 9,
     "visits": [
       {
         "visit_index": 1,
@@ -74,6 +74,36 @@
         ],
         "root_cause_component": "Pending Diagnosis",
         "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 7,
+        "timestamp": "2026-10-09T03:26:21.794784+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 8,
+        "timestamp": "2026-10-09T04:07:31.115564+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 9,
+        "timestamp": "2026-10-09T04:19:23.448908+00:00",
+        "dtc_codes": [
+          "P0300",
+          "P0420"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "2015 Toyota Aqua WP CAB-1234 chassis NHP10 customer states vehicle shakes violently when stopped at red lights, check engine light flashes repeatedly, and strong rotten egg smell from exhaust with trouble code P0300 and P0420"
       }
     ]
   },
@@ -84,7 +114,7 @@
     "model": "Vezel Hybrid",
     "year": 2015,
     "first_registered_at": "2024-05-10T11:00:00Z",
-    "total_visits": 1,
+    "total_visits": 2,
     "visits": [
       {
         "visit_index": 1,
@@ -94,6 +124,15 @@
         ],
         "root_cause_component": "Dual-Clutch Transmission Actuator",
         "technician_notes": "Clutch actuator fluid replaced with Honda Ultra Dot 4 and re-learned."
+      },
+      {
+        "visit_index": 2,
+        "timestamp": "2026-10-09T04:13:21.370027+00:00",
+        "dtc_codes": [
+          "P0841"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "2017 Honda Vezel WP CAA-5678 customer states vehicle shakes violently when stopped at red lights with DTC P0841"
       }
     ]
   }

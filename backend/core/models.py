@@ -161,6 +161,25 @@ class FleetHistorySummary(BaseModel):
     visits: List[FleetVisitRecord] = Field(default_factory=list, description="Complete chronological visit log")
 
 
+class ComplaintSummary(BaseModel):
+    """
+    NLP Customer & Technician Complaint Abstractive & Extractive Summarization.
+    Directly satisfies SLIIT requirements for NLP techniques (NER & Summarization) and LLM deployment.
+    """
+    executive_summary: str = Field(..., description="Concise 1-2 sentence technical diagnostic abstract")
+    chief_complaints: List[str] = Field(default_factory=list, description="Structured primary physical symptom bullet points")
+    operational_conditions: List[str] = Field(default_factory=list, description="Driving conditions when fault occurs (e.g., At idle, Cold start)")
+    severity_level: str = Field(default="Moderate", description="Assessed severity: Minor, Moderate, or Critical")
+    urgency_score: int = Field(default=5, ge=1, le=10, description="Severity/urgency score (1-10)")
+    method: str = Field(default="spacy_extractive_linguistic", description="Summarization method: 'hybrid_llm_abstractive' or 'spacy_extractive_linguistic'")
+
+
+class ComplaintSummarizeRequest(BaseModel):
+    """Payload for standalone complaint summarization endpoint."""
+    complaint: str = Field(..., description="Raw customer or technician complaint text")
+    dtc_codes: Optional[List[str]] = Field(default_factory=list, description="Optional diagnostic trouble codes")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -182,6 +201,7 @@ class VehicleDetails(BaseModel):
     jdm_specs: Optional[JDMChassisSpecs] = Field(default=None, description="JDM frame and powertrain specifications")
     plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
+    complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
@@ -259,6 +279,7 @@ class Agent1Payload(BaseModel):
     jdm_specs: Optional[JDMChassisSpecs] = Field(default=None, description="JDM frame and powertrain specifications")
     plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
+    complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
 
     @model_validator(mode="before")
     @classmethod
