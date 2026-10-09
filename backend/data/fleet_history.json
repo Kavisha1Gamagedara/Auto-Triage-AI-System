@@ -1,0 +1,90 @@
+{
+  "WP CAB-1234": {
+    "plate_number": "WP CAB-1234",
+    "chassis_number": "NHP10-2091482",
+    "make": "Toyota",
+    "model": "Aqua",
+    "year": 2014,
+    "first_registered_at": "2024-03-15T09:30:00Z",
+    "total_visits": 5,
+    "visits": [
+      {
+        "visit_index": 1,
+        "timestamp": "2024-03-15T09:30:00Z",
+        "dtc_codes": [
+          "P0A80"
+        ],
+        "root_cause_component": "Hybrid Battery Pack",
+        "technician_notes": "Hybrid battery reconditioned and cooling fan filter cleaned."
+      },
+      {
+        "visit_index": 2,
+        "timestamp": "2024-08-20T14:15:00Z",
+        "dtc_codes": [
+          "C1241"
+        ],
+        "root_cause_component": "12V Auxiliary Battery",
+        "technician_notes": "Low auxiliary battery voltage detected; replaced with Amaron AGM battery."
+      },
+      {
+        "visit_index": 3,
+        "timestamp": "2026-10-08T19:04:20.438960+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 4,
+        "timestamp": "2026-10-09T03:12:42.447703+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Dual-mode test verification."
+      },
+      {
+        "visit_index": 5,
+        "timestamp": "2026-10-09T03:13:37.049920+00:00",
+        "dtc_codes": [
+          "C1241"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Offline fallback recording."
+      },
+      {
+        "visit_index": 5,
+        "timestamp": "2026-10-09T03:14:00.774630+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      }
+    ]
+  },
+  "WP CAA-5678": {
+    "plate_number": "WP CAA-5678",
+    "chassis_number": "RU3-1084921",
+    "make": "Honda",
+    "model": "Vezel Hybrid",
+    "year": 2015,
+    "first_registered_at": "2024-05-10T11:00:00Z",
+    "total_visits": 1,
+    "visits": [
+      {
+        "visit_index": 1,
+        "timestamp": "2024-05-10T11:00:00Z",
+        "dtc_codes": [
+          "P0841"
+        ],
+        "root_cause_component": "Dual-Clutch Transmission Actuator",
+        "technician_notes": "Clutch actuator fluid replaced with Honda Ultra Dot 4 and re-learned."
+      }
+    ]
+  }
+}

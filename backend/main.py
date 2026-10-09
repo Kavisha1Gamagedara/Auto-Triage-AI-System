@@ -44,6 +44,7 @@ from agents.agent1_ingestion import (
     verify_plate_vehicle_compatibility,
     get_vehicle_history,
     record_vehicle_visit,
+    get_fleet_store_status,
     lookup_jdm_chassis_specs
 )
 
@@ -385,6 +386,17 @@ async def api_get_fleet_history(identifier: str):
     """
     hist = get_vehicle_history(identifier)
     return hist or {"has_prior_history": False, "total_prior_visits": 0, "message": f"No previous workshop visits found for '{identifier}'"}
+
+
+@app.get(
+    "/api/v1/fleet-history-status",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_get_fleet_history_status():
+    """
+    Returns the active operational mode (MongoDB Atlas vs Local JSON Fallback) of the Fleet History store.
+    """
+    return get_fleet_store_status()
 
 
 

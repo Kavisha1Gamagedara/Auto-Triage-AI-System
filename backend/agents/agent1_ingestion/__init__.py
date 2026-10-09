@@ -48,7 +48,8 @@ from .sri_lanka_plate_validator import (
 
 from .fleet_history_store import (
     get_vehicle_history,
-    record_vehicle_visit
+    record_vehicle_visit,
+    get_fleet_store_status
 )
 
 __all__ = [
@@ -85,6 +86,7 @@ __all__ = [
     "SL_PROVINCES",
     "VEHICLE_CLASS_MAP",
     "get_vehicle_history",
-    "record_vehicle_visit"
+    "record_vehicle_visit",
+    "get_fleet_store_status"
 ]
 
