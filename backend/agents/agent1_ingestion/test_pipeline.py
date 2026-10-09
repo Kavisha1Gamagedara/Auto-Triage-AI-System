@@ -536,6 +536,67 @@ async def test_complaint_summarization():
     print("\nNLP Complaint Summarization: ALL PASSED!")
 
 
+async def test_privacy_guardrail():
+    print("\n=== [10] Testing Responsible AI: PII Masking & Privacy Guardrail ===")
+    try:
+        from .privacy_guardrail import mask_pii
+        from .nlp_extractor import extract_entities
+    except ImportError:
+        from privacy_guardrail import mask_pii
+        from nlp_extractor import extract_entities
+
+    # 1. Test Sri Lankan NIC redaction (Old 9+V format & Modern 12-digit format)
+    raw_nic_text = "Customer NIC 951234567V brought in vehicle, alternative ID is 199512345678."
+    sanitized_nic, rep_nic = mask_pii(raw_nic_text)
+    assert rep_nic["pii_detected"] is True
+    assert rep_nic["total_redactions"] == 2
+    assert "951234567V" not in sanitized_nic
+    assert "199512345678" not in sanitized_nic
+    assert "[REDACTED_NIC]" in sanitized_nic
+    print("  -> Sri Lankan NIC Redaction (Old + Modern): PASSED")
+
+    # 2. Test Sri Lankan Phone & Email Redaction
+    raw_contact_text = "Contact customer at 0771234567 or email kamal.perera@gmail.com for repair approval."
+    sanitized_contact, rep_contact = mask_pii(raw_contact_text)
+    assert rep_contact["pii_detected"] is True
+    assert "0771234567" not in sanitized_contact
+    assert "kamal.perera@gmail.com" not in sanitized_contact
+    assert "[REDACTED_PHONE]" in sanitized_contact
+    assert "[REDACTED_EMAIL]" in sanitized_contact
+    print("  -> Sri Lankan Phone & Email Redaction: PASSED")
+
+    # 3. Test Named Entity Person / Customer Redaction vs Vehicle Brand Non-Collision
+    raw_customer_text = "Customer: Kamal Perera reported misfire on 2017 Toyota Aqua WP CAB-1234 with DTC P0300."
+    sanitized_cust, rep_cust = mask_pii(raw_customer_text)
+    assert rep_cust["pii_detected"] is True
+    assert "Kamal Perera" not in sanitized_cust
+    assert "[REDACTED_CUSTOMER]" in sanitized_cust
+    # Verify vehicle domain entities are completely preserved
+    assert "Toyota" in sanitized_cust
+    assert "Aqua" in sanitized_cust
+    assert "WP CAB-1234" in sanitized_cust
+    assert "P0300" in sanitized_cust
+    print("  -> Customer Name Redaction & Automotive False-Positive Shield: PASSED")
+
+    # 4. Ingestion Pipeline Integration Test
+    full_text = "Customer: Sunil Fernando (NIC: 881234567V, Phone: 0712345678, Email: sunil@repair.lk) states 2018 Honda Vezel RU3 with check engine light code P0171."
+    entities = extract_entities(full_text)
+    assert "privacy_guardrail" in entities
+    guardrail = entities["privacy_guardrail"]
+    assert guardrail["pii_detected"] is True
+    assert guardrail["total_redactions"] >= 3
+    # Check audit log masked previews
+    previews = [r["preview_masked"] for r in guardrail["redacted_entities"]]
+    assert any("*" in p for p in previews)
+    # Check that make, model, chassis, and DTC are extracted correctly from sanitized text
+    assert entities["make"] == "Honda"
+    assert entities["model"] == "Vezel"
+    assert "P0171" in entities["dtc_codes"]
+    print("  -> Full Agent 1 Ingestion Pipeline Privacy Integration: PASSED")
+
+    print("\nResponsible AI Privacy Guardrail: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
@@ -546,6 +607,7 @@ async def main():
     await test_extended_automotive_data()
     await test_sri_lanka_plate_and_fleet_history()
     await test_complaint_summarization()
+    await test_privacy_guardrail()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
@@ -554,4 +616,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 

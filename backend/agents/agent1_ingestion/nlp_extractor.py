@@ -44,6 +44,9 @@ try:
     from .complaint_summarizer import (
         summarize_complaint
     )
+    from .privacy_guardrail import (
+        mask_pii
+    )
 except ImportError:
     from extended_automotive_data import (
         GLOBAL_VEHICLE_CATALOG,
@@ -64,6 +67,9 @@ except ImportError:
     )
     from complaint_summarizer import (
         summarize_complaint
+    )
+    from privacy_guardrail import (
+        mask_pii
     )
 
 
@@ -931,7 +937,10 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     - OBD-II DTC Trouble Codes (regex pattern)
     - Physical Damaged Components (noun chunks / lexicon)
     """
-    clean_text = sanitize_input(raw_text)
+    # 0. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
+    raw_doc = nlp(raw_text) if nlp is not None else None
+    sanitized_pii_text, privacy_guardrail = mask_pii(raw_text, raw_doc)
+    clean_text = sanitize_input(sanitized_pii_text)
     doc = nlp(clean_text) if nlp is not None else clean_text
 
     vin = extract_vin(clean_text)
@@ -988,7 +997,8 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "jdm_specs": jdm_specs,
         "plate_compatibility": plate_compatibility,
         "fleet_history": fleet_history,
-        "complaint_summary": complaint_summary
+        "complaint_summary": complaint_summary,
+        "privacy_guardrail": privacy_guardrail
     }
 
 
