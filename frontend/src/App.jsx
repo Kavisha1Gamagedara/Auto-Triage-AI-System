@@ -42,7 +42,8 @@ import {
   Fuel,
   Thermometer,
   FileText,
-  XCircle
+  XCircle,
+  Lock
 } from 'lucide-react';
 
 import './App.css';
@@ -72,6 +73,10 @@ const PRESETS = [
   {
     label: 'Universal Cascade: P0171 + P0300 (Lean & Misfire)',
     text: '2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance'
+  },
+  {
+    label: '🛡️ Responsible AI: PII Masking (SL NIC + Phone)',
+    text: 'Customer: Kamal Perera (NIC: 951234567V, Phone: 0771234567, Email: kamal.perera@gmail.com) reports 2017 Toyota Aqua NHP10 WP CAB-1234 with trouble code P0300 and violent engine shaking'
   },
   {
     label: '🇱🇰 Aqua NHP10 (WP CAB-1234)',
@@ -2778,6 +2783,60 @@ export default function App() {
                                 </div>
                               )}
                             </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5) */}
+                      {(triageResult.privacy_guardrail || triageResult.vehicle_details?.privacy_guardrail) && (() => {
+                        const guard = triageResult.privacy_guardrail || triageResult.vehicle_details.privacy_guardrail;
+                        if (!guard) return null;
+                        const hasPii = guard.pii_detected;
+
+                        return (
+                          <div className={`privacy-guardrail-dossier-box ${hasPii ? 'pii-shielded' : 'clean'}`}>
+                            <div className="privacy-guardrail-header">
+                              <div className="privacy-guardrail-title">
+                                <Lock size={15} color={hasPii ? '#10B981' : '#00F0FF'} />
+                                <span>Responsible AI // User Data Protection & Privacy Guardrail</span>
+                              </div>
+                              <div className="privacy-header-badges">
+                                <span className={`privacy-status-pill ${hasPii ? 'shielded' : 'clean'}`}>
+                                  {hasPii ? `🛡️ ${guard.total_redactions} PII REDACTED` : '✓ PRIVACY CLEAR'}
+                                </span>
+                                <span className="privacy-std-pill" title={guard.compliance_standard}>
+                                  SL PDPA No. 9 of 2022 · GDPR
+                                </span>
+                              </div>
+                            </div>
+
+                            {hasPii ? (
+                              <>
+                                <div className="privacy-compliance-notice">
+                                  <span>
+                                    Customer sensitive personal identity data was detected and intercepted at the ingestion boundary. Downstream multi-agent reasoning and external LLMs are shielded via zero-knowledge token substitution.
+                                  </span>
+                                </div>
+
+                                <div className="privacy-redacted-list">
+                                  <span className="privacy-audit-label">Redaction Audit Trail:</span>
+                                  <div className="privacy-audit-tokens">
+                                    {guard.redacted_entities && guard.redacted_entities.map((item, idx) => (
+                                      <div key={idx} className="privacy-token-chip">
+                                        <span className="privacy-token-type">{item.entity_type.replace(/_/g, ' ')}:</span>
+                                        <span className="privacy-token-masked">{item.preview_masked}</span>
+                                        <span className="privacy-token-arrow">➔</span>
+                                        <code className="privacy-token-code">{item.token}</code>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="privacy-clean-note">
+                                <span>No customer PII detected in diagnostic input. Raw text is safe for multi-agent reasoning.</span>
+                              </div>
+                            )}
                           </div>
                         );
                       })()}

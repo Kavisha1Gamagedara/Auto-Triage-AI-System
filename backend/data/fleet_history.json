@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 9,
+    "total_visits": 11,
     "visits": [
       {
         "visit_index": 1,
@@ -104,6 +104,23 @@
         ],
         "root_cause_component": "Pending Diagnosis",
         "technician_notes": "2015 Toyota Aqua WP CAB-1234 chassis NHP10 customer states vehicle shakes violently when stopped at red lights, check engine light flashes repeatedly, and strong rotten egg smell from exhaust with trouble code P0300 and P0420"
+      },
+      {
+        "visit_index": 10,
+        "timestamp": "2026-10-09T04:34:03.952333+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 11,
+        "timestamp": "2026-10-09T04:41:37.875375+00:00",
+        "dtc_codes": [],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Customer: Kamal Perera (NIC: 951234567V, Phone: 0771234567, Email: kamal.perera@gmail.com) reports 2017 Toyota Aqua NHP10 WP CAB-1234 with trouble code P0300 and violent engine shaking"
       }
     ]
   },

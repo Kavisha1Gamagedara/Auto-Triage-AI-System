@@ -18,7 +18,9 @@ from core.models import (
     ProcurementRequest, 
     ProcurementResponse,
     ComplaintSummary,
-    ComplaintSummarizeRequest
+    ComplaintSummarizeRequest,
+    PrivacyGuardrailReport,
+    PIIMaskRequest
 )
 
 # Role-Based Access Control & Subscriptions
@@ -48,7 +50,8 @@ from agents.agent1_ingestion import (
     record_vehicle_visit,
     get_fleet_store_status,
     lookup_jdm_chassis_specs,
-    summarize_complaint
+    summarize_complaint,
+    mask_pii
 )
 
 
@@ -331,6 +334,17 @@ async def ingest_diagnostic(
     if not complaint_summary and raw_user_note:
         complaint_summary = summarize_complaint(raw_user_note, dtc_codes)
 
+    # 7. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
+    privacy_guardrail = extracted.get("privacy_guardrail")
+    if not privacy_guardrail and raw_user_note:
+        _, privacy_guardrail = mask_pii(raw_user_note)
+
+    # If PII was detected, shield downstream agents by providing sanitized text as the user note
+    safe_user_note = raw_user_note
+    if privacy_guardrail and privacy_guardrail.get("pii_detected") and privacy_guardrail.get("sanitized_text"):
+        safe_user_note = privacy_guardrail["sanitized_text"]
+        canonical_query = normalize_mechanic_notes(safe_user_note)
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -348,7 +362,8 @@ async def ingest_diagnostic(
         jdm_specs=jdm_specs,
         plate_compatibility=plate_compatibility,
         fleet_history=fleet_history,
-        complaint_summary=complaint_summary
+        complaint_summary=complaint_summary,
+        privacy_guardrail=privacy_guardrail
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -357,7 +372,7 @@ async def ingest_diagnostic(
         vehicle_details=vehicle_details,
         dtc_codes=dtc_codes,
         damaged_parts=damaged_parts,
-        user_note=raw_user_note,
+        user_note=safe_user_note,
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy,
         dtc_cascade=dtc_cascade,
@@ -368,7 +383,8 @@ async def ingest_diagnostic(
         jdm_specs=jdm_specs,
         plate_compatibility=plate_compatibility,
         fleet_history=fleet_history,
-        complaint_summary=complaint_summary
+        complaint_summary=complaint_summary,
+        privacy_guardrail=privacy_guardrail
     )
 
 
@@ -420,6 +436,21 @@ async def api_summarize_complaint(data: ComplaintSummarizeRequest):
     Directly satisfies SLIIT requirements for NLP techniques (NER & Summarization) and LLM deployment.
     """
     return summarize_complaint(data.complaint, data.dtc_codes)
+
+
+@app.post(
+    "/api/v1/mask-pii",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_mask_pii(data: PIIMaskRequest):
+    """
+    Responsible AI: Automated PII Masking & Privacy Guardrail endpoint.
+    Sanitizes customer complaints to comply with Sri Lanka PDPA No. 9 of 2022 & GDPR Art. 5(1)(c).
+    Redacts Sri Lankan NICs, phone numbers, customer names, emails, and financial identifiers.
+    """
+    sanitized_text, report = mask_pii(data.text)
+    return report
+
 
 
 

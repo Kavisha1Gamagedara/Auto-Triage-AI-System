@@ -180,6 +180,30 @@ class ComplaintSummarizeRequest(BaseModel):
     dtc_codes: Optional[List[str]] = Field(default_factory=list, description="Optional diagnostic trouble codes")
 
 
+class RedactedEntityInfo(BaseModel):
+    """Details of a single redacted Personally Identifiable Information (PII) item."""
+    entity_type: str = Field(..., description="Type of PII (SRI_LANKAN_NIC, PHONE_NUMBER, CUSTOMER_NAME, etc.)")
+    preview_masked: str = Field(..., description="Privacy-preserving partially masked preview for audit")
+    token: str = Field(..., description="Redaction token, e.g. [REDACTED_NIC]")
+
+
+class PrivacyGuardrailReport(BaseModel):
+    """
+    Responsible AI User Data Protection & Privacy Guardrail Report.
+    Complies with Sri Lanka Personal Data Protection Act (PDPA No. 9 of 2022) & GDPR Art. 5(1)(c).
+    """
+    pii_detected: bool = Field(False, description="Whether sensitive personal data was detected and redacted")
+    total_redactions: int = Field(0, description="Total count of redacted PII tokens")
+    redacted_entities: List[RedactedEntityInfo] = Field(default_factory=list, description="Audit log of redacted PII items")
+    compliance_standard: str = Field("Sri Lanka PDPA No. 9 of 2022 & GDPR Art. 5(1)(c)", description="Governing data privacy standard")
+    sanitized_text: str = Field(..., description="Sanitized complaint text with all PII replaced by safe redaction tokens")
+
+
+class PIIMaskRequest(BaseModel):
+    """Payload for standalone privacy guardrail PII masking endpoint."""
+    text: str = Field(..., description="Raw text containing potential user personal data to redact")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -202,6 +226,7 @@ class VehicleDetails(BaseModel):
     plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
+    privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
@@ -280,6 +305,7 @@ class Agent1Payload(BaseModel):
     plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
+    privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
 
     @model_validator(mode="before")
     @classmethod
