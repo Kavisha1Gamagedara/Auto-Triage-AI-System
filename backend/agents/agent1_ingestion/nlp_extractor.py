@@ -51,6 +51,13 @@ try:
         search_dtc_bm25,
         expand_automotive_query
     )
+    from .security_guardrail import (
+        audit_security_perimeter,
+        sanitize_with_security_perimeter
+    )
+    from .ensemble_resolver import (
+        resolve_ambiguous_entities
+    )
 except ImportError:
     from extended_automotive_data import (
         GLOBAL_VEHICLE_CATALOG,
@@ -78,6 +85,13 @@ except ImportError:
     from bm25_retrieval_engine import (
         search_dtc_bm25,
         expand_automotive_query
+    )
+    from security_guardrail import (
+        audit_security_perimeter,
+        sanitize_with_security_perimeter
+    )
+    from ensemble_resolver import (
+        resolve_ambiguous_entities
     )
 
 
@@ -629,11 +643,14 @@ def classify_dtc_cascades(dtc_codes: List[str]) -> Dict[str, Any]:
 def sanitize_input(raw_text: str) -> str:
     """
     Sanitizes raw mechanic / user input to prevent prompt injection and remove malformed characters.
+    Integrates with the Security Guardrail perimeter defense.
     """
+    if not raw_text or not isinstance(raw_text, str):
+        return ""
+    # Strip prompt injections and adversarial patterns via Security Guardrail
+    neutralized, _ = sanitize_with_security_perimeter(raw_text)
     # Remove control characters and normalize spaces
-    cleaned = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", raw_text)
-    # Strip potential prompt injection artifacts
-    cleaned = re.sub(r"(?i)(ignore previous instructions|system prompt|developer mode)", "", cleaned)
+    cleaned = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", neutralized)
     return " ".join(cleaned.split())
 
 
@@ -945,9 +962,12 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     - OBD-II DTC Trouble Codes (regex pattern)
     - Physical Damaged Components (noun chunks / lexicon)
     """
-    # 0. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
-    raw_doc = nlp(raw_text) if nlp is not None else None
-    sanitized_pii_text, privacy_guardrail = mask_pii(raw_text, raw_doc)
+    # 0. Security Guardrail: Input Perimeter & Prompt Injection Defense
+    security_clean_text, security_guardrail = sanitize_with_security_perimeter(raw_text)
+
+    # 1. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
+    raw_doc = nlp(security_clean_text) if nlp is not None else None
+    sanitized_pii_text, privacy_guardrail = mask_pii(security_clean_text, raw_doc)
     clean_text = sanitize_input(sanitized_pii_text)
     doc = nlp(clean_text) if nlp is not None else clean_text
 
@@ -992,6 +1012,24 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     # 6. Information Retrieval (IR) Engine: Automotive Synset Query Expansion & Okapi BM25 Ranking
     ir_bm25_report = search_dtc_bm25(clean_text, top_k=5, expand_synonyms=True)
 
+    # 7. Hybrid Ensemble Fallback: Zero-Shot Ambiguity Resolver (Word-numbers, verbal DTCs, generic models)
+    current_specs = {
+        "year": year,
+        "make": make,
+        "model": model,
+        "dtc_codes": dtc_codes,
+        "damaged_parts": damaged_parts
+    }
+    updated_specs, ensemble_report = resolve_ambiguous_entities(clean_text, current_specs)
+    if ensemble_report.get("resolved_via_ensemble"):
+        year = updated_specs.get("year", year)
+        make = updated_specs.get("make", make)
+        model = updated_specs.get("model", model)
+        dtc_codes = updated_specs.get("dtc_codes", dtc_codes)
+        damaged_parts = updated_specs.get("damaged_parts", damaged_parts)
+        dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
+        dtc_cascade = classify_dtc_cascades(dtc_codes)
+
     # Fallback defaults if text did not specify
     return {
         "vin": vin,
@@ -1010,7 +1048,9 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "fleet_history": fleet_history,
         "complaint_summary": complaint_summary,
         "privacy_guardrail": privacy_guardrail,
-        "ir_bm25_report": ir_bm25_report
+        "ir_bm25_report": ir_bm25_report,
+        "security_guardrail": security_guardrail,
+        "ensemble_report": ensemble_report
     }
 
 

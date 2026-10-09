@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 14,
+    "total_visits": 17,
     "visits": [
       {
         "visit_index": 1,
@@ -145,6 +145,36 @@
       {
         "visit_index": 14,
         "timestamp": "2026-10-09T05:15:20.091045+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 15,
+        "timestamp": "2026-10-09T05:38:19.132247+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 16,
+        "timestamp": "2026-10-09T06:54:18.306922+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 17,
+        "timestamp": "2026-10-09T06:56:34.048761+00:00",
         "dtc_codes": [
           "P0A80",
           "P0A93"

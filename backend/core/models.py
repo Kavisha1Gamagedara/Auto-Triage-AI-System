@@ -250,6 +250,49 @@ class IRBM25SearchRequest(BaseModel):
     expand_synonyms: bool = Field(default=True, description="Whether to apply automotive synset query expansion")
 
 
+class SecurityThreatItem(BaseModel):
+    """Details of a single identified adversarial prompt injection or jailbreak vector."""
+    category: str = Field(..., description="Threat category: DIRECT_PROMPT_INJECTION, ROLEPLAY_JAILBREAK, etc.")
+    pattern_matched: str = Field(..., description="Exact malicious substring pattern detected")
+    severity: str = Field(..., description="Threat severity level: CRITICAL, HIGH, MEDIUM")
+    description: str = Field(..., description="Academic description of the attack exploit")
+
+
+class SecurityGuardrailReport(BaseModel):
+    """Input perimeter defense and adversarial prompt injection audit report."""
+    threat_level: str = Field("CLEAN", description="Overall threat classification: CLEAN, SUSPICIOUS, CRITICAL_ATTACK_BLOCKED")
+    risk_score: float = Field(0.0, ge=0.0, le=100.0, description="Normalized adversarial threat score (0 to 100)")
+    is_safe: bool = Field(True, description="Whether input is safe for downstream LLM ingestion")
+    detected_threats: List[SecurityThreatItem] = Field(default_factory=list, description="List of intercepted attack vectors")
+    sanitized_query: str = Field(..., description="Neutralized query safe for downstream LLM context injection")
+    defense_action: str = Field("PASSED", description="Defensive perimeter action: PASSED, NEUTRALIZED_AND_FLAGGED, CRITICAL_BLOCKED")
+    execution_time_ms: float = Field(..., description="Security audit latency in milliseconds")
+    mitigation_summary: str = Field(..., description="Defensive mitigation summary explaining actions taken")
+
+
+class SecurityAuditRequest(BaseModel):
+    """Payload for standalone security audit endpoint."""
+    text: str = Field(..., description="Text query to audit for prompt injection and adversarial attacks")
+
+
+class EnsembleDisambiguationReport(BaseModel):
+    """Hybrid Ensemble Zero-Shot Ambiguity Resolution report."""
+    is_ambiguous: bool = Field(False, description="Whether input text contained ambiguous or non-standard entity phrasing")
+    ambiguity_reasons: List[str] = Field(default_factory=list, description="List of detected ambiguity signals")
+    resolved_via_ensemble: bool = Field(False, description="Whether Tier 2 ensemble disambiguator was invoked")
+    model_used: str = Field("none_tier1_deterministic", description="Model architecture used for resolution")
+    execution_time_ms: float = Field(..., description="Resolution latency in milliseconds")
+    original_specs: Dict[str, Any] = Field(default_factory=dict, description="Tier 1 deterministic partial extraction")
+    resolved_specs: Dict[str, Any] = Field(default_factory=dict, description="Ensemble-resolved vehicle specifications")
+    resolution_rationale: str = Field(..., description="Academic rationale explaining how ambiguity was resolved")
+
+
+class EnsembleDisambiguateRequest(BaseModel):
+    """Payload for standalone ensemble disambiguation endpoint."""
+    text: str = Field(..., description="Conversational or ambiguous vehicle complaint text")
+    current_specs: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Preliminary partial deterministic extraction if any")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -274,6 +317,8 @@ class VehicleDetails(BaseModel):
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
     privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
     ir_bm25_report: Optional[IRRetrievalReport] = Field(default=None, description="Information Retrieval BM25 diagnostic code matching & query expansion report")
+    security_guardrail: Optional[SecurityGuardrailReport] = Field(default=None, description="Input security perimeter defense & prompt injection audit report")
+    ensemble_report: Optional[EnsembleDisambiguationReport] = Field(default=None, description="Hybrid Ensemble Zero-Shot Ambiguity Resolution report")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
@@ -354,6 +399,8 @@ class Agent1Payload(BaseModel):
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
     privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
     ir_bm25_report: Optional[IRRetrievalReport] = Field(default=None, description="Information Retrieval BM25 diagnostic code matching & query expansion report")
+    security_guardrail: Optional[SecurityGuardrailReport] = Field(default=None, description="Input security perimeter defense & prompt injection audit report")
+    ensemble_report: Optional[EnsembleDisambiguationReport] = Field(default=None, description="Hybrid Ensemble Zero-Shot Ambiguity Resolution report")
 
     @model_validator(mode="before")
     @classmethod
