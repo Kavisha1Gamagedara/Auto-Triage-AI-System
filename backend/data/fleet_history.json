@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 11,
+    "total_visits": 14,
     "visits": [
       {
         "visit_index": 1,
@@ -121,6 +121,36 @@
         "dtc_codes": [],
         "root_cause_component": "Pending Diagnosis",
         "technician_notes": "Customer: Kamal Perera (NIC: 951234567V, Phone: 0771234567, Email: kamal.perera@gmail.com) reports 2017 Toyota Aqua NHP10 WP CAB-1234 with trouble code P0300 and violent engine shaking"
+      },
+      {
+        "visit_index": 12,
+        "timestamp": "2026-10-09T04:58:49.380212+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 13,
+        "timestamp": "2026-10-09T05:00:01.282863+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 14,
+        "timestamp": "2026-10-09T05:15:20.091045+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
       }
     ]
   },

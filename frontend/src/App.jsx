@@ -43,7 +43,8 @@ import {
   Thermometer,
   FileText,
   XCircle,
-  Lock
+  Lock,
+  Search
 } from 'lucide-react';
 
 import './App.css';
@@ -77,6 +78,10 @@ const PRESETS = [
   {
     label: '🛡️ Responsible AI: PII Masking (SL NIC + Phone)',
     text: 'Customer: Kamal Perera (NIC: 951234567V, Phone: 0771234567, Email: kamal.perera@gmail.com) reports 2017 Toyota Aqua NHP10 WP CAB-1234 with trouble code P0300 and violent engine shaking'
+  },
+  {
+    label: '🔍 IR Engine: BM25 & Synsets (Jerking & Rotten Eggs)',
+    text: '2019 Honda Civic customer states violent jerking, hesitation on acceleration, and rotten eggs smell from exhaust'
   },
   {
     label: '🇱🇰 Aqua NHP10 (WP CAB-1234)',
@@ -2869,6 +2874,112 @@ export default function App() {
                           </div>
                         </div>
                       )}
+
+                      {/* Information Retrieval (IR): Okapi BM25 Diagnostic Code Matcher & Synset Query Expansion */}
+                      {(triageResult.ir_bm25_report || triageResult.vehicle_details?.ir_bm25_report) && (() => {
+                        const irReport = triageResult.ir_bm25_report || triageResult.vehicle_details.ir_bm25_report;
+                        if (!irReport) return null;
+                        const expansion = irReport.query_expansion;
+                        const matches = irReport.top_matches || [];
+
+                        return (
+                          <div className="ir-bm25-dossier-box">
+                            <div className="ir-bm25-header">
+                              <div className="ir-bm25-title">
+                                <Search size={15} color="#00F0FF" />
+                                <span>IR Engine // Okapi BM25 Symptom Scorer & Synset Expansion</span>
+                              </div>
+                              <div className="ir-bm25-header-badges">
+                                <span className="ir-stat-pill">
+                                  Inverted Index N={irReport.corpus_size} · avgdl={irReport.avg_doc_length}
+                                </span>
+                                <span className="ir-stat-pill speed">
+                                  ⚡ {irReport.execution_time_ms} ms
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Synset Query Expansion Audit Trail */}
+                            {expansion && expansion.synsets_triggered && expansion.synsets_triggered.length > 0 && (
+                              <div className="ir-synset-expansion-card">
+                                <div className="ir-card-sublabel">
+                                  <Sparkles size={12} color="#f59e0b" />
+                                  <span>Automotive Synset Query Expansion (Mechanic Slang Thesaurus):</span>
+                                </div>
+                                <div className="ir-synset-triggers-list">
+                                  {expansion.synsets_triggered.map((syn, idx) => (
+                                    <div key={idx} className="ir-synset-item">
+                                      <span className="ir-trigger-badge">"{syn.trigger_phrase}"</span>
+                                      <span className="ir-arrow">➔</span>
+                                      <div className="ir-synonyms-tags">
+                                        {syn.synonyms.map((s, sIdx) => (
+                                          <span key={sIdx} className="ir-synonym-tag">{s}</span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Probabilistic Okapi BM25 Ranked DTC Candidates */}
+                            {matches.length > 0 && (
+                              <div className="ir-bm25-matches-section">
+                                <div className="ir-card-sublabel">
+                                  <span>Probabilistic BM25 Ranked DTC Candidates (k₁=1.5, b=0.75):</span>
+                                </div>
+                                <div className="ir-matches-table">
+                                  {matches.map((item, idx) => (
+                                    <div key={idx} className="ir-match-row">
+                                      <div className="ir-match-top-line">
+                                        <div className="ir-match-left">
+                                          <span className="ir-rank-badge">#{idx + 1}</span>
+                                          <span className="ir-code-badge">{item.dtc_code}</span>
+                                          <div className="ir-match-info">
+                                            <span className="ir-match-title">{item.title}</span>
+                                            <span className="ir-match-subsystem">{item.system} {item.subsystem ? `· ${item.subsystem}` : ''}</span>
+                                          </div>
+                                        </div>
+
+                                        <div className="ir-match-right">
+                                          <div className="ir-score-block">
+                                            <span className="ir-score-val">{item.bm25_score}</span>
+                                            <span className="ir-score-lbl">BM25</span>
+                                          </div>
+                                          <span className={`ir-tier-badge ${item.confidence_tier.toLowerCase().replace(/\s+/g, '-')}`}>
+                                            {item.confidence_tier}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="ir-match-bar-track">
+                                        <div
+                                          className="ir-match-bar-fill"
+                                          style={{ width: `${Math.min(100, item.normalized_score)}%` }}
+                                        />
+                                      </div>
+
+                                      {/* Term Weight Contribution Breakdown */}
+                                      {item.term_contributions && Object.keys(item.term_contributions).length > 0 && (
+                                        <div className="ir-term-weights-row">
+                                          <span className="ir-contrib-label">Term Weights:</span>
+                                          <div className="ir-contrib-chips">
+                                            {Object.entries(item.term_contributions).map(([term, weight], wIdx) => (
+                                              <span key={wIdx} className="ir-contrib-chip">
+                                                {term} <strong style={{ color: '#00F0FF' }}>+{weight}</strong>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Discovered OBD-II Trouble Codes */}
                       <div>

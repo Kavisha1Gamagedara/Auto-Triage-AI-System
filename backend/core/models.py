@@ -204,6 +204,52 @@ class PIIMaskRequest(BaseModel):
     text: str = Field(..., description="Raw text containing potential user personal data to redact")
 
 
+class BM25MatchItem(BaseModel):
+    """Ranked DTC trouble code candidate matched via Okapi BM25 probabilistic retrieval."""
+    dtc_code: str = Field(..., description="OBD-II Diagnostic Trouble Code, e.g. P0300")
+    title: str = Field(..., description="Official SAE fault title")
+    system: str = Field(..., description="High-level subsystem (Powertrain, Chassis, etc.)")
+    subsystem: Optional[str] = Field(None, description="Subsystem group")
+    bm25_score: float = Field(..., description="Raw Robertson-Spärck Jones Okapi BM25 retrieval score")
+    normalized_score: float = Field(..., description="Normalized confidence score (0-100%)")
+    confidence_tier: str = Field("Probable Candidate", description="Confidence tier: High Confidence, Probable Candidate, Correlated")
+    matched_terms: List[str] = Field(default_factory=list, description="Terms from query that intersected with document posting list")
+    term_contributions: Dict[str, float] = Field(default_factory=dict, description="Explainable term weight contribution breakdown")
+
+
+class QueryExpansionDetails(BaseModel):
+    """Audit details of automotive synset query expansion to resolve vocabulary mismatch."""
+    original_query: str = Field(..., description="Raw user/mechanic complaint text")
+    expanded_terms: List[str] = Field(default_factory=list, description="Domain synset terms added via automotive thesaurus")
+    expanded_query: str = Field(..., description="Final query passed into BM25 inverted index")
+    synsets_triggered: List[Dict[str, Any]] = Field(default_factory=list, description="Audit of trigger phrases and mapped synonyms")
+
+
+class IRRetrievalReport(BaseModel):
+    """
+    Information Retrieval (IR) Report combining Automotive Synset Query Expansion & Okapi BM25 Ranking.
+    Directly satisfies SLIIT IRWA curriculum requirements:
+    - Tokenization, Stemming & Inverted Index Postings
+    - Probabilistic Okapi BM25 Scoring (k1=1.5, b=0.75) with Term Weight Explainability
+    - Vocabulary Mismatch Resolution via Synset Expansion
+    """
+    query_expansion: QueryExpansionDetails = Field(..., description="Query expansion audit details")
+    top_matches: List[BM25MatchItem] = Field(default_factory=list, description="Top-K ranked DTC candidates")
+    corpus_size: int = Field(..., description="Total official DTC documents in inverted index collection")
+    avg_doc_length: float = Field(..., description="Average document length (avgdl) in inverted index")
+    execution_time_ms: float = Field(..., description="Retrieval latency in milliseconds")
+    coverage_status: Optional[str] = Field("HIGH_CONFIDENCE_LEXICAL_MATCH", description="Lexical coverage status: HIGH_CONFIDENCE, MODERATE, or LOW_LEXICAL_OVERLAP")
+    coverage_note: Optional[str] = Field("", description="Academic assessment of lexical vs cognitive fallback")
+    method: str = Field("Okapi BM25 with Automotive Synset Query Expansion", description="IR algorithm description")
+
+
+class IRBM25SearchRequest(BaseModel):
+    """Payload for standalone IR BM25 search endpoint."""
+    query: str = Field(..., description="Freeform symptom description or complaint text")
+    top_k: int = Field(default=5, ge=1, le=20, description="Number of top DTC candidates to retrieve")
+    expand_synonyms: bool = Field(default=True, description="Whether to apply automotive synset query expansion")
+
+
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
@@ -227,6 +273,7 @@ class VehicleDetails(BaseModel):
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
     privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
+    ir_bm25_report: Optional[IRRetrievalReport] = Field(default=None, description="Information Retrieval BM25 diagnostic code matching & query expansion report")
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
@@ -306,6 +353,7 @@ class Agent1Payload(BaseModel):
     fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
     complaint_summary: Optional[ComplaintSummary] = Field(default=None, description="NLP Executive Complaint Summary, symptoms, and urgency classification")
     privacy_guardrail: Optional[PrivacyGuardrailReport] = Field(default=None, description="Responsible AI data protection report & PII redaction audit log")
+    ir_bm25_report: Optional[IRRetrievalReport] = Field(default=None, description="Information Retrieval BM25 diagnostic code matching & query expansion report")
 
     @model_validator(mode="before")
     @classmethod

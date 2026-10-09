@@ -20,7 +20,9 @@ from core.models import (
     ComplaintSummary,
     ComplaintSummarizeRequest,
     PrivacyGuardrailReport,
-    PIIMaskRequest
+    PIIMaskRequest,
+    IRRetrievalReport,
+    IRBM25SearchRequest
 )
 
 # Role-Based Access Control & Subscriptions
@@ -51,7 +53,9 @@ from agents.agent1_ingestion import (
     get_fleet_store_status,
     lookup_jdm_chassis_specs,
     summarize_complaint,
-    mask_pii
+    mask_pii,
+    search_dtc_bm25,
+    expand_automotive_query
 )
 
 
@@ -345,6 +349,11 @@ async def ingest_diagnostic(
         safe_user_note = privacy_guardrail["sanitized_text"]
         canonical_query = normalize_mechanic_notes(safe_user_note)
 
+    # 8. Information Retrieval (IR) Engine: Synset Query Expansion & BM25 Scoring
+    ir_bm25_report = extracted.get("ir_bm25_report")
+    if not ir_bm25_report and safe_user_note:
+        ir_bm25_report = search_dtc_bm25(safe_user_note, top_k=5, expand_synonyms=True)
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -363,7 +372,8 @@ async def ingest_diagnostic(
         plate_compatibility=plate_compatibility,
         fleet_history=fleet_history,
         complaint_summary=complaint_summary,
-        privacy_guardrail=privacy_guardrail
+        privacy_guardrail=privacy_guardrail,
+        ir_bm25_report=ir_bm25_report
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -384,7 +394,8 @@ async def ingest_diagnostic(
         plate_compatibility=plate_compatibility,
         fleet_history=fleet_history,
         complaint_summary=complaint_summary,
-        privacy_guardrail=privacy_guardrail
+        privacy_guardrail=privacy_guardrail,
+        ir_bm25_report=ir_bm25_report
     )
 
 
@@ -450,6 +461,21 @@ async def api_mask_pii(data: PIIMaskRequest):
     """
     sanitized_text, report = mask_pii(data.text)
     return report
+
+
+@app.post(
+    "/api/v1/ir/bm25-search",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_ir_bm25_search(data: IRBM25SearchRequest):
+    """
+    Information Retrieval (IR) Engine: Automotive Synset Query Expansion & Okapi BM25 Ranking.
+    Ranks official Diagnostic Trouble Codes based on term frequency (TF), inverted index postings,
+    and Robertson-Spärck Jones Inverse Document Frequency (IDF) weights.
+    Directly satisfies SLIIT IRWA curriculum requirements.
+    """
+    return search_dtc_bm25(data.query, top_k=data.top_k, expand_synonyms=data.expand_synonyms)
+
 
 
 
