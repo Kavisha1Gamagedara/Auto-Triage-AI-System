@@ -39,8 +39,14 @@ from agents.agent1_ingestion import (
     nlp,
     verify_vehicle,
     decode_vin_nhtsa,
-    validate_vin_checksum
+    validate_vin_checksum,
+    extract_sri_lankan_plate,
+    verify_plate_vehicle_compatibility,
+    get_vehicle_history,
+    record_vehicle_visit,
+    lookup_jdm_chassis_specs
 )
+
 
 # Agent 2 - Cognitive Diagnostic Reasoning
 try:
@@ -277,6 +283,44 @@ async def ingest_diagnostic(
             vehicle={"make": make, "model": model, "year": year}
         )
 
+    # 4. Sri Lankan Number Plate & JDM Chassis Code Ingestion
+    sl_plate = None
+    if request.plate_number:
+        sl_plate = extract_sri_lankan_plate(request.plate_number)
+    elif extracted.get("sl_plate"):
+        sl_plate = extracted["sl_plate"]
+    elif request.raw_text:
+        sl_plate = extract_sri_lankan_plate(request.raw_text)
+
+    jdm_specs = None
+    if request.chassis_code:
+        jdm_specs = lookup_jdm_chassis_specs(request.chassis_code)
+    elif extracted.get("jdm_specs"):
+        jdm_specs = extracted["jdm_specs"]
+    elif request.raw_text:
+        jdm_specs = lookup_jdm_chassis_specs(request.raw_text)
+
+    # Check vehicle compatibility with statutory plate class
+    plate_compatibility = None
+    if sl_plate and sl_plate.get("is_valid"):
+        plate_compatibility = verify_plate_vehicle_compatibility(sl_plate, make, model)
+
+    # 5. Local Workshop Fleet Return-Visit History Lookup
+    history_lookup_key = (sl_plate.get("plate_number") if sl_plate else None) or vin or (jdm_specs.get("model_code") if jdm_specs else None)
+    fleet_history = None
+    if history_lookup_key:
+        fleet_history = get_vehicle_history(history_lookup_key)
+        # Record this diagnostic visit into the local shop fleet store
+        record_vehicle_visit(
+            identifier=history_lookup_key,
+            make=make,
+            model=model,
+            year=year,
+            dtc_codes=dtc_codes,
+            chassis_number=jdm_specs.get("model_code") if jdm_specs else None,
+            technician_notes=raw_user_note
+        )
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -284,12 +328,16 @@ async def ingest_diagnostic(
         year=year,
         is_verified=True,
         vin=vin,
-        engine=vin_data.get("engine_displacement_l") if vin_data else None,
-        fuel_type=vin_data.get("fuel_type") if vin_data else None,
-        drive_type=vin_data.get("drive_type") if vin_data else None,
+        engine=vin_data.get("engine_displacement_l") if vin_data else (jdm_specs.get("engine_displacement") if jdm_specs else None),
+        fuel_type=vin_data.get("fuel_type") if vin_data else (jdm_specs.get("drivetrain") if jdm_specs else None),
+        drive_type=vin_data.get("drive_type") if vin_data else (jdm_specs.get("transmission") if jdm_specs else None),
         body_class=vin_data.get("body_class") if vin_data else None,
         vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None),
-        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None
+        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None,
+        sl_plate=sl_plate,
+        jdm_specs=jdm_specs,
+        plate_compatibility=plate_compatibility,
+        fleet_history=fleet_history
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -304,8 +352,40 @@ async def ingest_diagnostic(
         dtc_cascade=dtc_cascade,
         fuzzy_corrections=fuzzy_corrections,
         freeze_frame=freeze_frame,
-        freeze_frame_analysis=freeze_frame_analysis
+        freeze_frame_analysis=freeze_frame_analysis,
+        sl_plate=sl_plate,
+        jdm_specs=jdm_specs,
+        plate_compatibility=plate_compatibility,
+        fleet_history=fleet_history
     )
+
+
+@app.post(
+    "/api/v1/validate-plate",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_validate_plate(data: Dict[str, str]):
+    """
+    Validates a Sri Lankan vehicle registration plate against statutory Motor Traffic Act rules.
+    """
+    plate_text = data.get("plate", "")
+    res = extract_sri_lankan_plate(plate_text)
+    if not res:
+        return {"is_valid": False, "status_message": "Invalid or unrecognized Sri Lankan number plate format."}
+    return res
+
+
+@app.get(
+    "/api/v1/fleet-history/{identifier}",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_get_fleet_history(identifier: str):
+    """
+    Retrieves previous workshop return-visit diagnostic history for a plate or chassis number.
+    """
+    hist = get_vehicle_history(identifier)
+    return hist or {"has_prior_history": False, "total_prior_visits": 0, "message": f"No previous workshop visits found for '{identifier}'"}
+
 
 
 @app.post(

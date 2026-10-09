@@ -30,7 +30,16 @@ try:
         EXTENDED_DTC_TAXONOMY,
         EXTENDED_DTC_DESCRIPTIONS,
         EXTENDED_DTC_CASCADE_RULES,
-        is_jdm_chassis_number
+        is_jdm_chassis_number,
+        lookup_jdm_chassis_specs,
+        JDM_CHASSIS_REGISTRY
+    )
+    from .sri_lanka_plate_validator import (
+        extract_sri_lankan_plate,
+        verify_plate_vehicle_compatibility
+    )
+    from .fleet_history_store import (
+        get_vehicle_history
     )
 except ImportError:
     from extended_automotive_data import (
@@ -39,8 +48,18 @@ except ImportError:
         EXTENDED_DTC_TAXONOMY,
         EXTENDED_DTC_DESCRIPTIONS,
         EXTENDED_DTC_CASCADE_RULES,
-        is_jdm_chassis_number
+        is_jdm_chassis_number,
+        lookup_jdm_chassis_specs,
+        JDM_CHASSIS_REGISTRY
     )
+    from sri_lanka_plate_validator import (
+        extract_sri_lankan_plate,
+        verify_plate_vehicle_compatibility
+    )
+    from fleet_history_store import (
+        get_vehicle_history
+    )
+
 
 # Automotive manufacturer aliases and standard names
 AUTOMOTIVE_MAKES = {
@@ -900,6 +919,9 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     - Input sanitization
     - Year extraction (1980 - 2026)
     - Make & Model extraction (spaCy / lexicon fallback)
+    - Sri Lankan Plate parsing & deterministic class validation (WP CAB-1234)
+    - JDM Chassis Code identification (NHP10, RU3, ZVW30)
+    - Local Fleet return-visit history retrieval
     - OBD-II DTC Trouble Codes (regex pattern)
     - Physical Damaged Components (noun chunks / lexicon)
     """
@@ -911,6 +933,31 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     make, model, fuzzy_corrections = extract_make_and_model(doc)
     dtc_codes = extract_dtc_codes(clean_text)
     damaged_parts = extract_damaged_parts(doc)
+
+    # 1. Sri Lankan Number Plate Extraction & Deterministic Statutory Validation
+    sl_plate = extract_sri_lankan_plate(clean_text)
+
+    # 2. Japanese Domestic Market (JDM) Chassis / Model Code Lookup
+    jdm_specs = lookup_jdm_chassis_specs(clean_text)
+    if jdm_specs:
+        # If make or model was omitted in query, auto-fill from verified JDM chassis specs
+        if not make or make.lower() in {"honda", "toyota"} and not model:
+            make = jdm_specs.get("make", make)
+            model = jdm_specs.get("model", model)
+        elif not model:
+            model = jdm_specs.get("model", model)
+
+    # 3. Check Plate Class Compatibility with Vehicle Body Type
+    plate_compatibility = None
+    if sl_plate and sl_plate.get("is_valid"):
+        plate_compatibility = verify_plate_vehicle_compatibility(sl_plate, make or "", model or "")
+
+    # 4. Local Workshop Fleet Return-Visit History Lookup
+    fleet_history = None
+    if sl_plate and sl_plate.get("plate_number"):
+        fleet_history = get_vehicle_history(sl_plate["plate_number"])
+    elif vin:
+        fleet_history = get_vehicle_history(vin)
 
     canonical_query = normalize_mechanic_notes(clean_text)
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
@@ -927,8 +974,13 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "canonical_query": canonical_query,
         "dtc_hierarchy": dtc_hierarchy,
         "fuzzy_corrections": fuzzy_corrections,
-        "dtc_cascade": dtc_cascade
+        "dtc_cascade": dtc_cascade,
+        "sl_plate": sl_plate,
+        "jdm_specs": jdm_specs,
+        "plate_compatibility": plate_compatibility,
+        "fleet_history": fleet_history
     }
+
 
 
 def parse_freeze_frame_scanner_text(raw_text: str) -> Optional[Any]:

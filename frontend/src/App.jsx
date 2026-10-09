@@ -74,6 +74,14 @@ const PRESETS = [
     text: '2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance'
   },
   {
+    label: '🇱🇰 Aqua NHP10 (WP CAB-1234)',
+    text: 'WP CAB-1234 2014 Toyota Aqua NHP10 has ABS warning light and brake pedal spongy'
+  },
+  {
+    label: '🇱🇰 Vezel RU3 (WP CAA-5678)',
+    text: 'WP CAA-5678 2015 Honda Vezel Hybrid RU3 with transmission warning and hesitation'
+  },
+  {
     label: 'Cascade: P0171 + P0300 + P0420',
     text: '2019 Honda Civic with codes P0171, P0300, and P0420 running rough with sulfur exhaust odor'
   },
@@ -295,6 +303,9 @@ export default function App() {
   const [manualYear, setManualYear] = useState('2019');
   const [manualDtcs, setManualDtcs] = useState('P0171');
   const [manualParts, setManualParts] = useState('crashed bumper');
+  const [manualPlate, setManualPlate] = useState('WP CAB-1234');
+  const [manualChassis, setManualChassis] = useState('NHP10');
+  const [smartPlate, setSmartPlate] = useState('');
 
   const [vinInput, setVinInput] = useState('1HGCR2F85HA000000');
   const [vinDtcs, setVinDtcs] = useState('P0171, P0420');
@@ -308,11 +319,13 @@ export default function App() {
   ];
 
   const MANUAL_PRESETS = [
-    { label: '2019 Honda Civic', make: 'Honda', model: 'Civic', year: 2019, dtcs: 'P0171', parts: 'crashed bumper' },
-    { label: 'Typo: "Toyta Commry"', make: 'Toyta', model: 'Commry', year: 2019, dtcs: 'P0171', parts: 'intake manifold' },
-    { label: '2017 Ford F-150', make: 'Ford', model: 'F-150', year: 2017, dtcs: 'P0300', parts: 'cracked spark plug' },
-    { label: '2021 Toyota Camry', make: 'Toyota', model: 'Camry', year: 2021, dtcs: 'P0420', parts: 'catalytic converter' },
-    { label: 'Bogus Car Test', make: 'Ford', model: 'GalaxyCruiser9000', year: 2025, dtcs: 'P0999', parts: 'warp drive' }
+    { label: '🇱🇰 Toyota Aqua (WP CAB-1234 · NHP10)', make: 'Toyota', model: 'Aqua', year: 2014, dtcs: 'P0A80', parts: 'hybrid battery degradation', plate: 'WP CAB-1234', chassis: 'NHP10' },
+    { label: '🇱🇰 Honda Vezel Hybrid (WP CAA-5678 · RU3)', make: 'Honda', model: 'Vezel Hybrid', year: 2015, dtcs: 'P0841', parts: 'dual-clutch transmission actuator', plate: 'WP CAA-5678', chassis: 'RU3' },
+    { label: '🇱🇰 Suzuki Wagon R (WP CBG-9012 · MH55S)', make: 'Suzuki', model: 'Wagon R', year: 2017, dtcs: 'P0562', parts: 'ISG auxiliary battery', plate: 'WP CBG-9012', chassis: 'MH55S' },
+    { label: '2019 Honda Civic', make: 'Honda', model: 'Civic', year: 2019, dtcs: 'P0171', parts: 'crashed bumper', plate: '', chassis: '' },
+    { label: '2017 Ford F-150', make: 'Ford', model: 'F-150', year: 2017, dtcs: 'P0300', parts: 'cracked spark plug', plate: '', chassis: '' },
+    { label: 'Typo: "Toyta Commry"', make: 'Toyta', model: 'Commry', year: 2019, dtcs: 'P0171', parts: 'intake manifold', plate: '', chassis: '' },
+    { label: 'Bogus Car Test', make: 'Ford', model: 'GalaxyCruiser9000', year: 2025, dtcs: 'P0999', parts: 'warp drive', plate: '', chassis: '' }
   ];
 
   // OBD-II Mode $02 Freeze Frame Telemetry State & Presets
@@ -542,6 +555,8 @@ export default function App() {
     setManualYear(String(p.year));
     setManualDtcs(p.dtcs);
     setManualParts(p.parts);
+    setManualPlate(p.plate || '');
+    setManualChassis(p.chassis || '');
     setError(null);
   };
 
@@ -709,7 +724,8 @@ export default function App() {
         if (!rawText.trim()) return;
         payload = {
           session_id: sessionId,
-          raw_text: rawText.trim()
+          raw_text: smartPlate.trim() ? `${smartPlate.trim()} ${rawText.trim()}` : rawText.trim(),
+          plate_number: smartPlate.trim() || undefined
         };
       } else if (intakeMode === 'vin') {
         if (!vinInput.trim()) {
@@ -756,7 +772,9 @@ export default function App() {
           year: parseInt(manualYear, 10),
           dtc_codes: dtcArray,
           damaged_parts: partsArray,
-          raw_text: `${manualYear} ${manualMake} ${manualModel} with ${manualParts}`
+          plate_number: manualPlate.trim() || undefined,
+          chassis_code: manualChassis.trim() || undefined,
+          raw_text: `${manualPlate ? manualPlate.trim() + ' ' : ''}${manualYear} ${manualMake} ${manualModel} ${manualChassis ? manualChassis.trim() + ' ' : ''}with ${manualParts}`
         };
       }
 
@@ -2044,9 +2062,31 @@ export default function App() {
                     </div>
 
                     <form onSubmit={handleRunTriage} className="input-group">
-                      <div className="input-labels">
-                        <span>Diagnostic Complaint Text:</span>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{rawText.length} chars</span>
+                      <div className="input-labels" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontWeight: 700 }}>Diagnostic Complaint Text:</span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>(or include plate e.g. WP CAB-1234)</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#00F0FF' }}>🇱🇰 Plate (Optional):</span>
+                          <input
+                            type="text"
+                            style={{
+                              background: 'rgba(15, 23, 42, 0.8)',
+                              border: '1px solid rgba(0, 240, 255, 0.35)',
+                              color: 'var(--text-white, #ffffff)',
+                              borderRadius: 4,
+                              padding: '2px 8px',
+                              fontSize: '0.78rem',
+                              fontFamily: 'var(--font-mono, monospace)',
+                              width: '120px',
+                              textTransform: 'uppercase'
+                            }}
+                            placeholder="WP CAB-1234"
+                            value={smartPlate}
+                            onChange={(e) => setSmartPlate(e.target.value.toUpperCase())}
+                          />
+                        </div>
                       </div>
 
                       <textarea
@@ -2105,6 +2145,46 @@ export default function App() {
                     </div>
 
                     <form onSubmit={handleRunTriage} className="manual-spec-form">
+                      <div className="form-row">
+                        <div className="form-field">
+                          <label className="form-label">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#00F0FF' }}>
+                              🇱🇰 Sri Lankan Number Plate (Optional)
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.06em', fontWeight: 600 }}
+                            placeholder="e.g. WP CAB-1234, SP CAA-5678"
+                            value={manualPlate}
+                            onChange={(e) => setManualPlate(e.target.value.toUpperCase())}
+                          />
+                          <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
+                            Deterministic DMT verification (WP, CP, SP... C=Car, B=Motorcycle, A=Tuk-Tuk)
+                          </span>
+                        </div>
+
+                        <div className="form-field">
+                          <label className="form-label">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#00F0FF' }}>
+                              🇯🇵 JDM Chassis / Model Code (Optional)
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.06em', fontWeight: 600 }}
+                            placeholder="e.g. NHP10, RU3, ZVW30, MH55S"
+                            value={manualChassis}
+                            onChange={(e) => setManualChassis(e.target.value.toUpperCase())}
+                          />
+                          <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
+                            Auto-loads engine code, e-CVT/i-DCD specs, and local dealer advisories
+                          </span>
+                        </div>
+                      </div>
+
                       <div className="form-row">
                         <div className="form-field">
                           <label className="form-label">Vehicle Make *</label>
@@ -2496,6 +2576,153 @@ export default function App() {
                           )}
                         </div>
                       )}
+
+                      {/* Sri Lankan Vehicle Registration (Number Plate) Telemetry */}
+                      {(triageResult.sl_plate || triageResult.vehicle_details?.sl_plate) && (() => {
+                        const plate = triageResult.sl_plate || triageResult.vehicle_details.sl_plate;
+                        const compat = triageResult.plate_compatibility || triageResult.vehicle_details?.plate_compatibility;
+                        return (
+                          <div className={`sl-plate-dossier-box ${plate.is_valid ? 'valid' : 'invalid'}`}>
+                            <div className="sl-plate-top">
+                              <div className="sl-plate-badge-visual">
+                                <span className="sl-plate-flag">🇱🇰</span>
+                                <span className="sl-plate-emblem">SL</span>
+                                <span className="sl-plate-text">{plate.plate_number}</span>
+                              </div>
+                              <div className="sl-plate-meta-chips">
+                                {plate.province_name && (
+                                  <span className="sl-meta-chip province">{plate.province_name}</span>
+                                )}
+                                <span className="sl-meta-chip class-chip">{plate.statutory_class}</span>
+                                <span className={`sl-meta-chip status-chip ${plate.is_valid ? 'valid' : 'invalid'}`}>
+                                  {plate.is_valid ? '✓ STATUTORY VALID' : '❌ STATUTORY INVALID'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="sl-plate-status-text">
+                              {plate.status_message}
+                            </div>
+
+                            {compat && !compat.is_compatible && compat.warning && (
+                              <div className="sl-plate-warning-banner">
+                                <AlertTriangle size={14} color="#f59e0b" />
+                                <span>{compat.warning}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Japanese Domestic Market (JDM) Chassis & Drivetrain Specifications */}
+                      {(triageResult.jdm_specs || triageResult.vehicle_details?.jdm_specs) && (() => {
+                        const jdm = triageResult.jdm_specs || triageResult.vehicle_details.jdm_specs;
+                        return (
+                          <div className="jdm-chassis-dossier-box">
+                            <div className="jdm-chassis-header">
+                              <div className="jdm-chassis-title">
+                                <Cpu size={15} color="#00F0FF" />
+                                <span>🇯🇵 JDM Chassis Code: <strong>{jdm.model_code}</strong> ({jdm.make} {jdm.model} {jdm.years || ''})</span>
+                              </div>
+                              <span className="jdm-verified-pill">JAPANESE EPC VERIFIED</span>
+                            </div>
+
+                            <div className="jdm-specs-grid">
+                              {jdm.engine_code && (
+                                <div className="jdm-spec-tile">
+                                  <span className="jdm-spec-k">Engine Code</span>
+                                  <span className="jdm-spec-v">{jdm.engine_code} ({jdm.engine_displacement || ''})</span>
+                                </div>
+                              )}
+                              {jdm.drivetrain && (
+                                <div className="jdm-spec-tile">
+                                  <span className="jdm-spec-k">Drivetrain</span>
+                                  <span className="jdm-spec-v">{jdm.drivetrain}</span>
+                                </div>
+                              )}
+                              {jdm.transmission && (
+                                <div className="jdm-spec-tile">
+                                  <span className="jdm-spec-k">Transmission</span>
+                                  <span className="jdm-spec-v">{jdm.transmission}</span>
+                                </div>
+                              )}
+                              {jdm.hv_battery && (
+                                <div className="jdm-spec-tile">
+                                  <span className="jdm-spec-k">HV Battery</span>
+                                  <span className="jdm-spec-v">{jdm.hv_battery}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {jdm.dealer_campaigns && jdm.dealer_campaigns.length > 0 && (
+                              <div className="jdm-dealer-campaigns-box">
+                                <div className="campaigns-title">
+                                  <AlertTriangle size={13} color="#00F0FF" />
+                                  <span>Sri Lanka Authorized Dealer Service Advisories (Toyota Lanka / Stafford / AMW)</span>
+                                </div>
+                                <div className="campaigns-list">
+                                  {jdm.dealer_campaigns.map((camp, idx) => (
+                                    <div key={idx} className="campaign-item">
+                                      <span className="campaign-bullet">📢</span>
+                                      <span>{camp}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Local Workshop Return-Visit Fleet History */}
+                      {(triageResult.fleet_history || triageResult.vehicle_details?.fleet_history) && (() => {
+                        const fleet = triageResult.fleet_history || triageResult.vehicle_details.fleet_history;
+                        if (!fleet || !fleet.has_prior_history) return null;
+                        return (
+                          <div className="fleet-history-dossier-box">
+                            <div className="fleet-history-header">
+                              <div className="fleet-history-title">
+                                <Clock size={15} color="#10b981" />
+                                <span>Local Garage Fleet History · Returning Customer</span>
+                              </div>
+                              <span className="fleet-visit-pill">
+                                VISIT #{fleet.total_prior_visits}
+                              </span>
+                            </div>
+
+                            <div className="fleet-history-summary-row">
+                              <div className="fleet-stat">
+                                <span className="fleet-stat-k">Prior Diagnosed DTCs:</span>
+                                <div className="fleet-stat-dtcs">
+                                  {fleet.historical_dtcs && fleet.historical_dtcs.length > 0 ? (
+                                    fleet.historical_dtcs.map((code, idx) => (
+                                      <span key={idx} className="fleet-dtc-chip">{code}</span>
+                                    ))
+                                  ) : (
+                                    <span className="fleet-stat-v">None</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {fleet.previously_repaired_components && fleet.previously_repaired_components.length > 0 && (
+                                <div className="fleet-stat">
+                                  <span className="fleet-stat-k">Previously Repaired Components:</span>
+                                  <span className="fleet-stat-v" style={{ color: '#10b981' }}>
+                                    {fleet.previously_repaired_components.join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {fleet.recent_visit_notes && (
+                              <div className="fleet-notes-quote">
+                                <em>Previous Service Note: "{fleet.recent_visit_notes}"</em>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
 
                       {/* IR RapidFuzz Typo Corrections */}
                       {triageResult.fuzzy_corrections && triageResult.fuzzy_corrections.length > 0 && (

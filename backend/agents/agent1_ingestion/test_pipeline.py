@@ -426,6 +426,74 @@ async def test_extended_automotive_data():
     print("\nGlobal/JDM, Chassis & Hybrid/EV Upgrades: ALL PASSED!")
 
 
+async def test_sri_lanka_plate_and_fleet_history():
+    print("\n=== [8] Testing Sri Lankan Plate Validator, JDM Specs & Fleet History ===")
+    try:
+        from .sri_lanka_plate_validator import extract_sri_lankan_plate, verify_plate_vehicle_compatibility
+        from .fleet_history_store import get_vehicle_history, record_vehicle_visit
+        from .extended_automotive_data import lookup_jdm_chassis_specs
+    except ImportError:
+        from sri_lanka_plate_validator import extract_sri_lankan_plate, verify_plate_vehicle_compatibility
+        from fleet_history_store import get_vehicle_history, record_vehicle_visit
+        from extended_automotive_data import lookup_jdm_chassis_specs
+
+
+    # 1. Valid Modern 3-letter Car Plate
+    p1 = extract_sri_lankan_plate("WP CAB-1234")
+    assert p1 is not None and p1["is_valid"] is True
+    assert p1["province_code"] == "WP"
+    assert p1["statutory_class"] == "Motor Car / Station Wagon / SUV"
+    print("  -> Valid Sri Lankan Plate (WP CAB-1234): PASSED")
+
+    # 2. Forbidden Letters Rule (I, O, Q)
+    p2 = extract_sri_lankan_plate("WP COB-1234")
+    assert p2 is not None and p2["is_valid"] is False
+    assert p2["validation_status"] == "FORBIDDEN_LETTERS_DETECTED"
+    print("  -> Forbidden Letter 'O' Rejection Rule: PASSED")
+
+    # 3. Invalid Province Code
+    p3 = extract_sri_lankan_plate("XP CAB-1234")
+    assert p3 is not None and p3["is_valid"] is False
+    assert p3["validation_status"] == "INVALID_PROVINCE"
+    print("  -> Invalid Province Code 'XP' Rejection: PASSED")
+
+    # 4. Vehicle Class Category Compatibility Check
+    p4 = extract_sri_lankan_plate("WP BAF-1234")
+    compat = verify_plate_vehicle_compatibility(p4, "Toyota", "Aqua")
+    assert compat["is_compatible"] is False
+    assert "strictly assigned to Motorcycles" in compat["warning"]
+    print("  -> Statutory Vehicle Class Mismatch Warning (Motorcycle series on Car): PASSED")
+
+    # 5. JDM Chassis Specs Lookup
+    jdm = lookup_jdm_chassis_specs("Toyota Aqua NHP10 2014")
+    assert jdm is not None
+    assert jdm["model_code"] == "NHP10"
+    assert jdm["engine_code"] == "1NZ-FXE"
+    assert "Brake Booster Pump" in jdm["dealer_campaigns"][0]
+    print("  -> JDM Chassis Code Lookup (NHP10 Engine/Transmission/Advisories): PASSED")
+
+    # 6. Local Workshop Return-Visit Fleet History Store
+    hist = get_vehicle_history("WP CAB-1234")
+    assert hist is not None
+    assert hist["total_prior_visits"] >= 1
+    assert "P0A80" in hist["historical_dtcs"]
+    print("  -> Return-Visit Fleet History Retrieval: PASSED")
+
+    # 7. Record new visit
+    updated = record_vehicle_visit(
+        identifier="WP CAB-1234",
+        make="Toyota",
+        model="Aqua",
+        year=2014,
+        dtc_codes=["P0A80", "P0A93"],
+        technician_notes="Test diagnostic session."
+    )
+    assert updated["total_prior_visits"] > hist["total_prior_visits"]
+    print("  -> Dynamic Fleet Visit Recording: PASSED")
+
+    print("\nSri Lankan Plate, JDM Specs & Fleet History: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
@@ -434,9 +502,11 @@ async def main():
     await test_fuzzy_vehicle_matching()
     await test_dtc_cascade_classification()
     await test_extended_automotive_data()
+    await test_sri_lanka_plate_and_fleet_history()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
+
 
 
 if __name__ == "__main__":

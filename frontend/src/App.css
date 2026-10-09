@@ -14347,9 +14347,369 @@
   color: #0f172a;
 }
 
-[data-theme='light'] .ruled-out-chip {
-  background: #ffffff;
+/* ==============================================================================
+   SRI LANKA NUMBER PLATE & JDM CHASSIS TELEMETRY STYLES
+   ============================================================================== */
+.sl-plate-dossier-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
 }
+
+.sl-plate-dossier-box.invalid {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.sl-plate-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sl-plate-badge-visual {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 2px solid #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.sl-plate-flag {
+  font-size: 1.1rem;
+}
+
+.sl-plate-emblem {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #475569;
+  border-right: 1.5px solid #cbd5e1;
+  padding-right: 5px;
+}
+
+.sl-plate-text {
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.sl-plate-meta-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sl-meta-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sl-meta-chip.province {
+  background: rgba(0, 240, 255, 0.12);
+  color: #00F0FF;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.sl-meta-chip.class-chip {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.sl-meta-chip.status-chip.valid {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.sl-meta-chip.status-chip.invalid {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sl-plate-status-text {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.4;
+}
+
+.sl-plate-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* JDM CHASSIS DOSSIER BOX */
+.jdm-chassis-dossier-box {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jdm-chassis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jdm-chassis-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-white, #ffffff);
+  font-weight: 600;
+}
+
+.jdm-verified-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #00F0FF;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.jdm-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.jdm-spec-tile {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jdm-spec-k {
+  font-size: 0.68rem;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.jdm-spec-v {
+  font-size: 0.82rem;
+  color: var(--text-white, #f8fafc);
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+}
+
+.jdm-dealer-campaigns-box {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px dashed rgba(0, 240, 255, 0.35);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campaigns-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #00F0FF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.campaigns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campaign-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-white, #e2e8f0);
+  line-height: 1.35;
+}
+
+.campaign-bullet {
+  font-size: 0.85rem;
+}
+
+/* LOCAL WORKSHOP FLEET HISTORY DOSSIER BOX */
+.fleet-history-dossier-box {
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fleet-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fleet-history-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.fleet-visit-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+
+.fleet-history-summary-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fleet-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.fleet-stat-k {
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+}
+
+.fleet-stat-v {
+  font-weight: 700;
+}
+
+.fleet-stat-dtcs {
+  display: flex;
+  gap: 4px;
+}
+
+.fleet-dtc-chip {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+}
+
+.fleet-notes-quote {
+  font-size: 0.76rem;
+  color: var(--text-muted, #94a3b8);
+  border-left: 2px solid rgba(16, 185, 129, 0.4);
+  padding-left: 8px;
+  margin-top: 4px;
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] .sl-plate-dossier-box {
+  background: #ffffff;
+  border-color: rgba(0, 180, 216, 0.4);
+}
+
+[data-theme='light'] .sl-plate-badge-visual {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+[data-theme='light'] .sl-plate-text {
+  color: #ffffff;
+}
+
+[data-theme='light'] .sl-meta-chip.class-chip {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .jdm-chassis-dossier-box {
+  background: #ffffff;
+  border-color: rgba(0, 180, 216, 0.35);
+}
+
+[data-theme='light'] .jdm-chassis-title {
+  color: #0f172a;
+}
+
+[data-theme='light'] .jdm-spec-tile {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .jdm-spec-v {
+  color: #0f172a;
+}
+
+[data-theme='light'] .fleet-history-dossier-box {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
 
 
 
