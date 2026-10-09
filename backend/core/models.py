@@ -1,6 +1,39 @@
 from typing import List, Optional, Dict, Any,Literal
 from pydantic import BaseModel, Field, model_validator, computed_field
 
+class FreezeFrameData(BaseModel):
+    """
+    OBD-II Mode $02 Freeze Frame Sensor Telemetry captured at the exact moment
+    a Diagnostic Trouble Code (DTC) was registered by the ECU.
+    Standardized per SAE J1979 / ISO 15031-5.
+    """
+    stft_pct: Optional[float] = Field(None, ge=-100.0, le=100.0, description="Short Term Fuel Trim Bank 1 in % (-100 to +100)")
+    ltft_pct: Optional[float] = Field(None, ge=-100.0, le=100.0, description="Long Term Fuel Trim Bank 1 in % (-100 to +100)")
+    engine_rpm: Optional[int] = Field(None, ge=0, le=15000, description="Engine speed in RPM when code triggered")
+    coolant_temp_c: Optional[float] = Field(None, ge=-40.0, le=160.0, description="Engine Coolant Temperature (ECT) in °C")
+    maf_gps: Optional[float] = Field(None, ge=0.0, le=600.0, description="Mass Air Flow rate in grams/second (g/s)")
+    engine_load_pct: Optional[float] = Field(None, ge=0.0, le=100.0, description="Calculated engine load value in %")
+    vehicle_speed_kmh: Optional[int] = Field(None, ge=0, le=400, description="Vehicle speed in km/h")
+    fuel_rail_pressure_kpa: Optional[float] = Field(None, ge=0.0, description="Fuel rail pressure in kPa (GDI & Diesel)")
+    battery_soc_pct: Optional[float] = Field(None, ge=0.0, le=100.0, description="High-Voltage Battery State of Charge % (EV/Hybrid)")
+    battery_cell_delta_mv: Optional[float] = Field(None, ge=0.0, description="Max battery cell voltage deviation in mV (EV/Hybrid)")
+    raw_scanner_text: Optional[str] = Field(None, description="Raw unparsed scanner freeze frame text report")
+
+
+class FreezeFrameAnalysis(BaseModel):
+    """
+    Master Diagnostic Reasoning evaluation derived from Freeze Frame parameters.
+    Mathematically isolates vacuum leaks, fuel pump failures, EV cell imbalances, or sensor faults.
+    """
+    total_fuel_trim_pct: Optional[float] = Field(None, description="Sum of STFT + LTFT in %")
+    trim_condition: str = Field("NORMAL", description="Status: CRITICAL_LEAN, MODERATE_LEAN, NORMAL, MODERATE_RICH, CRITICAL_RICH")
+    operating_state: str = Field("UNKNOWN", description="Vehicle operating regime: IDLE_WARM, HIGH_LOAD_CRUISE, COLD_START, HIGHWAY, STOPPED")
+    root_cause_verdict: str = Field("", description="Authoritative master mechanic deduction derived from telemetry")
+    ruled_out_components: List[str] = Field(default_factory=list, description="Components proven functional by operating telemetry (prevents guessing)")
+    high_probability_targets: List[str] = Field(default_factory=list, description="Specific components isolated as primary suspect causes")
+    confidence_score: int = Field(80, ge=0, le=100, description="Confidence percentage derived from sensor correlation")
+
+
 class DiagnosticRequest(BaseModel):
     """
     Payload received by Agent 1 from the technician or customer interface.
@@ -15,12 +48,19 @@ class DiagnosticRequest(BaseModel):
     # Optional direct VIN Mode
     vin: Optional[str] = Field(None, min_length=17, max_length=17, description="17-character vehicle identification number (ISO 3779)")
 
+    # Optional Sri Lanka Registration Plate & JDM Chassis Code
+    plate_number: Optional[str] = Field(None, description="Optional Sri Lankan registration plate, e.g. 'WP CAB-1234'")
+    chassis_code: Optional[str] = Field(None, description="Optional JDM Chassis / Model Code, e.g. 'NHP10', 'RU3'")
+
     # Optional direct fields for Manual Spec Entry Mode
     make: Optional[str] = Field(None, description="Direct vehicle make (e.g., Honda, Toyota)")
     model: Optional[str] = Field(None, description="Direct vehicle model (e.g., Civic, Camry)")
     year: Optional[int] = Field(None, ge=1900, le=2100, description="Direct vehicle manufacturing year")
     dtc_codes: Optional[List[str]] = Field(default_factory=list, description="Direct list of OBD-II DTC codes")
     damaged_parts: Optional[List[str]] = Field(default_factory=list, description="Direct list of damaged parts")
+
+    # Optional OBD-II Mode $02 Freeze Frame Sensor Telemetry
+    freeze_frame: Optional[FreezeFrameData] = Field(None, description="Optional OBD-II Mode $02 Freeze Frame Sensor Telemetry")
 
     @model_validator(mode="after")
     def validate_input_mode(self):
@@ -60,12 +100,73 @@ class DTCCascadeRequest(BaseModel):
 
 
 
+class SriLankanPlateDetails(BaseModel):
+    """
+    Statutory Sri Lankan Vehicle Registration (Number Plate) evaluation.
+    Governed deterministically by Motor Traffic Act rules.
+    """
+    plate_number: str = Field(..., description="Normalized plate number, e.g. 'WP CAB-1234'")
+    is_valid: bool = Field(..., description="Whether plate satisfies DMT syntax, province, and non-forbidden letter rules")
+    format_era: str = Field("modern_3letter", description="Format: modern_3letter, modern_2letter, vintage_sri_series, vintage_numeric")
+    province_code: Optional[str] = Field(None, description="2-letter Provincial Council code (WP, CP, SP, NP, EP, NW, NC, SG, UP)")
+    province_name: Optional[str] = Field(None, description="Full English province name, e.g. Western Province")
+    series: str = Field(..., description="Registration series letters, e.g. 'CAB'")
+    number: str = Field(..., description="4-digit serial registration number")
+    class_letter: Optional[str] = Field(None, description="First letter indicating statutory vehicle class (C, D, B, A, L, N, etc.)")
+    statutory_class: str = Field(..., description="Official vehicle class, e.g. 'Motor Car / Station Wagon / SUV'")
+    is_motor_car: bool = Field(True, description="True if class is designated for passenger cars")
+    forbidden_letters: List[str] = Field(default_factory=list, description="Prohibited characters detected (I, O, Q)")
+    validation_status: str = Field("VALID_SRI_LANKAN_PLATE", description="Deterministic status code")
+    status_message: str = Field("", description="Human-readable statutory verification message")
+
+
+class JDMChassisSpecs(BaseModel):
+    """
+    Japanese Domestic Market (JDM) vehicle frame and powertrain specifications.
+    Derived from factory EPC (Electronic Parts Catalog) databases.
+    """
+    model_code: str = Field(..., description="Frame model code, e.g. 'NHP10', 'RU3', 'ZVW30'")
+    make: str = Field(..., description="Manufacturer (Toyota, Honda, Suzuki, Nissan)")
+    model: str = Field(..., description="Model name (Aqua, Vezel Hybrid, Prius, Wagon R)")
+    years: Optional[str] = Field(None, description="Production generation years")
+    engine_code: Optional[str] = Field(None, description="Factory engine code, e.g. '1NZ-FXE', 'LEB-H1', 'R06A'")
+    engine_displacement: Optional[str] = Field(None, description="Displacement, e.g. '1.5L Atkinson Cycle'")
+    drivetrain: Optional[str] = Field(None, description="Drive type (Hybrid FWD, BEV, Petrol)")
+    transmission: Optional[str] = Field(None, description="Transmission type, e.g. 'e-CVT (P510)', '7-Speed i-DCD'")
+    hv_battery: Optional[str] = Field(None, description="High-voltage battery specs, e.g. '144V Ni-MH'")
+    inverter: Optional[str] = Field(None, description="Power control unit / inverter model")
+    dealer_campaigns: List[str] = Field(default_factory=list, description="Known Toyota Lanka / Stafford Motors / AMW service campaigns")
+
+
+class FleetVisitRecord(BaseModel):
+    """Single diagnostic service event recorded at the repair shop."""
+    visit_index: int = Field(..., description="Sequential visit number")
+    timestamp: str = Field(..., description="ISO 8601 visit date and time")
+    dtc_codes: List[str] = Field(default_factory=list, description="DTC trouble codes diagnosed")
+    root_cause_component: str = Field("Pending Diagnosis", description="Isolated failure component")
+    technician_notes: Optional[str] = Field("", description="Mechanic observations or repair actions")
+
+
+class FleetHistorySummary(BaseModel):
+    """Local workshop fleet return-visit history keyed by registration plate or chassis number."""
+    has_prior_history: bool = Field(False, description="True if vehicle has visited this repair facility before")
+    plate_number: Optional[str] = Field(None, description="Primary license plate identifier")
+    chassis_number: Optional[str] = Field(None, description="JDM chassis or VIN identifier")
+    total_prior_visits: int = Field(0, description="Total number of recorded previous visits")
+    first_visit_date: Optional[str] = Field(None, description="First recorded registration timestamp")
+    last_visit_date: Optional[str] = Field(None, description="Most recent service timestamp")
+    historical_dtcs: List[str] = Field(default_factory=list, description="All trouble codes historically logged for this vehicle")
+    previously_repaired_components: List[str] = Field(default_factory=list, description="List of components previously serviced/replaced")
+    recent_visit_notes: Optional[str] = Field("", description="Notes from the last repair session")
+    visits: List[FleetVisitRecord] = Field(default_factory=list, description="Complete chronological visit log")
+
+
 class VehicleDetails(BaseModel):
-    """Normalized vehicle specifications verified against NHTSA vPIC or VIN decoder."""
+    """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
     make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
     model: str = Field(..., description="Vehicle model name (e.g., Civic)")
     year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
-    is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC")
+    is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC or JDM Registry")
     
     # Extended VIN Decoded Telemetry (Additive)
     vin: Optional[str] = Field(default=None, description="17-character ISO 3779 VIN if provided/extracted")
@@ -76,11 +177,18 @@ class VehicleDetails(BaseModel):
     vin_checksum_valid: Optional[bool] = Field(default=None, description="Whether the 9th check digit passed MOD-11 validation")
     fuzzy_corrections: Optional[List[Dict[str, Any]]] = Field(default=None, description="Fuzzy string corrections applied")
 
+    # Sri Lanka & JDM Automotive Domain Telemetry (Additive)
+    sl_plate: Optional[SriLankanPlateDetails] = Field(default=None, description="Sri Lankan registration plate statutory verification")
+    jdm_specs: Optional[JDMChassisSpecs] = Field(default=None, description="JDM frame and powertrain specifications")
+    plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
+    fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
+
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
+
 
 
 class DTCCodeHierarchy(BaseModel):
@@ -141,6 +249,16 @@ class Agent1Payload(BaseModel):
 
     # Multi-DTC Cascade & Correlation Analysis (Additive)
     dtc_cascade: Optional[DTCCascadeAnalysis] = Field(default=None, description="Multi-DTC causal hierarchy and cascade classification")
+
+    # OBD-II Mode $02 Freeze Frame Sensor Telemetry (Additive)
+    freeze_frame: Optional[FreezeFrameData] = Field(default=None, description="Ingested OBD-II Freeze Frame Sensor Telemetry")
+    freeze_frame_analysis: Optional[FreezeFrameAnalysis] = Field(default=None, description="Master Diagnostic Analysis derived from Freeze Frame metrics")
+
+    # Sri Lanka & JDM Automotive Domain Telemetry (Additive)
+    sl_plate: Optional[SriLankanPlateDetails] = Field(default=None, description="Sri Lankan registration plate statutory verification")
+    jdm_specs: Optional[JDMChassisSpecs] = Field(default=None, description="JDM frame and powertrain specifications")
+    plate_compatibility: Optional[Dict[str, Any]] = Field(default=None, description="Plate statutory class vs vehicle compatibility")
+    fleet_history: Optional[FleetHistorySummary] = Field(default=None, description="Local workshop return-visit service history")
 
     @model_validator(mode="before")
     @classmethod
@@ -265,6 +383,7 @@ class DiagnosticResult(BaseModel):
     )
     severity: Literal["low", "moderate", "high", "critical"]
     safety_warning: str
+    freeze_frame_analysis: Optional[FreezeFrameAnalysis] = Field(default=None, description="Ground-truth freeze frame analysis")
 
     @model_validator(mode="after")
     def primary_must_rank_highest(self):
@@ -372,11 +491,11 @@ class ProcurementResponse(BaseModel):
 
 #Verification of alternative hypotheses is a separate stage from the initial diagnostic reasoning - Agent 2
 class VerificationVerdict(BaseModel):
-    index: int =Field(...,ge=0, decsription="Psotion of the hypothesis in the list under review")
-    plausible: bool="Whether this component exists on the vehicle and explains the codes"
-    reason: str = Field(
+    index: int = Field(..., ge=0, description="Position of the hypothesis in the list under review")
+    plausible: bool = Field(..., description="Whether this component exists on the vehicle and explains the codes")
+    reason: Optional[str] = Field(
         default="",
-        description ="Why this hypothesis was rejected.Required when plausible is false;omit otherwise."
+        description="Why this hypothesis was rejected. Required when plausible is false; omit otherwise."
     )
 
 class VerificationResponse(BaseModel):

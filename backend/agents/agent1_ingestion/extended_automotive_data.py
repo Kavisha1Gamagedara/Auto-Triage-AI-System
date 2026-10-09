@@ -198,6 +198,334 @@ def validate_chassis_or_vin(identifier: str) -> Dict[str, Any]:
 
 
 # ==============================================================================
+# 2.1 POPULAR SRI LANKAN JDM CHASSIS / MODEL CODE MECHANICAL REGISTRY
+# ==============================================================================
+JDM_CHASSIS_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "NHP10": {
+        "make": "Toyota",
+        "model": "Aqua",
+        "years": "2011-2021",
+        "engine_code": "1NZ-FXE",
+        "engine_displacement": "1.5L Atkinson Cycle",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "e-CVT (P510 Planetary)",
+        "hv_battery": "144V Ni-MH (0.9 kWh, 20 modules)",
+        "inverter": "G9200-52011 Inverter/Converter",
+        "dealer_campaigns": [
+            "Toyota Lanka Free Campaign: Brake Booster Pump & Accumulator Assembly (ABS warning light/spongy pedal)",
+            "Toyota Global Campaign: Hybrid Inverter Intelligent Power Module (IPM) Software Reflash"
+        ]
+    },
+    "MXPK11": {
+        "make": "Toyota",
+        "model": "Aqua",
+        "years": "2021-present",
+        "engine_code": "M15A-FXE",
+        "engine_displacement": "1.5L Dynamic Force 3-Cylinder",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "e-CVT",
+        "hv_battery": "Bipolar Nickel-Hydrogen (Ni-MH)",
+        "inverter": "Toyota Dynamic Inverter Unit",
+        "dealer_campaigns": []
+    },
+    "RU3": {
+        "make": "Honda",
+        "model": "Vezel Hybrid",
+        "years": "2013-2020",
+        "engine_code": "LEB-H1",
+        "engine_displacement": "1.5L i-VTEC Earth Dreams DOHC",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "7-Speed i-DCD Dual Clutch Transmission",
+        "hv_battery": "Lithium-Ion IPU (0.86 kWh)",
+        "inverter": "Integrated Power Unit (IPU)",
+        "dealer_campaigns": [
+            "Stafford Motors Service Bulletin: i-DCD Dual-Clutch Actuator Fluid Deterioration & Transmission Overheating Software Reflash",
+            "Stafford Motors Service Bulletin: Electric Water Pump Diagnostic Update"
+        ]
+    },
+    "RU1": {
+        "make": "Honda",
+        "model": "Vezel",
+        "years": "2013-2020",
+        "engine_code": "L15B",
+        "engine_displacement": "1.5L i-VTEC Petrol",
+        "drivetrain": "FWD",
+        "transmission": "CVT",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "GP5": {
+        "make": "Honda",
+        "model": "Fit Hybrid",
+        "years": "2013-2020",
+        "engine_code": "LEB-H1",
+        "engine_displacement": "1.5L i-VTEC Earth Dreams DOHC",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "7-Speed i-DCD Dual Clutch Transmission",
+        "hv_battery": "Lithium-Ion IPU (0.86 kWh)",
+        "inverter": "Integrated Power Unit (IPU)",
+        "dealer_campaigns": [
+            "Stafford Motors Service Bulletin: i-DCD Dual-Clutch Transmission Software Reflash & Actuator Service"
+        ]
+    },
+    "GM4": {
+        "make": "Honda",
+        "model": "Grace Hybrid",
+        "years": "2014-2020",
+        "engine_code": "LEB-H1",
+        "engine_displacement": "1.5L i-VTEC Earth Dreams DOHC",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "7-Speed i-DCD Dual Clutch Transmission",
+        "hv_battery": "Lithium-Ion IPU",
+        "inverter": "Integrated Power Unit (IPU)",
+        "dealer_campaigns": [
+            "Stafford Motors Service Bulletin: i-DCD Dual-Clutch Fluid Diagnostic Check"
+        ]
+    },
+    "MH34S": {
+        "make": "Suzuki",
+        "model": "Wagon R",
+        "years": "2012-2017",
+        "engine_code": "R06A",
+        "engine_displacement": "660cc 3-Cylinder DOHC",
+        "drivetrain": "ENE-CHARGE Mild Hybrid",
+        "transmission": "CVT",
+        "hv_battery": "Lithium-Ion Auxiliary Battery (under passenger seat)",
+        "inverter": "High-Efficiency Alternator / Charge Controller",
+        "dealer_campaigns": []
+    },
+    "MH44S": {
+        "make": "Suzuki",
+        "model": "Wagon R",
+        "years": "2014-2017",
+        "engine_code": "R06A",
+        "engine_displacement": "660cc 3-Cylinder DOHC S-ENE Charge",
+        "drivetrain": "S-ENE Charge (ISG Motor)",
+        "transmission": "CVT",
+        "hv_battery": "Lithium-Ion Auxiliary Battery",
+        "inverter": "Integrated Starter Generator (ISG)",
+        "dealer_campaigns": [
+            "AMW Service Advisory: ISG Drive Belt Tension & Lithium Auxiliary Battery Diagnostic Check"
+        ]
+    },
+    "MH55S": {
+        "make": "Suzuki",
+        "model": "Wagon R",
+        "years": "2017-present",
+        "engine_code": "R06A",
+        "engine_displacement": "660cc 3-Cylinder Mild Hybrid",
+        "drivetrain": "Mild Hybrid (ISG Motor)",
+        "transmission": "CVT",
+        "hv_battery": "Lithium-Ion Auxiliary Battery",
+        "inverter": "ISG Motor Generator",
+        "dealer_campaigns": []
+    },
+    "ZVW30": {
+        "make": "Toyota",
+        "model": "Prius",
+        "years": "2009-2015",
+        "engine_code": "2ZR-FXE",
+        "engine_displacement": "1.8L DOHC Atkinson Cycle",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "e-CVT (P410 Planetary)",
+        "hv_battery": "201.6V Ni-MH (1.3 kWh, 28 modules)",
+        "inverter": "G9200-47140 Inverter/Converter",
+        "dealer_campaigns": [
+            "Toyota Lanka Free Campaign: Brake Booster Master Cylinder & Pump Accumulator (C1246/C1391 pressure loss)",
+            "Toyota Global Campaign: Hybrid Inverter IPM Transistor Thermal Overheat Protection"
+        ]
+    },
+    "ZVW50": {
+        "make": "Toyota",
+        "model": "Prius",
+        "years": "2015-2022",
+        "engine_code": "2ZR-FXE",
+        "engine_displacement": "1.8L DOHC Atkinson Cycle",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "e-CVT (P610 Planetary)",
+        "hv_battery": "Lithium-Ion / Ni-MH",
+        "inverter": "Toyota 4th Gen Inverter Assembly",
+        "dealer_campaigns": []
+    },
+    "NKE165": {
+        "make": "Toyota",
+        "model": "Corolla Axio Hybrid",
+        "years": "2013-2020",
+        "engine_code": "1NZ-FXE",
+        "engine_displacement": "1.5L Atkinson Cycle Hybrid",
+        "drivetrain": "Hybrid (FWD)",
+        "transmission": "e-CVT",
+        "hv_battery": "144V Ni-MH",
+        "inverter": "G9200 Inverter/Converter",
+        "dealer_campaigns": []
+    },
+    "NZE161": {
+        "make": "Toyota",
+        "model": "Corolla Axio",
+        "years": "2012-2020",
+        "engine_code": "1NZ-FE",
+        "engine_displacement": "1.5L Petrol DOHC",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "NZE141": {
+        "make": "Toyota",
+        "model": "Corolla Axio",
+        "years": "2006-2012",
+        "engine_code": "1NZ-FE",
+        "engine_displacement": "1.5L Petrol DOHC",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "ZRT260": {
+        "make": "Toyota",
+        "model": "Premio",
+        "years": "2007-2021",
+        "engine_code": "2ZR-FE / 2ZR-FAE",
+        "engine_displacement": "1.8L Valvematic Petrol",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "NZT260": {
+        "make": "Toyota",
+        "model": "Premio",
+        "years": "2007-2021",
+        "engine_code": "1NZ-FE",
+        "engine_displacement": "1.5L DOHC Petrol",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "KSP130": {
+        "make": "Toyota",
+        "model": "Vitz",
+        "years": "2010-2020",
+        "engine_code": "1KR-FE",
+        "engine_displacement": "1.0L 3-Cylinder Petrol",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "NSP130": {
+        "make": "Toyota",
+        "model": "Vitz",
+        "years": "2010-2020",
+        "engine_code": "1NR-FKE",
+        "engine_displacement": "1.3L 4-Cylinder Petrol",
+        "drivetrain": "FWD",
+        "transmission": "Super CVT-i",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "A200A": {
+        "make": "Toyota",
+        "model": "Raize",
+        "years": "2019-present",
+        "engine_code": "1KR-VET",
+        "engine_displacement": "1.0L 3-Cylinder Turbo",
+        "drivetrain": "FWD",
+        "transmission": "D-CVT",
+        "hv_battery": None,
+        "inverter": None,
+        "dealer_campaigns": []
+    },
+    "ZE1": {
+        "make": "Nissan",
+        "model": "Leaf EV",
+        "years": "2017-present",
+        "engine_code": "EM57 Motor",
+        "engine_displacement": "110kW / 160kW Pure Electric",
+        "drivetrain": "BEV (FWD)",
+        "transmission": "Single-Speed Reduction Gear",
+        "hv_battery": "40 kWh / 62 kWh Laminated Lithium-Ion",
+        "inverter": "Nissan Integrated Inverter Module",
+        "dealer_campaigns": []
+    },
+    "AZE0": {
+        "make": "Nissan",
+        "model": "Leaf EV",
+        "years": "2012-2017",
+        "engine_code": "EM57 Motor",
+        "engine_displacement": "80kW Pure Electric",
+        "drivetrain": "BEV (FWD)",
+        "transmission": "Single-Speed Reduction Gear",
+        "hv_battery": "24 kWh / 30 kWh Lithium-Ion",
+        "inverter": "Nissan PDM / Inverter Assembly",
+        "dealer_campaigns": []
+    },
+    "HE12": {
+        "make": "Nissan",
+        "model": "Note e-Power",
+        "years": "2016-2020",
+        "engine_code": "HR12DE + EM57",
+        "engine_displacement": "1.2L 3-Cylinder Series Hybrid",
+        "drivetrain": "e-Power Electric Drive (FWD)",
+        "transmission": "Single-Speed Reduction Gear",
+        "hv_battery": "1.5 kWh Lithium-Ion Drive Battery",
+        "inverter": "e-Power Integrated Inverter",
+        "dealer_campaigns": []
+    }
+}
+
+
+def lookup_jdm_chassis_specs(identifier_or_text: str) -> Optional[Dict[str, Any]]:
+    """
+    Scans a string (chassis number, model code, or query text) to find and extract JDM specifications.
+    E.g. 'NHP10', 'DBA-ZRT260-3021948', 'Toyota Aqua NHP10 2015' -> returns full mechanical specs.
+    """
+    if not identifier_or_text or not isinstance(identifier_or_text, str):
+        return None
+
+    clean = identifier_or_text.strip().upper()
+
+    # 1. Exact or partial match with known model codes in registry
+    for code, specs in JDM_CHASSIS_REGISTRY.items():
+        # Match whole word model code (e.g. NHP10 in 'Aqua NHP10' or in 'DAA-NHP10-2184920')
+        if re.search(rf"\b{re.escape(code)}\b", clean):
+            return {
+                "model_code": code,
+                "found_in_registry": True,
+                **specs
+            }
+
+    # 2. Extract model code from JDM chassis pattern e.g. DAA-ZVW30-1234567
+    m = JDM_CHASSIS_REGEX.match(clean)
+    if m:
+        extracted_code = m.group(1).upper()
+        if extracted_code in JDM_CHASSIS_REGISTRY:
+            return {
+                "model_code": extracted_code,
+                "found_in_registry": True,
+                **JDM_CHASSIS_REGISTRY[extracted_code]
+            }
+        return {
+            "model_code": extracted_code,
+            "found_in_registry": False,
+            "make": "JDM Vehicle",
+            "model": extracted_code,
+            "dealer_campaigns": []
+        }
+
+    return None
+
+
+
+# ==============================================================================
 # 3. MODERN EV, HYBRID & ADAS PHYSICAL COMPONENTS
 # ==============================================================================
 EV_HYBRID_ADAS_COMPONENTS: List[str] = [

@@ -1,5 +1,6 @@
 import os
 from typing import Dict, List, Any, Optional
+from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException, status, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 # Core shared schemas and database
@@ -11,6 +12,8 @@ from core.models import (
     SpellcheckRequest,
     DTCCascadeRequest,
     DTCCascadeAnalysis,
+    FreezeFrameData,
+    FreezeFrameAnalysis,
     RepairRequest,
     ProcurementRequest, 
     ProcurementResponse
@@ -31,11 +34,20 @@ from agents.agent1_ingestion import (
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
+    parse_freeze_frame_scanner_text,
+    analyze_freeze_frame,
     nlp,
     verify_vehicle,
     decode_vin_nhtsa,
-    validate_vin_checksum
+    validate_vin_checksum,
+    extract_sri_lankan_plate,
+    verify_plate_vehicle_compatibility,
+    get_vehicle_history,
+    record_vehicle_visit,
+    get_fleet_store_status,
+    lookup_jdm_chassis_specs
 )
+
 
 # Agent 2 - Cognitive Diagnostic Reasoning
 try:
@@ -255,6 +267,61 @@ async def ingest_diagnostic(
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
     dtc_cascade = classify_dtc_cascades(dtc_codes)
 
+    # OBD-II Mode $02 Freeze Frame Sensor Telemetry ingestion & empirical analysis
+    freeze_frame = request.freeze_frame
+    if not freeze_frame and request.raw_text:
+        freeze_frame = parse_freeze_frame_scanner_text(request.raw_text)
+    elif freeze_frame and freeze_frame.raw_scanner_text and freeze_frame.stft_pct is None:
+        parsed_ff = parse_freeze_frame_scanner_text(freeze_frame.raw_scanner_text)
+        if parsed_ff:
+            freeze_frame = parsed_ff
+
+    freeze_frame_analysis = None
+    if freeze_frame:
+        freeze_frame_analysis = analyze_freeze_frame(
+            freeze_frame,
+            dtc_codes=dtc_codes,
+            vehicle={"make": make, "model": model, "year": year}
+        )
+
+    # 4. Sri Lankan Number Plate & JDM Chassis Code Ingestion
+    sl_plate = None
+    if request.plate_number:
+        sl_plate = extract_sri_lankan_plate(request.plate_number)
+    elif extracted.get("sl_plate"):
+        sl_plate = extracted["sl_plate"]
+    elif request.raw_text:
+        sl_plate = extract_sri_lankan_plate(request.raw_text)
+
+    jdm_specs = None
+    if request.chassis_code:
+        jdm_specs = lookup_jdm_chassis_specs(request.chassis_code)
+    elif extracted.get("jdm_specs"):
+        jdm_specs = extracted["jdm_specs"]
+    elif request.raw_text:
+        jdm_specs = lookup_jdm_chassis_specs(request.raw_text)
+
+    # Check vehicle compatibility with statutory plate class
+    plate_compatibility = None
+    if sl_plate and sl_plate.get("is_valid"):
+        plate_compatibility = verify_plate_vehicle_compatibility(sl_plate, make, model)
+
+    # 5. Local Workshop Fleet Return-Visit History Lookup
+    history_lookup_key = (sl_plate.get("plate_number") if sl_plate else None) or vin or (jdm_specs.get("model_code") if jdm_specs else None)
+    fleet_history = None
+    if history_lookup_key:
+        fleet_history = get_vehicle_history(history_lookup_key)
+        # Record this diagnostic visit into the local shop fleet store
+        record_vehicle_visit(
+            identifier=history_lookup_key,
+            make=make,
+            model=model,
+            year=year,
+            dtc_codes=dtc_codes,
+            chassis_number=jdm_specs.get("model_code") if jdm_specs else None,
+            technician_notes=raw_user_note
+        )
+
     # Build detailed vehicle specifications
     vehicle_details = VehicleDetails(
         make=make,
@@ -262,12 +329,16 @@ async def ingest_diagnostic(
         year=year,
         is_verified=True,
         vin=vin,
-        engine=vin_data.get("engine_displacement_l") if vin_data else None,
-        fuel_type=vin_data.get("fuel_type") if vin_data else None,
-        drive_type=vin_data.get("drive_type") if vin_data else None,
+        engine=vin_data.get("engine_displacement_l") if vin_data else (jdm_specs.get("engine_displacement") if jdm_specs else None),
+        fuel_type=vin_data.get("fuel_type") if vin_data else (jdm_specs.get("drivetrain") if jdm_specs else None),
+        drive_type=vin_data.get("drive_type") if vin_data else (jdm_specs.get("transmission") if jdm_specs else None),
         body_class=vin_data.get("body_class") if vin_data else None,
         vin_checksum_valid=vin_data.get("checksum", {}).get("is_valid") if vin_data else (validate_vin_checksum(vin)["is_valid"] if vin else None),
-        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None
+        fuzzy_corrections=fuzzy_corrections if fuzzy_corrections else None,
+        sl_plate=sl_plate,
+        jdm_specs=jdm_specs,
+        plate_compatibility=plate_compatibility,
+        fleet_history=fleet_history
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -280,8 +351,53 @@ async def ingest_diagnostic(
         canonical_query=canonical_query,
         dtc_hierarchy=dtc_hierarchy,
         dtc_cascade=dtc_cascade,
-        fuzzy_corrections=fuzzy_corrections
+        fuzzy_corrections=fuzzy_corrections,
+        freeze_frame=freeze_frame,
+        freeze_frame_analysis=freeze_frame_analysis,
+        sl_plate=sl_plate,
+        jdm_specs=jdm_specs,
+        plate_compatibility=plate_compatibility,
+        fleet_history=fleet_history
     )
+
+
+@app.post(
+    "/api/v1/validate-plate",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_validate_plate(data: Dict[str, str]):
+    """
+    Validates a Sri Lankan vehicle registration plate against statutory Motor Traffic Act rules.
+    """
+    plate_text = data.get("plate", "")
+    res = extract_sri_lankan_plate(plate_text)
+    if not res:
+        return {"is_valid": False, "status_message": "Invalid or unrecognized Sri Lankan number plate format."}
+    return res
+
+
+@app.get(
+    "/api/v1/fleet-history/{identifier}",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_get_fleet_history(identifier: str):
+    """
+    Retrieves previous workshop return-visit diagnostic history for a plate or chassis number.
+    """
+    hist = get_vehicle_history(identifier)
+    return hist or {"has_prior_history": False, "total_prior_visits": 0, "message": f"No previous workshop visits found for '{identifier}'"}
+
+
+@app.get(
+    "/api/v1/fleet-history-status",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_get_fleet_history_status():
+    """
+    Returns the active operational mode (MongoDB Atlas vs Local JSON Fallback) of the Fleet History store.
+    """
+    return get_fleet_store_status()
+
 
 
 @app.post(
@@ -342,6 +458,36 @@ async def analyze_dtc_cascade(data: DTCCascadeRequest):
     return classify_dtc_cascades(data.dtc_codes)
 
 
+class ParseFreezeFrameRequest(BaseModel):
+    raw_text: str
+    dtc_codes: Optional[List[str]] = None
+
+
+@app.post(
+    "/api/v1/parse-freeze-frame",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def parse_freeze_frame_endpoint(data: ParseFreezeFrameRequest):
+    """
+    Dedicated endpoint to parse unformatted scan tool text dumps (Autel, Snap-on, Launch, BlueDriver, generic Mode $02)
+    and compute empirical physical telemetry analysis.
+    """
+    parsed = parse_freeze_frame_scanner_text(data.raw_text)
+    if not parsed:
+        return {
+            "success": False,
+            "message": "No recognized freeze frame telemetry parameters found in the provided text.",
+            "freeze_frame": None,
+            "analysis": None
+        }
+    analysis = analyze_freeze_frame(parsed, dtc_codes=data.dtc_codes or [])
+    return {
+        "success": True,
+        "freeze_frame": parsed,
+        "analysis": analysis
+    }
+
+
 @app.post(
     "/api/v1/diagnose",
     response_model=DiagnosticResult,
@@ -361,6 +507,8 @@ async def run_diagnostics(payload: Agent1Payload):
         )
     try:
         result = deduce_root_cause(payload)
+        if payload.freeze_frame_analysis and not getattr(result, "freeze_frame_analysis", None):
+            result.freeze_frame_analysis = payload.freeze_frame_analysis
         return result
     except Exception as e:
         if groq and hasattr(groq, "APIStatusError") and isinstance(e, groq.APIStatusError):

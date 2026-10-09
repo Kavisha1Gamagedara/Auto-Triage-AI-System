@@ -170,10 +170,27 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
             f"rather than replacing parts for downstream cascade codes."
         )
 
+    # If OBD-II Freeze Frame Telemetry is present, inject physical sensor ground-truth
+    if payload.freeze_frame_analysis:
+        ffa = payload.freeze_frame_analysis
+        trim_str = f"Total Fuel Trim: {ffa.total_fuel_trim_pct}% ({ffa.trim_condition})" if ffa.total_fuel_trim_pct is not None else ""
+        ruled_out = ", ".join(ffa.ruled_out_components) if ffa.ruled_out_components else "None"
+        targets = ", ".join(ffa.high_probability_targets) if ffa.high_probability_targets else "None"
+        diagnostic_context += (
+            f"\n\nOBD-II FREEZE FRAME GROUND-TRUTH TELEMETRY:\n"
+            f"- Operating State: {ffa.operating_state}\n"
+            f"- Telemetry Analysis Verdict: {ffa.root_cause_verdict}\n"
+            f"{('- ' + trim_str + chr(10)) if trim_str else ''}"
+            f"- HIGH-PROBABILITY TARGETS: {targets}\n"
+            f"- RULED-OUT COMPONENTS: {ruled_out}\n"
+            f"CRITICAL TECHNICIAN INSTRUCTION:\n"
+            f"You MUST ground your reasoning in this empirical telemetry. "
+            f"Do NOT diagnose any of the ruled-out components as your primary hypothesis because the freeze-frame sensor data disproves them. "
+            f"Directly cite the freeze-frame parameters and operating state in your reasoning_steps and supporting_evidence."
+        )
 
     # Execute the structured LLM call
     response = client.chat.completions.create(
-
         model=GROQ_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_CONTENT},
@@ -190,25 +207,32 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     if not raw:
         raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")
 
-    #Fold typgraphic characters to ASCII equivalents before parsing,
-    #so downstream agents and Windows consoles never choke on curly quotes or em-dashes.
-    raw = unicodedata.normalize("NFKC",raw)
-    
+    # Fold typographic characters to ASCII equivalents before parsing,
+    # so downstream agents and Windows consoles never choke on curly quotes or em-dashes.
+    raw = unicodedata.normalize("NFKC", raw)
+    raw = raw.encode("ascii", "ignore").decode("ascii")
+
     logger.debug("Model: %s, finish_reason: %s", GROQ_MODEL, choice.finish_reason)
     logger.debug("Raw LLM output: %r", raw)
- 
+
     if not raw:
         raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")
- 
-    # Convert the JSON string to a dict, then validate it against the Pydantic model
 
+    # Convert the JSON string to a dict, then validate it against the Pydantic model
     result_dict = json.loads(raw)
     result = DiagnosticResult.model_validate(result_dict)
     result = _check_catalog_names(result)
 
+    if payload.freeze_frame_analysis:
+        result.freeze_frame_analysis = payload.freeze_frame_analysis
+
     try:
-        return verify_hypotheses(result, payload)
+        final_result = verify_hypotheses(result, payload)
     except Exception as exc:
         print(f"Verification stage failed, returning raw result: {exc}")
-        return result
+        final_result = result
 
+    if payload.freeze_frame_analysis and not getattr(final_result, "freeze_frame_analysis", None):
+        final_result.freeze_frame_analysis = payload.freeze_frame_analysis
+
+    return final_result

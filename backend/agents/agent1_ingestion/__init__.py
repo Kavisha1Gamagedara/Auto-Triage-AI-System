@@ -14,6 +14,8 @@ from .nlp_extractor import (
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
+    parse_freeze_frame_scanner_text,
+    analyze_freeze_frame,
     nlp
 )
 
@@ -31,7 +33,23 @@ from .extended_automotive_data import (
     EXTENDED_DTC_CASCADE_RULES,
     is_jdm_chassis_number,
     is_recognized_global_vehicle,
-    validate_chassis_or_vin
+    validate_chassis_or_vin,
+    lookup_jdm_chassis_specs,
+    JDM_CHASSIS_REGISTRY
+)
+
+from .sri_lanka_plate_validator import (
+    extract_sri_lankan_plate,
+    validate_plate_components,
+    verify_plate_vehicle_compatibility,
+    SL_PROVINCES,
+    VEHICLE_CLASS_MAP
+)
+
+from .fleet_history_store import (
+    get_vehicle_history,
+    record_vehicle_visit,
+    get_fleet_store_status
 )
 
 __all__ = [
@@ -46,6 +64,8 @@ __all__ = [
     "classify_dtc_cascades",
     "fuzzy_correct_make",
     "fuzzy_correct_model",
+    "parse_freeze_frame_scanner_text",
+    "analyze_freeze_frame",
     "nlp",
     "verify_vehicle",
     "decode_vin_nhtsa",
@@ -57,5 +77,16 @@ __all__ = [
     "EXTENDED_DTC_CASCADE_RULES",
     "is_jdm_chassis_number",
     "is_recognized_global_vehicle",
-    "validate_chassis_or_vin"
+    "validate_chassis_or_vin",
+    "lookup_jdm_chassis_specs",
+    "JDM_CHASSIS_REGISTRY",
+    "extract_sri_lankan_plate",
+    "validate_plate_components",
+    "verify_plate_vehicle_compatibility",
+    "SL_PROVINCES",
+    "VEHICLE_CLASS_MAP",
+    "get_vehicle_history",
+    "record_vehicle_visit",
+    "get_fleet_store_status"
 ]
+
