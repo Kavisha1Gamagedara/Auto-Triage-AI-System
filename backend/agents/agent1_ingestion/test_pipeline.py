@@ -597,6 +597,59 @@ async def test_privacy_guardrail():
     print("\nResponsible AI Privacy Guardrail: ALL PASSED!")
 
 
+async def test_ir_bm25_engine():
+    print("\n=== [11] Testing Information Retrieval (IR): Query Expansion & Okapi BM25 Scoring ===")
+    try:
+        from .bm25_retrieval_engine import search_dtc_bm25, expand_automotive_query, get_bm25_engine
+        from .nlp_extractor import extract_entities
+    except ImportError:
+        from bm25_retrieval_engine import search_dtc_bm25, expand_automotive_query, get_bm25_engine
+        from nlp_extractor import extract_entities
+
+    # 1. Test Automotive Synset Query Expansion (Vernacular Slang to Diagnostic Terminology)
+    exp1 = expand_automotive_query("Car has violent jerking and rotten eggs smell")
+    assert "engine misfire" in exp1["expanded_terms"] or any("misfire" in t for t in exp1["expanded_terms"])
+    assert any("catalytic" in t or "P0420" in t for t in exp1["expanded_terms"])
+    assert len(exp1["synsets_triggered"]) >= 2
+    print("  -> Automotive Synset Query Expansion (Thesaurus Mapping): PASSED")
+    print(f"     Original: '{exp1['original_query']}'")
+    print(f"     Expanded: '{exp1['expanded_query']}'")
+
+    # 2. Test Inverted Index & Collection Statistics
+    engine = get_bm25_engine()
+    assert engine.total_docs >= 15
+    assert engine.avg_doc_length > 10.0
+    assert len(engine.inverted_index) > 50
+    assert "misfir" in engine.inverted_index or "misfire" in engine.inverted_index
+    print(f"  -> Inverted Index Collection Stats (N={engine.total_docs}, avgdl={engine.avg_doc_length:.1f}): PASSED")
+
+    # 3. Test BM25 Probabilistic Ranking for 'Jerking' Complaint -> P0300
+    res_jerk = search_dtc_bm25("Customer states violent jerking and hesitation on acceleration", top_k=3)
+    top_jerk = res_jerk["top_matches"][0]
+    assert top_jerk["dtc_code"] in {"P0300", "P0301", "P0171"}
+    assert top_jerk["bm25_score"] > 5.0
+    assert len(top_jerk["matched_terms"]) >= 2
+    assert len(top_jerk["term_contributions"]) >= 2
+    print(f"  -> BM25 Symptom Ranking ('jerking' -> {top_jerk['dtc_code']} '{top_jerk['title']}'): PASSED (Score: {top_jerk['bm25_score']:.2f})")
+
+    # 4. Test BM25 Probabilistic Ranking for 'Rotten eggs smell' -> P0420
+    res_egg = search_dtc_bm25("Exhaust has strong rotten eggs smell and sluggish acceleration", top_k=3)
+    top_egg = res_egg["top_matches"][0]
+    assert top_egg["dtc_code"] == "P0420"
+    assert top_egg["bm25_score"] > 8.0
+    print(f"  -> BM25 Symptom Ranking ('rotten eggs' -> {top_egg['dtc_code']} '{top_egg['title']}'): PASSED (Score: {top_egg['bm25_score']:.2f})")
+
+    # 5. Test Full Pipeline Integration in extract_entities
+    entities = extract_entities("2018 Toyota Corolla with violent jerking and engine shudder")
+    assert "ir_bm25_report" in entities
+    ir_report = entities["ir_bm25_report"]
+    assert len(ir_report["top_matches"]) > 0
+    assert ir_report["corpus_size"] >= 15
+    print("  -> Full Agent 1 Ingestion Pipeline IR BM25 Integration: PASSED")
+
+    print("\nInformation Retrieval BM25 Engine: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
@@ -608,6 +661,7 @@ async def main():
     await test_sri_lanka_plate_and_fleet_history()
     await test_complaint_summarization()
     await test_privacy_guardrail()
+    await test_ir_bm25_engine()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
@@ -616,5 +670,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 

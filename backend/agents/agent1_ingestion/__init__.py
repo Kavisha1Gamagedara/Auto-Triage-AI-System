@@ -60,6 +60,13 @@ from .privacy_guardrail import (
     mask_pii
 )
 
+from .bm25_retrieval_engine import (
+    search_dtc_bm25,
+    expand_automotive_query,
+    BM25DiagnosticEngine,
+    get_bm25_engine
+)
+
 __all__ = [
     "extract_entities",
     "sanitize_input",
@@ -97,6 +104,10 @@ __all__ = [
     "record_vehicle_visit",
     "get_fleet_store_status",
     "summarize_complaint",
-    "mask_pii"
+    "mask_pii",
+    "search_dtc_bm25",
+    "expand_automotive_query",
+    "BM25DiagnosticEngine",
+    "get_bm25_engine"
 ]
 

@@ -47,6 +47,10 @@ try:
     from .privacy_guardrail import (
         mask_pii
     )
+    from .bm25_retrieval_engine import (
+        search_dtc_bm25,
+        expand_automotive_query
+    )
 except ImportError:
     from extended_automotive_data import (
         GLOBAL_VEHICLE_CATALOG,
@@ -70,6 +74,10 @@ except ImportError:
     )
     from privacy_guardrail import (
         mask_pii
+    )
+    from bm25_retrieval_engine import (
+        search_dtc_bm25,
+        expand_automotive_query
     )
 
 
@@ -981,6 +989,9 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     # 5. NLP Customer & Technician Complaint Summarization (Abstractive & Extractive)
     complaint_summary = summarize_complaint(clean_text, dtc_codes)
 
+    # 6. Information Retrieval (IR) Engine: Automotive Synset Query Expansion & Okapi BM25 Ranking
+    ir_bm25_report = search_dtc_bm25(clean_text, top_k=5, expand_synonyms=True)
+
     # Fallback defaults if text did not specify
     return {
         "vin": vin,
@@ -998,7 +1009,8 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "plate_compatibility": plate_compatibility,
         "fleet_history": fleet_history,
         "complaint_summary": complaint_summary,
-        "privacy_guardrail": privacy_guardrail
+        "privacy_guardrail": privacy_guardrail,
+        "ir_bm25_report": ir_bm25_report
     }
 
 
