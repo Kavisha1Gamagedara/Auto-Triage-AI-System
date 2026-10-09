@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 5,
+    "total_visits": 6,
     "visits": [
       {
         "visit_index": 1,
@@ -58,6 +58,16 @@
       {
         "visit_index": 5,
         "timestamp": "2026-10-09T03:14:00.774630+00:00",
+        "dtc_codes": [
+          "P0A80",
+          "P0A93"
+        ],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 6,
+        "timestamp": "2026-10-09T03:24:12.621076+00:00",
         "dtc_codes": [
           "P0A80",
           "P0A93"

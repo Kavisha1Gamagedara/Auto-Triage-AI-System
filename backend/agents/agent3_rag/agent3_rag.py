@@ -17,7 +17,8 @@ client = AsyncOpenAI(
     base_url="https://api.groq.com/openai/v1"
 ) 
 
-GENERIC_VEHICLE = "Generic OBD-II"
+# Vehicle-independent manual content: OBD-II code diagnostics and generic component repair procedures
+GENERIC_VEHICLES = ["Generic OBD-II", "Generic Repair"]
 
 
 def _matching_vehicles(collection, vehicle_model: str) -> list:
@@ -61,7 +62,7 @@ def retrieve_chunks(collection, target_component: str, vehicle_model: str, dtc_c
 
     for use_codes in ([True, False] if codes else [False]):
         specific = search(vehicles, 2, use_codes)
-        generic = search([GENERIC_VEHICLE], max(2, len(codes)), use_codes)
+        generic = search(GENERIC_VEHICLES, max(2, len(codes)), use_codes)
         documents, metadatas = specific[0] + generic[0], specific[1] + generic[1]
         if documents:
             break
@@ -115,7 +116,7 @@ async def get_repair_procedure(target_component: str, vehicle_model: str, dtc_co
        "UNVERIFIED - confirm in OEM service manual: " followed by any value given.
        If no torque value is given, set torque_specs to "Not available - consult OEM service manual".
     4. ONLY use context sections whose [Vehicle: ...] matches the {vehicle_model}, or is
-       "Generic OBD-II" (code diagnostics that apply to any vehicle). Prefer the vehicle-specific
+       "Generic OBD-II" or "Generic Repair" (procedures that apply to any vehicle). Prefer the vehicle-specific
        section when both exist. If no section matches that vehicle and component/code, return
        {{"steps": [], "torque_specs": "", "citation": "", "error": "No matching manual"}}.
     

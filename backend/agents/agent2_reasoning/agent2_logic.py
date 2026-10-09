@@ -1,6 +1,7 @@
 import json
 import unicodedata
 import os
+import logging
 from dotenv import load_dotenv
 from groq import Groq
 try:
@@ -11,6 +12,22 @@ except ImportError:
 load_dotenv()
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+logger = logging.getLogger(__name__)
+
+#New module level code for DB Connection Loss
+def _load_catalog_parts() -> list[str]:
+    """Agent 4's part vocabulary. Fetched once; empty list disables constraining."""
+    try:
+        from core.db import get_db
+        names = sorted(get_db().parts.distinct("part_name"))
+        logger.info("Loaded %d catalog part names for constrained vocabulary", len(names))
+        return names
+    except Exception as exc:
+        logger.warning("Catalog vocabulary unavailable, falling back to free text: %s", exc)
+        return []
+
+CATALOG_PARTS = _load_catalog_parts()
 
 def get_client() -> Groq:
     api_key = os.getenv("GROQ_API_KEY")
@@ -34,29 +51,45 @@ Rules:
 - "confirming_test" must be the cheapest test that separates this hypothesis from the others.
 - If evidence is thin, express that through low confidence values rather than inventing certainty.
 - Use only plain ASCII characters. No typographic dashes, curly quotes, or emoji.
+- "catalog_part_name" must be chosen EXACTLY from the catalog list provided below, copied character for character. If no catalog entry genuinely matches the failing component, set it to null. Never force an approximate match: a null is more useful downstream than a wrong part name.
 
 Respond with a single JSON object and nothing else, matching this schema exactly:
 {schema}
 """
-
+CATALOG_BLOCK =(
+    "\n\nAvailable catalog part names:\n" + "\n".join(f"- {n}" for n in CATALOG_PARTS)
+    if CATALOG_PARTS else
+    "\n\nNo catalog is available. Set catalog_part_name to null for every hypothesis."
+)
 
 SYSTEM_CONTENT = SYSTEM_PROMPT.replace(
     "{schema}",json.dumps(DiagnosticResult.model_json_schema(), indent=2)
-)
+) + CATALOG_BLOCK
+
+#Validating the Parts match is real
+def _check_catalog_names(result: DiagnosticResult) -> DiagnosticResult:
+    if not CATALOG_PARTS:
+        return result
+    valid = set(CATALOG_PARTS)
+    for h in [result.primary_hypothesis] + result.differential_hypotheses:
+        if h.catalog_part_name and h.catalog_part_name not in valid:
+            logger.warning("Hallucinated catalog name discarded: %r", h.catalog_part_name)
+            h.catalog_part_name = None
+    return result
 
 VERIFIER_PROMPT = """You are a vehicle systems expert. You are NOT diagnosing anything.
 
-For each candidate component listed, decide two things about the specified vehicle:
-1. Does this component physically exist on this year/make/model, given its drivetrain and engine type?
-2. Could a fault in it plausibly set the listed DTC codes?
+For each candidate component listed, work through these in order:
+1. What drivetrain does this vehicle use? State it explicitly: internal combustion, hybrid, plug-in hybrid, or battery electric. If the model name is one you recognise as electric-only or hybrid-only, say so.
+2. Which systems does that drivetrain rule out entirely? A battery electric vehicle has no fuel tank, no EVAP system, no exhaust, no spark ignition, no engine oil system, and no transmission in the conventional sense.
+3. Only then, for each candidate: does this component physically exist on this vehicle, and could a fault in it set the listed DTC codes?
 
 Mark plausible=false only when you are confident the component does not exist on this vehicle
 or cannot set these codes. Uncertainty is not grounds for rejection.
 
-Common failures to catch: distributor caps on coil-on-plug engines, spark plugs or oxygen
-sensors on battery electric vehicles, carburettor parts on fuel-injected engines, timing belts
-on timing-chain engines.
-
+Common failures to catch: distributor caps on coil-on-plug engines; spark plugs, oxygen sensors,
+catalytic converters, fuel pumps, fuel injectors, EVAP components or engine thermostats on battery
+electric vehicles; carburettor parts on fuel-injected engines; timing belts on timing-chain engines.
 Use only plain ASCII. Respond with a single JSON object matching this schema:
 {schema}
 """
@@ -179,9 +212,16 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
     raw = unicodedata.normalize("NFKC", raw)
     raw = raw.encode("ascii", "ignore").decode("ascii")
 
+    logger.debug("Model: %s, finish_reason: %s", GROQ_MODEL, choice.finish_reason)
+    logger.debug("Raw LLM output: %r", raw)
+
+    if not raw:
+        raise ValueError(f"LLM returned no content (finish_reason={choice.finish_reason})")
+
     # Convert the JSON string to a dict, then validate it against the Pydantic model
     result_dict = json.loads(raw)
     result = DiagnosticResult.model_validate(result_dict)
+    result = _check_catalog_names(result)
 
     if payload.freeze_frame_analysis:
         result.freeze_frame_analysis = payload.freeze_frame_analysis
