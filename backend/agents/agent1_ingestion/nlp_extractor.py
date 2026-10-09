@@ -41,6 +41,9 @@ try:
     from .fleet_history_store import (
         get_vehicle_history
     )
+    from .complaint_summarizer import (
+        summarize_complaint
+    )
 except ImportError:
     from extended_automotive_data import (
         GLOBAL_VEHICLE_CATALOG,
@@ -58,6 +61,9 @@ except ImportError:
     )
     from fleet_history_store import (
         get_vehicle_history
+    )
+    from complaint_summarizer import (
+        summarize_complaint
     )
 
 
@@ -963,6 +969,9 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
     dtc_cascade = classify_dtc_cascades(dtc_codes)
 
+    # 5. NLP Customer & Technician Complaint Summarization (Abstractive & Extractive)
+    complaint_summary = summarize_complaint(clean_text, dtc_codes)
+
     # Fallback defaults if text did not specify
     return {
         "vin": vin,
@@ -978,7 +987,8 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         "sl_plate": sl_plate,
         "jdm_specs": jdm_specs,
         "plate_compatibility": plate_compatibility,
-        "fleet_history": fleet_history
+        "fleet_history": fleet_history,
+        "complaint_summary": complaint_summary
     }
 
 

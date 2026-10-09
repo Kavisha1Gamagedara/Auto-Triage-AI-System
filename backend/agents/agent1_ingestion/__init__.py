@@ -52,6 +52,10 @@ from .fleet_history_store import (
     get_fleet_store_status
 )
 
+from .complaint_summarizer import (
+    summarize_complaint
+)
+
 __all__ = [
     "extract_entities",
     "sanitize_input",
@@ -87,6 +91,7 @@ __all__ = [
     "VEHICLE_CLASS_MAP",
     "get_vehicle_history",
     "record_vehicle_visit",
-    "get_fleet_store_status"
+    "get_fleet_store_status",
+    "summarize_complaint"
 ]
 

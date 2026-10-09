@@ -494,6 +494,48 @@ async def test_sri_lanka_plate_and_fleet_history():
     print("\nSri Lankan Plate, JDM Specs & Fleet History: ALL PASSED!")
 
 
+async def test_complaint_summarization():
+    print("\n=== [9] Testing NLP Complaint Summarization (Abstractive & Extractive) ===")
+    try:
+        from .complaint_summarizer import summarize_complaint, _build_linguistic_extractive_summary
+        from .nlp_extractor import extract_entities
+    except ImportError:
+        from complaint_summarizer import summarize_complaint, _build_linguistic_extractive_summary
+        from nlp_extractor import extract_entities
+
+    # 1. Critical Complaint with Flashing CEL and Violent Shaking
+    complaint_1 = "Vehicle shakes violently when stopped at red lights, check engine light flashes repeatedly, and strong rotten egg smell."
+    res_1 = summarize_complaint(complaint_1, ["P0300", "P0420"])
+    assert res_1["severity_level"] in {"Critical", "High", "Moderate"}
+    assert res_1["urgency_score"] >= 7
+    assert len(res_1["executive_summary"]) > 15
+    assert len(res_1["chief_complaints"]) >= 1
+    print(f"  -> Critical Complaint Summarization ({res_1['method']}): PASSED")
+    print(f"     Abstract: '{res_1['executive_summary'][:85]}...'")
+
+    # 2. Deterministic spaCy Linguistic Extractive Fallback
+    fallback = _build_linguistic_extractive_summary(
+        clean_text=complaint_1,
+        chief_complaints=["Engine vibration", "Flashing MIL"],
+        conditions=["At idle / stoplights"],
+        severity="Critical",
+        urgency=9
+    )
+    assert fallback["method"] == "spacy_extractive_linguistic"
+    assert "Engine vibration" in fallback["executive_summary"]
+    assert fallback["urgency_score"] == 9
+    print("  -> Deterministic spaCy Linguistic Fallback: PASSED")
+
+    # 3. Pipeline Ingestion Integration Check
+    entities = extract_entities("2017 Toyota Aqua WP CAB-1234 customer states vehicle shakes violently and check engine light on")
+    assert "complaint_summary" in entities
+    assert entities["complaint_summary"] is not None
+    assert len(entities["complaint_summary"]["executive_summary"]) > 10
+    print("  -> Entity Ingestion Pipeline Integration: PASSED")
+
+    print("\nNLP Complaint Summarization: ALL PASSED!")
+
+
 async def main():
     await test_extraction_cases()
     await test_nhtsa_and_payloads()
@@ -503,6 +545,7 @@ async def main():
     await test_dtc_cascade_classification()
     await test_extended_automotive_data()
     await test_sri_lanka_plate_and_fleet_history()
+    await test_complaint_summarization()
     print("\n==========================================")
     print("ALL AGENT 1 NLP & INTEGRATION TESTS PASSED!")
     print("==========================================")
