@@ -15422,6 +15422,511 @@
   color: #334155;
 }
 
+/* =========================================================================
+   Security Guardrail: Prompt Injection & Adversarial Jailbreak Defense
+   ========================================================================= */
+.sec-guardrail-dossier-box {
+  margin-top: 14px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.sec-guardrail-dossier-box.critical-blocked {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: rgba(239, 68, 68, 0.08);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.sec-guardrail-dossier-box.suspicious {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.08);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+}
+
+.sec-guardrail-dossier-box.clean {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.sec-guardrail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sec-guardrail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.03em;
+}
+
+.sec-guardrail-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sec-status-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.sec-status-pill.blocked {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.sec-status-pill.warn {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.sec-status-pill.safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.sec-risk-score {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: var(--font-mono, monospace);
+}
+
+.sec-guardrail-summary {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.sec-threats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sec-card-sublabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sec-threats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px;
+}
+
+.sec-threat-item {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sec-threat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sec-threat-cat {
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  color: #f87171;
+}
+
+.sec-threat-sev {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.sec-threat-sev.critical {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.sec-threat-sev.high {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.sec-threat-sev.medium {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.sec-threat-pattern {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.sec-threat-pattern code {
+  color: #fecdd3;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+}
+
+.sec-threat-desc {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.sec-neutralized-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sec-neutralized-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.sec-neutralized-box code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  color: #a7f3d0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] .sec-guardrail-dossier-box {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .sec-guardrail-dossier-box.critical-blocked {
+  background: #fff1f2;
+  border-color: #fca5a5;
+}
+
+[data-theme='light'] .sec-guardrail-dossier-box.suspicious {
+  background: #fefce8;
+  border-color: #fde047;
+}
+
+[data-theme='light'] .sec-guardrail-dossier-box.clean {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+[data-theme='light'] .sec-guardrail-title {
+  color: #0f172a;
+}
+
+[data-theme='light'] .sec-threat-item {
+  background: #ffffff;
+  border-color: #fecaca;
+}
+
+[data-theme='light'] .sec-threat-pattern code {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+[data-theme='light'] .sec-threat-desc {
+  color: #475569;
+}
+
+[data-theme='light'] .sec-neutralized-box {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+[data-theme='light'] .sec-neutralized-box code {
+  color: #166534;
+}
+
+/* =========================================================================
+   Hybrid Ensemble Fallback: Zero-Shot Ambiguity Resolver
+   ========================================================================= */
+.ensemble-dossier-box {
+  margin-top: 14px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.ensemble-dossier-box.resolved {
+  border-color: rgba(168, 85, 247, 0.55);
+  background: rgba(168, 85, 247, 0.08);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.18);
+}
+
+.ensemble-dossier-box.unambiguous {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.ensemble-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ensemble-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.03em;
+}
+
+.ensemble-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ensemble-status-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.ensemble-status-pill.escalated {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+.ensemble-status-pill.direct {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.ensemble-meta-pill {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono, monospace);
+}
+
+.ensemble-summary {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #a855f7;
+}
+
+.ensemble-triggers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ensemble-card-sublabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ensemble-reasons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ensemble-reason-chip {
+  font-size: 0.73rem;
+  color: #fde047;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.ensemble-comparison-section {
+  margin-top: 4px;
+}
+
+.ensemble-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.ensemble-spec-col {
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ensemble-spec-col.before {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px dashed rgba(239, 68, 68, 0.35);
+}
+
+.ensemble-spec-col.after {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.col-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.ensemble-spec-col.before .col-label {
+  color: #f87171;
+}
+
+.ensemble-spec-col.after .col-label {
+  color: #c084fc;
+}
+
+.spec-val-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+}
+
+.spec-k {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.spec-v {
+  color: #cbd5e1;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.73rem;
+}
+
+.spec-v.highlight {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.ensemble-arrow-col {
+  font-size: 1.1rem;
+  color: #a855f7;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] .ensemble-dossier-box {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .ensemble-dossier-box.resolved {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+}
+
+[data-theme='light'] .ensemble-dossier-box.unambiguous {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+[data-theme='light'] .ensemble-title {
+  color: #0f172a;
+}
+
+[data-theme='light'] .ensemble-summary {
+  background: #f8fafc;
+  color: #334155;
+  border-left-color: #9333ea;
+}
+
+[data-theme='light'] .ensemble-reason-chip {
+  background: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+[data-theme='light'] .ensemble-spec-col.before {
+  background: #fff1f2;
+  border-color: #fca5a5;
+}
+
+[data-theme='light'] .ensemble-spec-col.after {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+
+[data-theme='light'] .spec-v {
+  color: #475569;
+}
+
+[data-theme='light'] .spec-v.highlight {
+  color: #0284c7;
+}
+
 
 
 

@@ -22,7 +22,11 @@ from core.models import (
     PrivacyGuardrailReport,
     PIIMaskRequest,
     IRRetrievalReport,
-    IRBM25SearchRequest
+    IRBM25SearchRequest,
+    SecurityGuardrailReport,
+    SecurityAuditRequest,
+    EnsembleDisambiguationReport,
+    EnsembleDisambiguateRequest
 )
 
 # Role-Based Access Control & Subscriptions
@@ -36,7 +40,7 @@ from agents.agent1_ingestion import (
     extract_damaged_parts, 
     extract_vin,
     normalize_mechanic_notes, 
-    resolve_dtc_hierarchy,
+    resolve_dtc_hierarchy, 
     classify_dtc_cascades,
     fuzzy_correct_make,
     fuzzy_correct_model,
@@ -55,7 +59,11 @@ from agents.agent1_ingestion import (
     summarize_complaint,
     mask_pii,
     search_dtc_bm25,
-    expand_automotive_query
+    expand_automotive_query,
+    audit_security_perimeter,
+    sanitize_with_security_perimeter,
+    resolve_ambiguous_entities,
+    detect_extraction_ambiguity
 )
 
 
@@ -175,6 +183,8 @@ async def ingest_diagnostic(
     vin_data = None
     fuzzy_corrections: List[Dict[str, Any]] = []
     extracted: Dict[str, Any] = {}
+    raw_user_note = (request.raw_text or "").strip()
+    _, security_guardrail = sanitize_with_security_perimeter(raw_user_note)
 
     # Check Mode 1: Direct VIN Intake Mode
     if vin:
@@ -235,8 +245,9 @@ async def ingest_diagnostic(
                     damaged_parts.append(part)
     else:
         # Mode 3: Smart NLP Intake Mode (extracts VIN, specs, DTCs from text)
-        sanitized_text = sanitize_input(request.raw_text or "")
-        extracted = extract_entities(sanitized_text)
+        extracted = extract_entities(raw_user_note)
+        if security_guardrail.get("threat_level") != "CLEAN":
+            extracted["security_guardrail"] = security_guardrail
         
         # If a 17-character VIN was discovered in the complaint notes, decode via NHTSA
         if extracted.get("vin"):
@@ -338,18 +349,27 @@ async def ingest_diagnostic(
     if not complaint_summary and raw_user_note:
         complaint_summary = summarize_complaint(raw_user_note, dtc_codes)
 
-    # 7. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
+    # 7. Security Perimeter Guardrail: Prompt Injection & Adversarial Defense
+    sec_candidate = extracted.get("security_guardrail")
+    if sec_candidate and sec_candidate.get("threat_level") != "CLEAN":
+        security_guardrail = sec_candidate
+    elif not security_guardrail:
+        _, security_guardrail = sanitize_with_security_perimeter(raw_user_note)
+
+    # 8. Responsible AI: Automated PII Masking & Privacy Guardrail (PDPA No. 9 of 2022 & GDPR Art. 5)
     privacy_guardrail = extracted.get("privacy_guardrail")
     if not privacy_guardrail and raw_user_note:
         _, privacy_guardrail = mask_pii(raw_user_note)
 
-    # If PII was detected, shield downstream agents by providing sanitized text as the user note
+    # Shield downstream agents by prioritizing neutralized and PII-sanitized text
     safe_user_note = raw_user_note
+    if security_guardrail and not security_guardrail.get("is_safe") and security_guardrail.get("sanitized_query"):
+        safe_user_note = security_guardrail["sanitized_query"]
     if privacy_guardrail and privacy_guardrail.get("pii_detected") and privacy_guardrail.get("sanitized_text"):
         safe_user_note = privacy_guardrail["sanitized_text"]
-        canonical_query = normalize_mechanic_notes(safe_user_note)
+    canonical_query = normalize_mechanic_notes(safe_user_note)
 
-    # 8. Information Retrieval (IR) Engine: Synset Query Expansion & BM25 Scoring
+    # 9. Information Retrieval (IR) Engine: Synset Query Expansion & BM25 Scoring
     ir_bm25_report = extracted.get("ir_bm25_report")
     if not ir_bm25_report and safe_user_note:
         ir_bm25_report = search_dtc_bm25(safe_user_note, top_k=5, expand_synonyms=True)
@@ -373,7 +393,9 @@ async def ingest_diagnostic(
         fleet_history=fleet_history,
         complaint_summary=complaint_summary,
         privacy_guardrail=privacy_guardrail,
-        ir_bm25_report=ir_bm25_report
+        ir_bm25_report=ir_bm25_report,
+        security_guardrail=security_guardrail,
+        ensemble_report=extracted.get("ensemble_report")
     )
 
     # Assemble and return verified A2A payload for Agent 2
@@ -395,7 +417,9 @@ async def ingest_diagnostic(
         fleet_history=fleet_history,
         complaint_summary=complaint_summary,
         privacy_guardrail=privacy_guardrail,
-        ir_bm25_report=ir_bm25_report
+        ir_bm25_report=ir_bm25_report,
+        security_guardrail=security_guardrail,
+        ensemble_report=extracted.get("ensemble_report")
     )
 
 
@@ -477,7 +501,33 @@ async def api_ir_bm25_search(data: IRBM25SearchRequest):
     return search_dtc_bm25(data.query, top_k=data.top_k, expand_synonyms=data.expand_synonyms)
 
 
+@app.post(
+    "/api/v1/security/audit",
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_security_audit(data: SecurityAuditRequest):
+    """
+    Security Guardrail: Input Perimeter & Prompt Injection Defense endpoint.
+    Intercepts adversarial prompt injections, DAN/roleplay jailbreaks, delimiter hijacking,
+    and system exfiltration probes to shield downstream cognitive LLMs (Agent 2).
+    """
+    return audit_security_perimeter(data.text)
 
+
+@app.post(
+    "/api/v1/ensemble/disambiguate",
+    response_model=EnsembleDisambiguationReport,
+    tags=["Agent 1 - Ingestion & Validation"]
+)
+async def api_ensemble_disambiguate(data: EnsembleDisambiguateRequest):
+    """
+    Hybrid Ensemble Fallback: Zero-Shot Ambiguity Resolver endpoint.
+    Cascades deterministic extraction to zero-shot LLM reasoning when conversational word-form
+    numbers, verbalized DTC codes, or generic model descriptors are detected.
+    """
+    specs = data.current_specs or {}
+    _, report = resolve_ambiguous_entities(data.text, specs)
+    return report
 
 
 @app.post(

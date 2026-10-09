@@ -67,6 +67,16 @@ from .bm25_retrieval_engine import (
     get_bm25_engine
 )
 
+from .security_guardrail import (
+    audit_security_perimeter,
+    sanitize_with_security_perimeter
+)
+
+from .ensemble_resolver import (
+    resolve_ambiguous_entities,
+    detect_extraction_ambiguity
+)
+
 __all__ = [
     "extract_entities",
     "sanitize_input",
@@ -108,6 +118,10 @@ __all__ = [
     "search_dtc_bm25",
     "expand_automotive_query",
     "BM25DiagnosticEngine",
-    "get_bm25_engine"
+    "get_bm25_engine",
+    "audit_security_perimeter",
+    "sanitize_with_security_perimeter",
+    "resolve_ambiguous_entities",
+    "detect_extraction_ambiguity"
 ]
 
