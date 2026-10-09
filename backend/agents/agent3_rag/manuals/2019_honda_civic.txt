@@ -12,3 +12,16 @@ Replacement Procedure (1.5L turbo):
 8. Tighten with a torque wrench. Do not add anti-seize unless the service information says to.
 9. Repeat for the other three cylinders, then reinstall the coils, reconnect the connectors and refit the engine cover.
 Torque: NOT VERIFIED against the Honda service manual. NGK data for aluminum cylinder heads lists 10.8 to 14.5 lb-ft (about 14.6 to 19.7 N.m). Confirm the exact value in Honda service information before use.
+
+---
+[Vehicle: 2019 Honda Civic]
+[Source: Go-Parts guide for 2017-2024 Honda Civic oxygen sensors (go-parts.com/garage/ps-2017-2024-honda-civic-oxygen-sensor) and YouCanic Honda Civic O2 sensor guide, paraphrased; NOT Honda service information]
+Component: Heated Oxygen (O2) Sensor Replacement
+Replacement Procedure (upstream Sensor 1 and downstream Sensor 2):
+1. Park on level ground and let the engine cool. Confirm whether the upstream (before the catalytic converter) or downstream (after it) sensor is needed; they are not interchangeable.
+2. The upstream sensor is reached from under the open hood; the downstream sensor requires jacking up and supporting the vehicle.
+3. Disconnect the sensor's wire harness connector.
+4. Unscrew the sensor with a slotted oxygen sensor socket. If it will not turn, spray penetrating oil on the threads and let it soak.
+5. Install the new sensor, preferably an OEM-brand part such as Denso or NTK, and reconnect the harness.
+6. Clear the codes and confirm the check engine light stays off. The guide rates the job beginner-friendly at about 45 minutes.
+Torque: NOT VERIFIED. No sensor torque was found for the Civic. Look up the value in Honda service information before use.

@@ -11,7 +11,7 @@ COLLECTION_NAME = "oem_manuals"
 
 # Procedures are short, so they normally stay as one chunk. Only unusually long
 # ones are split, and every sub-chunk gets the vehicle/component header back.
-MAX_CHUNK_CHARS = 1500
+MAX_CHUNK_CHARS = 3000
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=MAX_CHUNK_CHARS,
