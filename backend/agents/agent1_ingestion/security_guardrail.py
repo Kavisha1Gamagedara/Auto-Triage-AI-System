@@ -24,8 +24,8 @@ ADVERSARIAL_ATTACK_PATTERNS = [
         "category": "DIRECT_PROMPT_INJECTION",
         "severity": "CRITICAL",
         "weight": 55.0,
-        "regex": r"(?i)\b(?:ignore|disregard|forget|override|bypass|cancel)\s+(?:all\s+)?(?:previous|prior|above|earlier|system|existing)?\s*(?:instructions|directions|prompts|rules|constraints|guidelines|context|commands)\b",
-        "description": "Attempt to purge or override system instructions and baseline safety constraints."
+        "regex": r"(?i)\b(?:ignore|disregard|forget|override|bypass|cancel)\s+(?:all\s+|any\s+)?(?:\w+\s+){0,3}(?:instructions|directions|prompts|rules|constraints|guidelines|context|commands|protocols)\b",
+        "description": "Attempt to purge or override system instructions, diagnostic guidelines, or baseline safety constraints."
     },
     {
         "category": "DIRECT_PROMPT_INJECTION",
@@ -84,10 +84,17 @@ ADVERSARIAL_ATTACK_PATTERNS = [
     # 4. System Instruction Leakage and Exfiltration Probes
     {
         "category": "SYSTEM_EXFILTRATION_PROBE",
-        "severity": "HIGH",
-        "weight": 45.0,
-        "regex": r"(?i)\b(?:print|reveal|output|display|show|leak|repeat|quote|dump)\s+(?:your|the)\s+(?:system\s+prompt|initial\s+prompt|base\s+instructions|secret\s+instructions|hidden\s+rules|api\s*key|internal\s+configuration)\b",
-        "description": "Adversarial exfiltration probe attempting to extract internal system prompt or API keys."
+        "severity": "CRITICAL",
+        "weight": 60.0,
+        "regex": r"(?i)\b(?:print|reveal|output|display|show|leak|repeat|quote|dump|extract)\s+(?:your|the|all)?\s*(?:system\s+prompt|initial\s+prompt|base\s+instructions|secret\s+instructions|hidden\s+rules|api\s*key|groq_api_key|mongo_uri|database\s+credentials|db\s+credentials|credentials|internal\s+configuration|secrets?|tokens?|passwords?|connection\s+strings?|env(?:ironment)?\s+variables?)\b",
+        "description": "Adversarial exfiltration probe attempting to extract internal system prompt, database credentials, or API keys."
+    },
+    {
+        "category": "SYSTEM_EXFILTRATION_PROBE",
+        "severity": "CRITICAL",
+        "weight": 60.0,
+        "regex": r"(?i)\b(?:groq_api_key|mongo_uri|database\s+credentials)\b",
+        "description": "Direct targeting of internal infrastructure secrets or environment credentials."
     },
     {
         "category": "SYSTEM_EXFILTRATION_PROBE",

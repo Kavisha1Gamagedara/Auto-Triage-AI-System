@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 21,
+    "total_visits": 23,
     "visits": [
       {
         "visit_index": 1,
@@ -191,6 +191,13 @@
         ],
         "root_cause_component": "Pending Diagnosis",
         "technician_notes": "Test diagnostic session."
+      },
+      {
+        "visit_index": 23,
+        "timestamp": "2026-10-10T16:36:50.399853+00:00",
+        "dtc_codes": [],
+        "root_cause_component": "Pending Diagnosis",
+        "technician_notes": "Customer plate WP CAB-1234'; DROP TABLE fleet_history; SELECT * FROM subscriptions WHERE '1'='1"
       }
     ]
   },
