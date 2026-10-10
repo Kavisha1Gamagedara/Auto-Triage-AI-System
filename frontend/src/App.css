@@ -15927,6 +15927,512 @@
   color: #0284c7;
 }
 
+/* ==========================================================================
+   AGENT 2: ALTERNATIVE HYPOTHESES (DIFFERENTIAL DIAGNOSES) & REASONING CHAIN
+   ========================================================================== */
+
+/* Primary Confidence Badge */
+.primary-confidence-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Primary Confirming Test Card */
+.primary-confirming-test-card {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.07);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+/* Differential Hypotheses Container */
+.differential-hypotheses-box {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.diff-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #60a5fa;
+  text-transform: uppercase;
+}
+
+.diff-count-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.diff-intro-note {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 14px;
+}
+
+.diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Differential Item Cards */
+.differential-item {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  transition: all 0.2s ease;
+}
+
+.differential-item:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.differential-item.verified {
+  border-left: 3px solid #38bdf8;
+}
+
+.differential-item.rejected {
+  border-left: 3px solid #f43f5e;
+  opacity: 0.85;
+}
+
+.diff-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.diff-item-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.diff-rank-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.diff-component-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.diff-item-status-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diff-status-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.diff-status-pill.verified {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.diff-status-pill.rejected {
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+/* Confidence Meter */
+.diff-confidence-block {
+  margin-bottom: 10px;
+}
+
+.diff-confidence-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  margin-bottom: 4px;
+}
+
+.diff-conf-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.diff-conf-score {
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.diff-confidence-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.diff-confidence-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.diff-confidence-fill.verified {
+  background: linear-gradient(90deg, #38bdf8 0%, #10b981 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.diff-confidence-fill.rejected {
+  background: linear-gradient(90deg, #f43f5e 0%, #e11d48 100%);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+}
+
+/* Failure Mode and Verifier Note */
+.diff-failure-mode {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+  margin-bottom: 8px;
+}
+
+.diff-failure-mode strong {
+  color: #94a3b8;
+}
+
+.diff-verification-note {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(244, 63, 94, 0.08);
+  border-left: 2px solid #f43f5e;
+  color: #fecdd3;
+  margin-bottom: 8px;
+}
+
+.diff-verification-note strong {
+  color: #fb7185;
+}
+
+/* Evidence Chips */
+.diff-evidence-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.diff-evidence-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.diff-evidence-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.diff-evidence-chip {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Confirming Test Box */
+.diff-test-box {
+  padding: 8px 11px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px dashed rgba(56, 189, 248, 0.25);
+}
+
+.diff-test-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  margin-bottom: 4px;
+}
+
+.diff-test-body {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+/* Cognitive Chain-of-Thought Reasoning Steps Box */
+.reasoning-steps-box {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.reasoning-steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.reasoning-steps-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.reasoning-steps-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.reasoning-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reasoning-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.step-number-bubble {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-text-content {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] .primary-confidence-pill {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+[data-theme='light'] .primary-confirming-test-card {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme='light'] .primary-confirming-test-card .detail-text {
+  color: #065f46 !important;
+}
+
+[data-theme='light'] .differential-hypotheses-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .diff-title {
+  color: #2563eb;
+}
+
+[data-theme='light'] .diff-count-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+[data-theme='light'] .diff-intro-note {
+  color: #64748b;
+}
+
+[data-theme='light'] .differential-item {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='light'] .differential-item:hover {
+  border-color: #93c5fd;
+}
+
+[data-theme='light'] .diff-rank-badge {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .diff-component-name {
+  color: #0f172a;
+}
+
+[data-theme='light'] .diff-confidence-track {
+  background: #e2e8f0;
+}
+
+[data-theme='light'] .diff-failure-mode {
+  color: #334155;
+}
+
+[data-theme='light'] .diff-failure-mode strong {
+  color: #64748b;
+}
+
+[data-theme='light'] .diff-verification-note {
+  background: #fff1f2;
+  border-left-color: #e11d48;
+  color: #9f1239;
+}
+
+[data-theme='light'] .diff-verification-note strong {
+  color: #be123c;
+}
+
+[data-theme='light'] .diff-evidence-chip {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .diff-test-box {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+[data-theme='light'] .diff-test-header {
+  color: #0284c7;
+}
+
+[data-theme='light'] .diff-test-body {
+  color: #334155;
+}
+
+[data-theme='light'] .reasoning-steps-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .reasoning-steps-title {
+  color: #0284c7;
+}
+
+[data-theme='light'] .reasoning-steps-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+[data-theme='light'] .reasoning-step-item {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .step-number-bubble {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0284c7;
+}
+
+[data-theme='light'] .step-text-content {
+  color: #1e293b;
+}
+
 
 
 

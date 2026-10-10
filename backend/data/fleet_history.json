@@ -6,7 +6,7 @@
     "model": "Aqua",
     "year": 2014,
     "first_registered_at": "2024-03-15T09:30:00Z",
-    "total_visits": 20,
+    "total_visits": 21,
     "visits": [
       {
         "visit_index": 1,
@@ -183,13 +183,14 @@
         "technician_notes": "Test diagnostic session."
       },
       {
-        "visit_index": 20,
-        "timestamp": "2026-10-09T14:05:12.924321+00:00",
+        "visit_index": 21,
+        "timestamp": "2026-10-09T18:22:04.425741+00:00",
         "dtc_codes": [
-          "P0300"
+          "P0A80",
+          "P0A93"
         ],
         "root_cause_component": "Pending Diagnosis",
-        "technician_notes": "WP CAB-1234 2019 Honda Vezel RU2 with misfire"
+        "technician_notes": "Test diagnostic session."
       }
     ]
   },
