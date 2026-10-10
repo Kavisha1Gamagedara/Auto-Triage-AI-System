@@ -69,7 +69,7 @@ from agents.agent1_ingestion import (
 
 # Agent 2 - Cognitive Diagnostic Reasoning
 try:
-    import groq
+    import groq  # pyright: ignore[reportMissingImports]
     from agents.agent2_reasoning import deduce_root_cause
 except Exception as e:
     groq = None
