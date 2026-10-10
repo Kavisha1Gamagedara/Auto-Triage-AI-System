@@ -45,7 +45,8 @@ import {
   XCircle,
   Lock,
   Search,
-  GitBranch
+  GitBranch,
+  Printer
 } from 'lucide-react';
 
 import './App.css';
@@ -68,6 +69,7 @@ import SubscriptionTiersModal from './SubscriptionTiersModal.jsx';
 import DeveloperPaymentGatewayModal from './DeveloperPaymentGatewayModal.jsx';
 import AdminDashboardModal from './AdminDashboardModal.jsx';
 import QuotaExceededModal from './QuotaExceededModal.jsx';
+import DiagnosticInvoiceModal from './DiagnosticInvoiceModal.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -404,6 +406,7 @@ export default function App() {
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState(null);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [quotaExceededModalOpen, setQuotaExceededModalOpen] = useState(false);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const [activePage, setActivePage] = useState('triage'); // 'triage' | 'workflow'
@@ -2652,12 +2655,13 @@ export default function App() {
 
                       <button
                         type="button"
-                        className="dossier-action-btn"
-                        onClick={() => window.print()}
-                        title="Print or Export Diagnostic Report"
+                        className="dossier-action-btn btn-export-invoice"
+                        onClick={() => setInvoiceModalOpen(true)}
+                        title="Generate & Export Official Diagnostic Bill / PDF"
+                        style={{ background: 'rgba(0, 240, 255, 0.12)', borderColor: 'rgba(0, 240, 255, 0.45)', color: '#00F0FF', fontWeight: 700 }}
                       >
-                        <ExternalLink size={13} />
-                        Export Report
+                        <Printer size={13} />
+                        Export Bill & PDF
                       </button>
                       <button
                         type="button"
@@ -4165,6 +4169,18 @@ export default function App() {
           setQuotaExceededModalOpen(false);
           setTiersModalOpen(true);
         }}
+      />
+
+      {/* Official Diagnostic Bill & PDF Export Modal */}
+      <DiagnosticInvoiceModal
+        isOpen={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        user={user}
+        sessionId={sessionId}
+        triageResult={triageResult}
+        agent2Result={agent2Result}
+        repairPlan={repairPlan}
+        procurement={procurement || procurementPlan}
       />
     </div>
   );
