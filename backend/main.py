@@ -1,8 +1,8 @@
 import os
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, status, Header, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, status, Header  # type: ignore[reportMissingImports]
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore[reportMissingImports]
 # Core shared schemas and database
 from core.models import (
     DiagnosticRequest, 
