@@ -11,17 +11,17 @@
       "password_hash": "b77c1b300a816ab072700455aa10a55514da70d99c5192db8cd85d7569778d10",
       "salt": "324dc8e4caee4cc2",
       "created_at": "2026-10-08T06:12:10.618131+00:00",
-      "last_active": "2026-10-09T07:17:39.830704+00:00",
+      "last_active": "2026-10-09T18:22:56.275945+00:00",
       "subscription_status": "active",
       "subscription_expires": null,
       "daily_usage": {
         "2026-10-08": 2,
-        "2026-10-09": 6
+        "2026-10-09": 7
       },
       "monthly_usage": {
-        "2026-10": 8
+        "2026-10": 9
       },
-      "total_usage": 8
+      "total_usage": 9
     },
     "user_mech_001": {
       "id": "user_mech_001",
@@ -56,12 +56,16 @@
       "password_hash": "ba4f19035265bec6f13bc3f1668f44d9d7f8b267a1bc95f41b5743a84a0185bc",
       "salt": "614906d184d942ad",
       "created_at": "2026-10-08T06:12:10.618131+00:00",
-      "last_active": "2026-10-08T08:57:43.683690+00:00",
+      "last_active": "2026-10-09T13:34:39.097472+00:00",
       "subscription_status": "active",
       "subscription_expires": "2026-11-07T06:12:10.618210+00:00",
-      "daily_usage": {},
-      "monthly_usage": {},
-      "total_usage": 14
+      "daily_usage": {
+        "2026-10-09": 4
+      },
+      "monthly_usage": {
+        "2026-10": 4
+      },
+      "total_usage": 18
     },
     "user_b58703a8f178": {
       "id": "user_b58703a8f178",
@@ -100,6 +104,28 @@
       },
       "monthly_usage": {
         "2026-10": 0
+      },
+      "total_usage": 2
+    },
+    "user_0981fab1093b": {
+      "id": "user_0981fab1093b",
+      "name": "mihijith",
+      "email": "mihijith.panagoda@gmail.com",
+      "phone": "+94778647669",
+      "role": "mechanic",
+      "tier": "basic",
+      "workshop_name": "Independent Diagnostic Workshop",
+      "password_hash": "be3a411aa37567d3e39e3eeeb207d8889534fc70b8c6ba0fc372a7f806438e69",
+      "salt": "a81e6b2ab4614753",
+      "created_at": "2026-10-09T13:49:46.547092+00:00",
+      "last_active": "2026-10-09T14:08:43.562968+00:00",
+      "subscription_status": "active",
+      "subscription_expires": null,
+      "daily_usage": {
+        "2026-10-09": 2
+      },
+      "monthly_usage": {
+        "2026-10": 2
       },
       "total_usage": 2
     }
@@ -178,5 +204,5 @@
       "is_unlimited": true
     }
   },
-  "last_updated": "2026-10-09T07:17:40.770933+00:00"
+  "last_updated": "2026-10-09T18:22:57.258864+00:00"
 }
