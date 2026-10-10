@@ -11,17 +11,18 @@
       "password_hash": "b77c1b300a816ab072700455aa10a55514da70d99c5192db8cd85d7569778d10",
       "salt": "324dc8e4caee4cc2",
       "created_at": "2026-10-08T06:12:10.618131+00:00",
-      "last_active": "2026-10-09T11:42:01.001945+00:00",
+      "last_active": "2026-10-10T14:54:25.555314+00:00",
       "subscription_status": "active",
       "subscription_expires": null,
       "daily_usage": {
         "2026-10-08": 2,
-        "2026-10-09": 6
+        "2026-10-09": 6,
+        "2026-10-10": 4
       },
       "monthly_usage": {
-        "2026-10": 8
+        "2026-10": 12
       },
-      "total_usage": 8
+      "total_usage": 12
     },
     "user_mech_001": {
       "id": "user_mech_001",
@@ -205,5 +206,5 @@
       "is_unlimited": true
     }
   },
-  "last_updated": "2026-10-10T11:56:15.656266+00:00"
+  "last_updated": "2026-10-10T14:56:07.345104+00:00"
 }
