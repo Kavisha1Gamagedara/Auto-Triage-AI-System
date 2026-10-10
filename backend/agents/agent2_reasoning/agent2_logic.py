@@ -179,10 +179,12 @@ def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
             if p_match:
                 threat_info = f"Matched '{p_match}'"
 
-    if sec_level == "CRITICAL_ATTACK_BLOCKED":
+    sec_is_safe = (sec.get("is_safe", True) if isinstance(sec, dict) else getattr(sec, "is_safe", True)) if sec else True
+
+    if sec_level in ("CRITICAL_ATTACK_BLOCKED", "SUSPICIOUS") or not sec_is_safe or sec_score >= 25.0:
         logger.warning(
-            "Security Circuit Breaker tripped: Adversarial injection detected (%s, Risk: %s). Halting Agent 2 reasoning.",
-            threat_info, sec_score
+            "Security Circuit Breaker tripped: Adversarial injection detected (%s, Level: %s, Risk: %s). Halting Agent 2 reasoning.",
+            threat_info, sec_level, sec_score
         )
         return DiagnosticResult(
             status="unverified",

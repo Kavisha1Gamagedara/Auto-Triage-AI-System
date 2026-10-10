@@ -1015,36 +1015,99 @@ export default function App() {
       setAgentLatencies(prev => ({ ...prev, 2: a2Latency }));
 
       let deducedRootCause = null;
+      const isSecurityCompromised = Boolean(
+        data1?.security_guardrail &&
+        (data1.security_guardrail.threat_level !== 'CLEAN' || !data1.security_guardrail.is_safe)
+      );
 
       if (!res2.ok) {
-        console.warn('Agent 2 diagnosis error, falling back to simulated reasoning:', data2.detail);
-        const upperDtcs = (data1.dtc_codes || []).join(' ').toUpperCase();
-        let matchedKey = Object.keys(SIMULATED_DIAGNOSES).find(k => upperDtcs.includes(k)) || 'P0171';
-        const sim = SIMULATED_DIAGNOSES[matchedKey];
-        setAgent2Result({
-          root_cause_component: sim.root_cause_component,
-          failure_mode: sim.failure_mode,
-          severity: sim.severity,
-          safety_warning: sim.safety_warning,
-          confidence: sim.confidence,
-          confirming_test: sim.confirming_test,
-          primary_hypothesis: {
-            root_cause_component: sim.root_cause_component,
-            failure_mode: sim.failure_mode,
-            confidence: sim.confidence,
-            confirming_test: sim.confirming_test,
-            verified: true,
-            supporting_evidence: ['Primary Diagnostic Match']
-          },
-          differential_hypotheses: sim.differential_hypotheses || [],
-          reasoning_steps: sim.reasoning_steps || []
-        });
-        setAgent2Error(data2.detail);
-        deducedRootCause = sim.root_cause_component;
+        console.warn('Agent 2 diagnosis error:', data2.detail);
+        if (isSecurityCompromised) {
+          setAgent2Result({
+            status: 'unverified',
+            root_cause_component: 'PIPELINE_SUSPENDED_SECURITY_QUARANTINE',
+            failure_mode: 'Intake Security Perimeter intercepted non-diagnostic / adversarial input. Cognitive causal deduction suspended.',
+            severity: 'critical',
+            confidence: 0,
+            safety_warning: 'DIAGNOSTIC PAUSED: Security quarantine active. Autonomous parts procurement and workshop repair manuals withheld.',
+            confirming_test: 'Enter valid OBD-II diagnostic trouble codes or vehicle mechanical symptoms and re-run triage.',
+            primary_hypothesis: {
+              root_cause_component: 'PIPELINE_SUSPENDED_SECURITY_QUARANTINE',
+              failure_mode: 'Non-diagnostic or adversarial input intercepted by security perimeter.',
+              confidence: 0,
+              confirming_test: 'Enter valid OBD-II diagnostic trouble codes and re-run triage.',
+              verified: false,
+              supporting_evidence: ['Zero OBD-II diagnostic trouble codes supplied', 'Interception by Input Security Perimeter']
+            },
+            differential_hypotheses: [],
+            reasoning_steps: [
+              'Intake Audit: Zero OBD-II diagnostic trouble codes detected in customer intake text.',
+              'Security Guardrail: Non-diagnostic directives or exfiltration probes intercepted.',
+              'Diagnostic Pause: Autonomous reasoning paused to prevent guessing phantom components.',
+              'Commercial Safeguard: Parts catalog procurement and repair manuals are paused until genuine fault codes are provided.',
+              'Technician Action: Please enter valid diagnostic trouble codes (e.g., P0171, P0300) or describe vehicle symptoms.'
+            ]
+          });
+          setAgent2Error(null);
+          deducedRootCause = null;
+        } else {
+          const upperDtcs = (data1.dtc_codes || []).join(' ').toUpperCase();
+          let matchedKey = Object.keys(SIMULATED_DIAGNOSES).find(k => upperDtcs.includes(k));
+          if (matchedKey) {
+            const sim = SIMULATED_DIAGNOSES[matchedKey];
+            setAgent2Result({
+              root_cause_component: sim.root_cause_component,
+              failure_mode: sim.failure_mode,
+              severity: sim.severity,
+              safety_warning: sim.safety_warning,
+              confidence: sim.confidence,
+              confirming_test: sim.confirming_test,
+              primary_hypothesis: {
+                root_cause_component: sim.root_cause_component,
+                failure_mode: sim.failure_mode,
+                confidence: sim.confidence,
+                confirming_test: sim.confirming_test,
+                verified: true,
+                supporting_evidence: ['Primary Diagnostic Match']
+              },
+              differential_hypotheses: sim.differential_hypotheses || [],
+              reasoning_steps: sim.reasoning_steps || []
+            });
+            setAgent2Error(data2.detail);
+            deducedRootCause = sim.root_cause_component;
+          } else {
+            setAgent2Result({
+              status: 'unverified',
+              root_cause_component: 'PIPELINE_SUSPENDED_AWAITING_FAULT_CODES',
+              failure_mode: 'No diagnostic trouble codes or recognizable physical mechanical symptoms provided.',
+              severity: 'critical',
+              confidence: 0,
+              safety_warning: 'DIAGNOSTIC PAUSED: Awaiting valid vehicle fault codes.',
+              confirming_test: 'Provide OBD-II fault codes or detailed vehicle symptoms.',
+              primary_hypothesis: {
+                root_cause_component: 'PIPELINE_SUSPENDED_AWAITING_FAULT_CODES',
+                failure_mode: 'No diagnostic trouble codes provided.',
+                confidence: 0,
+                confirming_test: 'Provide OBD-II fault codes.',
+                verified: false,
+                supporting_evidence: []
+              },
+              differential_hypotheses: [],
+              reasoning_steps: ['Awaiting physical vehicle symptom data or OBD-II fault codes.']
+            });
+            setAgent2Error(data2.detail);
+            deducedRootCause = null;
+          }
+        }
       } else {
         setAgent2Result(data2);
         setAgent2Error(null);
-        deducedRootCause = data2.root_cause_component || data2.primary_hypothesis?.root_cause_component;
+        const cand = data2.root_cause_component || data2.primary_hypothesis?.root_cause_component;
+        if (cand && (cand.includes('SECURITY') || cand.includes('PIPELINE_SUSPENDED') || cand.includes('AWAITING'))) {
+          deducedRootCause = null;
+        } else {
+          deducedRootCause = cand;
+        }
       }
 
       // Visual pacing delay so user clearly observes Agent 2 emphasized in working state
@@ -1056,7 +1119,7 @@ export default function App() {
       setPipelineStage('agent3');
       const t3Start = performance.now();
 
-      if (deducedRootCause) {
+      if (deducedRootCause && !isSecurityCompromised) {
         try {
           const repairRes = await fetch(`${API_BASE_URL}/api/v1/repair`, {
             method: 'POST',
@@ -1074,13 +1137,14 @@ export default function App() {
           if (repairRes.ok && repairData.status === "success") {
             setRepairPlan(repairData.repair_plan);
           } else {
-            // Show the failure instead of hiding the box, so "no manual" and "Agent 3 broke" are distinguishable
             setRepairPlan({ steps: [], error: repairData.message || repairData.detail || `Agent 3 request failed (HTTP ${repairRes.status})` });
           }
         } catch (repairErr) {
           console.warn('Agent 3 repair retrieval error:', repairErr);
           setRepairPlan({ steps: [], error: `Agent 3 request failed: ${repairErr.message}` });
         }
+      } else {
+        setRepairPlan({ steps: [], error: isSecurityCompromised ? 'OEM Manual RAG paused: Security perimeter quarantine active.' : 'Awaiting valid vehicle fault codes.' });
       }
 
       const t3End = performance.now();
@@ -1096,7 +1160,7 @@ export default function App() {
       setPipelineStage('agent4');
       const t4Start = performance.now();
 
-      if (deducedRootCause) {
+      if (deducedRootCause && !isSecurityCompromised) {
         try {
           const procureRes = await fetch(`${API_BASE_URL}/api/v1/procure`, {
             method: 'POST',
@@ -1122,6 +1186,18 @@ export default function App() {
           console.warn('Agent 4 procurement error:', procureErr);
           setProcurementError(procureErr.message || 'Agent 4 procurement is unreachable.');
         }
+      } else {
+        const quarantinedQuote = {
+          resolved_part: 'SECURITY_QUARANTINED',
+          match_method: 'SECURITY_CIRCUIT_BREAKER',
+          match_confidence: 0,
+          bill_of_materials: [],
+          unpriced_items: [],
+          tiers: {},
+          warnings: ['Parts procurement withheld: Security Perimeter quarantine active.']
+        };
+        setProcurementPlan(quarantinedQuote);
+        setProcurement(quarantinedQuote);
       }
 
       const t4End = performance.now();
@@ -2568,48 +2644,85 @@ export default function App() {
               </div>
 
               {/* MISSION CRITICAL ERROR DOSSIER */}
-              {error && (
-                <div className="dossier-error-banner">
-                  <div className="error-banner-top">
-                    <AlertTriangle size={32} color="var(--red-primary)" style={{ flexShrink: 0 }} />
-                    <div>
-                      <div className="error-badge-title">Autonomous Pipeline Rejection // HTTP 422 Unprocessable Entity</div>
-                      <div className="error-lead-message">{error}</div>
+              {error && (() => {
+                const errStr = String(error).toLowerCase();
+                const isSecurityErr = errStr.includes('security') || errStr.includes('threat') || errStr.includes('directive') || errStr.includes('instruction') || errStr.includes('prohibited') || errStr.includes('adversarial');
+                const isVehicleErr = errStr.includes('vehicle') || errStr.includes('nhtsa') || errStr.includes('none none none') || errStr.includes('vin');
+
+                let title = 'Diagnostic Intake Verification Notice';
+                let checklistTitle = 'Diagnostic Intake Checklist:';
+                let checklistItems = [
+                  'Specify the vehicle make, model, and year (e.g., 2018 Toyota Corolla) or 17-character VIN.',
+                  'Describe observable mechanical symptoms (e.g., rough idle, engine hesitation, loss of power).',
+                  'Include active SAE OBD-II diagnostic trouble codes (e.g., P0171, P0300) if available.'
+                ];
+
+                if (isSecurityErr) {
+                  title = 'Security Perimeter Notice // Non-Diagnostic Directives Filtered';
+                  checklistTitle = 'Technician Safety & Input Protocol:';
+                  checklistItems = [
+                    'Submit physical vehicle symptoms and observable diagnostic trouble codes.',
+                    'Do not include prompt injection directives, instruction overrides, or forced replacement requests.',
+                    'Specify vehicle identification (e.g., 2019 Honda Civic or VIN barcode) to proceed.'
+                  ];
+                } else if (isVehicleErr) {
+                  title = 'Vehicle Identification Required // Intake Notice';
+                  checklistTitle = 'Vehicle Identification Checklist:';
+                  checklistItems = [
+                    'Specify vehicle year, make, and model (e.g., 2018 Toyota Corolla, 2020 Honda Civic).',
+                    'Or scan / enter a standard 17-character VIN number.',
+                    'Include at least one mechanical symptom or active diagnostic trouble code (e.g., P0300).'
+                  ];
+                }
+
+                let cleanErrorMsg = error;
+                if (typeof cleanErrorMsg === 'string' && cleanErrorMsg.includes("'None None None'")) {
+                  cleanErrorMsg = "Vehicle make, model, or year was not detected in the intake notes. Please specify your vehicle details or enter a 17-character VIN.";
+                }
+
+                return (
+                  <div className="dossier-error-banner">
+                    <div className="error-banner-top">
+                      <AlertTriangle size={32} color="var(--red-primary)" style={{ flexShrink: 0 }} />
+                      <div>
+                        <div className="error-badge-title">{title}</div>
+                        <div className="error-lead-message">{cleanErrorMsg}</div>
+                      </div>
+                    </div>
+
+                    <div className="error-checklist-box">
+                      <strong>{checklistTitle}</strong>
+                      <ul>
+                        {checklistItems.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="error-actions-row">
+                      <button
+                        type="button"
+                        className="btn-outline-error"
+                        onClick={() => { setError(null); setPipelineStage('idle'); }}
+                      >
+                        <RefreshCw size={14} />
+                        Reset Diagnostic Gateway
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-accent-preset"
+                        onClick={() => {
+                          setError(null);
+                          handlePresetClick('2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance');
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        Load Certified Universal Preset (P0171 + P0300)
+                      </button>
                     </div>
                   </div>
-
-                  <div className="error-checklist-box">
-                    <strong>Pre-Flight Mechanic Diagnostic Checklist:</strong>
-                    <ul>
-                      <li>Ensure vehicle make and model exist in US DOT NHTSA database (1980–2026).</li>
-                      <li>When utilizing 17-character VIN barcode, verify the 9th position MOD-11 checksum digit.</li>
-                      <li>Include at least 3 descriptive mechanical symptom tokens or valid OBD-II trouble codes (e.g., P0171, P0300).</li>
-                    </ul>
-                  </div>
-
-                  <div className="error-actions-row">
-                    <button
-                      type="button"
-                      className="btn-outline-error"
-                      onClick={() => { setError(null); setPipelineStage('idle'); }}
-                    >
-                      <RefreshCw size={14} />
-                      Reset Diagnostic Gateway
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-accent-preset"
-                      onClick={() => {
-                        setError(null);
-                        handlePresetClick('2018 Toyota Corolla with trouble codes P0171 and P0300 running rough on acceleration with fuel trim imbalance');
-                      }}
-                    >
-                      <Sparkles size={14} />
-                      Load Certified Universal Preset (P0171 + P0300)
-                    </button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* FULL-WIDTH EXECUTIVE DIAGNOSTIC OUTPUT DOSSIER */}
               {triageResult && (

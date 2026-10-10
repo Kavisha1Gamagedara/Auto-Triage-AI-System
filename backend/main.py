@@ -286,9 +286,14 @@ async def ingest_diagnostic(
         is_valid = False
 
     if not is_valid and not is_attack_intercepted:
+        if not make and not model and not year:
+            detail = "Vehicle make, model, or year was not detected in intake notes. Please specify the vehicle (e.g., '2019 Honda Civic') or enter a 17-character VIN."
+        else:
+            v_name = f"{year or ''} {make or ''} {model or ''}".strip()
+            detail = f"Vehicle '{v_name}' could not be verified in the US DOT NHTSA database. Please verify the vehicle spelling or enter a 17-character VIN."
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Vehicle configuration '{year} {make} {model}' was not found in the official US DOT NHTSA vPIC database."
+            detail=detail
         )
 
     # Compute Information Retrieval normalized query & DTC taxonomic hierarchy
