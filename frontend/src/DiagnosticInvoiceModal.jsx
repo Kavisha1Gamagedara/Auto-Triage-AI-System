@@ -68,6 +68,15 @@ export default function DiagnosticInvoiceModal({
   const proc = procurement || {};
   const tiers = proc.tiers || {};
 
+  // Check if session is quarantined by Security Circuit Breaker
+  const isQuarantined = Boolean(
+    agent2Result?.root_cause_component?.includes('SECURITY') ||
+    agent2Result?.severity === 'Quarantined' ||
+    proc?.match_method === 'SECURITY_CIRCUIT_BREAKER' ||
+    proc?.resolved_part?.includes('SECURITY') ||
+    proc?.resolved_part?.includes('WITHHELD')
+  );
+
   // Default fallback parts in case procurement is missing or still pricing
   const defaultFallbackParts = {
     OEM_Genuine: [
@@ -99,15 +108,17 @@ export default function DiagnosticInvoiceModal({
     ]
   };
 
-  const activeTierParts = (tiers[selectedTier]?.parts && tiers[selectedTier].parts.length > 0)
-    ? tiers[selectedTier].parts
-    : (defaultFallbackParts[selectedTier] || defaultFallbackParts.OEM_Genuine);
+  const activeTierParts = isQuarantined
+    ? []
+    : (tiers[selectedTier]?.parts && tiers[selectedTier].parts.length > 0)
+      ? tiers[selectedTier].parts
+      : (defaultFallbackParts[selectedTier] || defaultFallbackParts.OEM_Genuine);
 
   // Financial calculations (in LKR)
-  const partsSubtotal = activeTierParts.reduce((acc, part) => acc + (Number(part.price_lkr) || 0) * (part.quantity || 1), 0);
-  const laborSubtotal = (parseFloat(laborHours) || 0) * (parseFloat(laborRate) || 0);
-  const serviceSubtotal = diagnosticFee + shopSuppliesFee;
-  const grossTotal = partsSubtotal + laborSubtotal + serviceSubtotal;
+  const partsSubtotal = isQuarantined ? 0 : activeTierParts.reduce((acc, part) => acc + (Number(part.price_lkr) || 0) * (part.quantity || 1), 0);
+  const laborSubtotal = isQuarantined ? 0 : ((parseFloat(laborHours) || 0) * (parseFloat(laborRate) || 0));
+  const serviceSubtotal = isQuarantined ? 0 : (diagnosticFee + shopSuppliesFee);
+  const grossTotal = isQuarantined ? 0 : (partsSubtotal + laborSubtotal + serviceSubtotal);
   const invoiceNumber = `INV-${(sessionId || '20261010').slice(0, 8).toUpperCase()}`;
   const invoiceDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -210,14 +221,24 @@ export default function DiagnosticInvoiceModal({
                 <span><strong>Date:</strong> {invoiceDate}</span>
                 <span><strong>Time:</strong> {invoiceTime}</span>
               </div>
-              <div className="invoice-status-chip">
-                <CheckCircle2 size={13} color="#059669" />
-                <span>TRIAGE VERIFIED & ROAD AUDITED</span>
+              <div className="invoice-status-chip" style={isQuarantined ? { background: '#fef2f2', borderColor: '#f87171', color: '#b91c1c' } : {}}>
+                {isQuarantined ? <AlertTriangle size={13} color="#dc2626" /> : <CheckCircle2 size={13} color="#059669" />}
+                <span>{isQuarantined ? 'SECURITY CIRCUIT BREAKER // WITHHELD' : 'TRIAGE VERIFIED & ROAD AUDITED'}</span>
               </div>
             </div>
           </div>
 
           <hr className="bill-divider" />
+
+          {isQuarantined && (
+            <div style={{ background: '#fef2f2', border: '1px solid #f87171', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#991b1b', fontSize: '0.85rem', lineHeight: 1.5 }}>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <AlertTriangle size={16} color="#dc2626" />
+                SECURITY CIRCUIT BREAKER NOTICE: BILLING QUARANTINED
+              </strong>
+              Adversarial input detected and neutralized by Agent 1 Security Perimeter. All commercial part quotes, labor estimations, and pricing engines are withheld (0 LKR Total) to protect workshop billing integrity.
+            </div>
+          )}
 
           {/* CLIENT & VEHICLE PROFILE GRID */}
           <div className="bill-client-vehicle-grid">
@@ -405,8 +426,20 @@ export default function DiagnosticInvoiceModal({
                 </tr>
               </thead>
               <tbody>
+                {/* Quarantined Notice Row */}
+                {isQuarantined && (
+                  <tr>
+                    <td style={{ textAlign: 'center' }}>--</td>
+                    <td colSpan={3}>
+                      <strong style={{ color: '#dc2626' }}>Parts Procurement Withheld (Security Quarantine)</strong>
+                      <div className="item-subtext">Commercial parts catalogs and pricing suppressed under Security Circuit Breaker</div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>LKR 0</td>
+                  </tr>
+                )}
+
                 {/* Parts Rows */}
-                {activeTierParts.map((part, pIdx) => (
+                {!isQuarantined && activeTierParts.map((part, pIdx) => (
                   <tr key={pIdx}>
                     <td style={{ textAlign: 'center' }}>0{pIdx + 1}</td>
                     <td>
@@ -424,45 +457,49 @@ export default function DiagnosticInvoiceModal({
                   </tr>
                 ))}
 
-                {/* Labor and Diagnostic Line Items */}
-                <tr>
-                  <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 1}</td>
-                  <td>
-                    <strong>Diagnostic Scan & Sensor Telemetry Verification</strong>
-                    <div className="item-subtext">Full OBD-II protocol query & freeze-frame live stream analysis</div>
-                  </td>
-                  <td>Auto-Triage Gateway</td>
-                  <td style={{ textAlign: 'center' }}>1</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                    LKR {diagnosticFee.toLocaleString()}
-                  </td>
-                </tr>
+                {/* Labor and Diagnostic Line Items (only if not quarantined) */}
+                {!isQuarantined && (
+                  <>
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 1}</td>
+                      <td>
+                        <strong>Diagnostic Scan & Sensor Telemetry Verification</strong>
+                        <div className="item-subtext">Full OBD-II protocol query & freeze-frame live stream analysis</div>
+                      </td>
+                      <td>Auto-Triage Gateway</td>
+                      <td style={{ textAlign: 'center' }}>1</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                        LKR {diagnosticFee.toLocaleString()}
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 2}</td>
-                  <td>
-                    <strong>Certified Mechanical Labor & Component R&R</strong>
-                    <div className="item-subtext">{laborHours} labor hours @ LKR {Number(laborRate).toLocaleString()}/hr per factory standard</div>
-                  </td>
-                  <td>Master Tech Labor</td>
-                  <td style={{ textAlign: 'center' }}>{laborHours}h</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                    LKR {laborSubtotal.toLocaleString()}
-                  </td>
-                </tr>
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 2}</td>
+                      <td>
+                        <strong>Certified Mechanical Labor & Component R&R</strong>
+                        <div className="item-subtext">{laborHours} labor hours @ LKR {Number(laborRate).toLocaleString()}/hr per factory standard</div>
+                      </td>
+                      <td>Master Tech Labor</td>
+                      <td style={{ textAlign: 'center' }}>{laborHours}h</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                        LKR {laborSubtotal.toLocaleString()}
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 3}</td>
-                  <td>
-                    <strong>Environmental & Hazardous Consumables Fee</strong>
-                    <div className="item-subtext">Safe disposal of chemical waste, degreaser, and shop supplies</div>
-                  </td>
-                  <td>Shop Supplies</td>
-                  <td style={{ textAlign: 'center' }}>1</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                    LKR {shopSuppliesFee.toLocaleString()}
-                  </td>
-                </tr>
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>0{activeTierParts.length + 3}</td>
+                      <td>
+                        <strong>Environmental & Hazardous Consumables Fee</strong>
+                        <div className="item-subtext">Safe disposal of chemical waste, degreaser, and shop supplies</div>
+                      </td>
+                      <td>Shop Supplies</td>
+                      <td style={{ textAlign: 'center' }}>1</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                        LKR {shopSuppliesFee.toLocaleString()}
+                      </td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
 

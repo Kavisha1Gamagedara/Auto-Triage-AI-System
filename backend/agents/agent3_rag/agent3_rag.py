@@ -71,6 +71,15 @@ def retrieve_chunks(collection, target_component: str, vehicle_model: str, dtc_c
 
 
 async def get_repair_procedure(target_component: str, vehicle_model: str, dtc_codes=None) -> dict:
+    # --- SECURITY CIRCUIT BREAKER CHECK (OWASP LLM01 / NIST AI RMF) ------
+    if target_component and (target_component.startswith("PIPELINE_SUSPENDED") or "SECURITY" in target_component.upper()):
+        return {
+            "steps": [],
+            "torque_specs": "N/A - Security Quarantine Active",
+            "citation": "Security Guardrail DMZ",
+            "error": "OEM manual retrieval withheld: Agent 1 Security Circuit Breaker active."
+        }
+
     print(f"Searching manuals for: {target_component}...")
     
     # 1. Connect to local ChromaDB (agent directory with fallback to root)

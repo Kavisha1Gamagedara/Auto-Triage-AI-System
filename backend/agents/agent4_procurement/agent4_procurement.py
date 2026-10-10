@@ -217,6 +217,24 @@ def get_procurement_quote(
             "candidates": candidates or [],
         }
 
+    # --- SECURITY CIRCUIT BREAKER CHECK (OWASP LLM01 / NIST AI RMF) ------
+    # If the diagnostic pipeline was suspended due to prompt injection, withhold parts pricing.
+    if root_cause_component and (root_cause_component.startswith("PIPELINE_SUSPENDED") or "SECURITY" in root_cause_component.upper()):
+        warnings.append("Procurement & parts pricing withheld: Agent 1 Security Circuit Breaker active.")
+        return {
+            "resolved_part": "SECURITY_QUARANTINED",
+            "match_method": "circuit_breaker",
+            "match_confidence": 0.0,
+            "bill_of_materials": [],
+            "unpriced_items": [],
+            "tiers": dict(empty_tiers),
+            "suppressed_tiers": ["OEM_Genuine", "Certified_Aftermarket", "Economy"],
+            "severity": severity or "Critical",
+            "safety_warning": "SECURITY QUARANTINE: Parts procurement withheld due to prompt injection incident.",
+            "warnings": warnings,
+            "candidates": [],
+        }
+
     # --- STEP 1: resolve the component to a canonical catalog name ---------
     # Only the component name is resolved. Failure-mode prose would poison
     # the lexical match, so it is never passed here.

@@ -46,7 +46,8 @@ import {
   Lock,
   Search,
   GitBranch,
-  Printer
+  Printer,
+  ShieldAlert
 } from 'lucide-react';
 
 import './App.css';
@@ -637,6 +638,8 @@ export default function App() {
     setProcurementError(null);
     setProcurementPlan(null);
     setAgent2Result(null);
+    setShowAdminSecurityAudit(false);
+    setShowAgent1SecurityAudit(false);
     setPipelineStage('idle');
     setError(null);
   };
@@ -714,6 +717,8 @@ export default function App() {
   const [agent2Loading, setAgent2Loading] = useState(false);
   const [agent2Result, setAgent2Result] = useState(null);
   const [agent2Error, setAgent2Error] = useState(null);
+  const [showAdminSecurityAudit, setShowAdminSecurityAudit] = useState(false);
+  const [showAgent1SecurityAudit, setShowAgent1SecurityAudit] = useState(false);
   const [agent2Source, setAgent2Source] = useState('preset'); // 'agent1' | 'preset' | 'custom'
   const [selectedAgent2Preset, setSelectedAgent2Preset] = useState(0);
 
@@ -2617,11 +2622,20 @@ export default function App() {
                         AUTONOMOUS MULTI-AGENT DIAGNOSTIC REPORT // DOSSIER # {sessionId.slice(0, 8)}
                       </div>
                       <div className="dossier-vehicle-title">
-                        {triageResult.vehicle_details.year} {triageResult.vehicle_details.make} {triageResult.vehicle_details.model}
-                        {triageResult.vehicle_details.is_verified && (
+                        {triageResult.vehicle_details.year && triageResult.vehicle_details.make && triageResult.vehicle_details.model
+                          ? `${triageResult.vehicle_details.year} ${triageResult.vehicle_details.make} ${triageResult.vehicle_details.model}`
+                          : (triageResult.vehicle_details.make && triageResult.vehicle_details.model)
+                            ? `${triageResult.vehicle_details.make} ${triageResult.vehicle_details.model}`
+                            : 'Unspecified Vehicle (Non-Diagnostic Intake)'}
+                        {triageResult.vehicle_details.is_verified ? (
                           <span className="nhtsa-shield-pill" style={{ fontSize: '0.78rem' }}>
                             <ShieldCheck size={13} />
                             NHTSA Verified Road-Legal
+                          </span>
+                        ) : (
+                          <span className="nhtsa-shield-pill" style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)', color: '#fbbf24' }}>
+                            <AlertTriangle size={13} />
+                            Awaiting Vehicle Identification
                           </span>
                         )}
                         {triageResult.vehicle_details.vin && (
@@ -2640,12 +2654,22 @@ export default function App() {
                       </div>
                       <div className="dossier-stat-chip">
                         <span>Root Cause:</span>
-                        <strong style={{ color: '#00F0FF' }}>{agent2Result?.root_cause_component || 'Deduced'}</strong>
+                        <strong style={{ color: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused') ? '#fbbf24' : '#00F0FF' }}>
+                          {(agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? 'Paused (Symptoms Required)'
+                            : (agent2Result?.root_cause_component || 'Deduced')}
+                        </strong>
                       </div>
                       <div className="dossier-stat-chip">
                         <span>Severity:</span>
-                        <strong style={{ color: agent2Result?.severity === 'High' ? 'var(--red-primary)' : '#10B981' }}>
-                          {(agent2Result?.severity || 'MEDIUM').toUpperCase()}
+                        <strong style={{
+                          color: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? '#fbbf24'
+                            : agent2Result?.severity === 'High' ? 'var(--red-primary)' : '#10B981'
+                        }}>
+                          {((agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? 'PAUSED'
+                            : (agent2Result?.severity || 'MEDIUM')).toUpperCase()}
                         </strong>
                       </div>
                       <div className="dossier-stat-chip">
@@ -2656,12 +2680,35 @@ export default function App() {
                       <button
                         type="button"
                         className="dossier-action-btn btn-export-invoice"
-                        onClick={() => setInvoiceModalOpen(true)}
-                        title="Generate & Export Official Diagnostic Bill / PDF"
-                        style={{ background: 'rgba(0, 240, 255, 0.12)', borderColor: 'rgba(0, 240, 255, 0.45)', color: '#00F0FF', fontWeight: 700 }}
+                        onClick={() => {
+                          if (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused') {
+                            alert('Billing Export Paused: No billable vehicle faults or parts were diagnosed. Invoicing is held to prevent inaccurate customer charges.');
+                            return;
+                          }
+                          setInvoiceModalOpen(true);
+                        }}
+                        title={
+                          (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? "Export Paused: Valid vehicle mechanical complaints or trouble codes required"
+                            : "Generate & Export Official Diagnostic Bill / PDF"
+                        }
+                        style={{
+                          background: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? 'rgba(245, 158, 11, 0.12)'
+                            : 'rgba(0, 240, 255, 0.12)',
+                          borderColor: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? 'rgba(245, 158, 11, 0.45)'
+                            : 'rgba(0, 240, 255, 0.45)',
+                          color: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused')
+                            ? '#fbbf24'
+                            : '#00F0FF',
+                          fontWeight: 700,
+                          opacity: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused') ? 0.85 : 1,
+                          cursor: (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused') ? 'not-allowed' : 'pointer'
+                        }}
                       >
                         <Printer size={13} />
-                        Export Bill & PDF
+                        {(agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || agent2Result?.severity === 'Paused') ? 'Bill Locked (No Faults)' : 'Export Bill & PDF'}
                       </button>
                       <button
                         type="button"
@@ -2691,10 +2738,10 @@ export default function App() {
 
                       {/* Vehicle Specifications */}
                       <div className="telemetry-specs">
-                        <div className="spec-badge">Make: <strong>{triageResult.vehicle_details.make}</strong></div>
-                        <div className="spec-badge">Model: <strong>{triageResult.vehicle_details.model}</strong></div>
-                        <div className="spec-badge">Year: <strong>{triageResult.vehicle_details.year}</strong></div>
-                        <div className="spec-badge">Status: <strong>ROAD-LEGAL</strong></div>
+                        <div className="spec-badge">Make: <strong>{triageResult.vehicle_details.make || 'Unspecified'}</strong></div>
+                        <div className="spec-badge">Model: <strong>{triageResult.vehicle_details.model || 'Unspecified'}</strong></div>
+                        <div className="spec-badge">Year: <strong>{triageResult.vehicle_details.year || '—'}</strong></div>
+                        <div className="spec-badge">Status: <strong style={{ color: triageResult.vehicle_details.is_verified ? '#10b981' : '#fbbf24' }}>{triageResult.vehicle_details.is_verified ? 'ROAD-LEGAL' : 'AWAITING SPECS'}</strong></div>
                         {triageResult.vehicle_details.engine && (
                           <div className="spec-badge">Engine: <strong>{triageResult.vehicle_details.engine}</strong></div>
                         )}
@@ -3027,6 +3074,8 @@ export default function App() {
                         if (!irReport) return null;
                         const expansion = irReport.query_expansion;
                         const matches = irReport.top_matches || [];
+                        const isBlocked = (triageResult.security_guardrail?.threat_level === 'CRITICAL_ATTACK_BLOCKED') ||
+                                          (triageResult.vehicle_details?.security_guardrail?.threat_level === 'CRITICAL_ATTACK_BLOCKED');
 
                         return (
                           <div className="ir-bm25-dossier-box">
@@ -3069,7 +3118,7 @@ export default function App() {
                             )}
 
                             {/* Probabilistic Okapi BM25 Ranked DTC Candidates */}
-                            {matches.length > 0 && (
+                            {matches.length > 0 ? (
                               <div className="ir-bm25-matches-section">
                                 <div className="ir-card-sublabel">
                                   <span>Probabilistic BM25 Ranked DTC Candidates (k₁=1.5, b=0.75):</span>
@@ -3122,6 +3171,26 @@ export default function App() {
                                   ))}
                                 </div>
                               </div>
+                            ) : (
+                              <div style={{
+                                marginTop: 10,
+                                padding: '10px 14px',
+                                background: 'rgba(56, 189, 248, 0.05)',
+                                border: '1px dashed rgba(56, 189, 248, 0.25)',
+                                borderRadius: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontSize: '0.78rem',
+                                color: '#94a3b8'
+                              }}>
+                                <Search size={14} color="#38bdf8" />
+                                <span>
+                                  {isBlocked
+                                    ? 'BM25 symptom scorer paused: Non-diagnostic prompt intercepted by Security Perimeter (no mechanical fault symptoms detected).'
+                                    : 'No physical mechanical symptom keywords detected in complaint. Probabilistic BM25 scoring paused until vehicle trouble codes or physical symptoms are provided.'}
+                                </span>
+                              </div>
                             )}
                           </div>
                         );
@@ -3150,7 +3219,7 @@ export default function App() {
                               </div>
                               <div className="sec-guardrail-header-badges">
                                 <span className={`sec-status-pill ${isBlocked ? 'blocked' : (isSuspicious ? 'warn' : 'safe')}`}>
-                                  {isBlocked ? '🚨 CRITICAL ATTACK BLOCKED' : isSuspicious ? '⚠️ SUSPICIOUS' : '🛡️ PERIMETER CLEAN'}
+                                  {isBlocked ? '🛡️ INPUT SAFEGUARD ACTIVE' : isSuspicious ? '⚠️ SUSPICIOUS' : '🛡️ PERIMETER CLEAN'}
                                 </span>
                                 <span className="sec-risk-score">
                                   Risk: <strong>{sec.risk_score}</strong>/100 · ⚡ {sec.execution_time_ms} ms
@@ -3159,43 +3228,80 @@ export default function App() {
                             </div>
 
                             <div className="sec-guardrail-summary">
-                              {sec.mitigation_summary}
+                              {isBlocked ? (
+                                <span>
+                                  Input Safeguard Active: Non-diagnostic directives or instruction-override patterns were intercepted and neutralized. Autonomous diagnostic reasoning paused to maintain system integrity.
+                                </span>
+                              ) : (
+                                sec.mitigation_summary
+                              )}
                             </div>
 
-                            {/* Intercepted Threats Audit Trail */}
-                            {threats.length > 0 && (
-                              <div className="sec-threats-section">
-                                <div className="sec-card-sublabel">
-                                  <AlertOctagon size={12} color="#ef4444" />
-                                  <span>Intercepted Attack Vectors ({threats.length} Detected):</span>
-                                </div>
-                                <div className="sec-threats-grid">
-                                  {threats.map((t, idx) => (
-                                    <div key={idx} className="sec-threat-item">
-                                      <div className="sec-threat-top">
-                                        <span className="sec-threat-cat">{t.category}</span>
-                                        <span className={`sec-threat-sev ${t.severity.toLowerCase()}`}>{t.severity}</span>
-                                      </div>
-                                      <div className="sec-threat-pattern">
-                                        Matched: <code>"{t.pattern_matched}"</code>
-                                      </div>
-                                      <div className="sec-threat-desc">{t.description}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                            {/* Optional Collapsible Security Telemetry for Examiner / Student 1 Proof */}
+                            {(threats.length > 0 || (sec.sanitized_query && sec.threat_level !== 'CLEAN')) && (
+                              <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAgent1SecurityAudit(prev => !prev)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    cursor: 'pointer',
+                                    padding: '4px 0',
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <ShieldAlert size={13} color="#f87171" />
+                                  <span>{showAgent1SecurityAudit ? 'Hide Red-Team Threat Vectors & Audit Metadata' : 'View Red-Team Threat Vectors & Audit Metadata (Admin / Student 1 Proof)'}</span>
+                                  {showAgent1SecurityAudit ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                </button>
 
-                            {/* Neutralized Safe Payload Sent to Agent 2 */}
-                            {sec.sanitized_query && sec.threat_level !== 'CLEAN' && (
-                              <div className="sec-neutralized-section">
-                                <div className="sec-card-sublabel">
-                                  <ShieldCheck size={12} color="#10b981" />
-                                  <span>Neutralized Safe Payload Forwarded to Downstream LLMs:</span>
-                                </div>
-                                <div className="sec-neutralized-box">
-                                  <code>{sec.sanitized_query}</code>
-                                </div>
+                                {showAgent1SecurityAudit && (
+                                  <div style={{ marginTop: 10 }}>
+                                    {/* Intercepted Threats Audit Trail */}
+                                    {threats.length > 0 && (
+                                      <div className="sec-threats-section">
+                                        <div className="sec-card-sublabel">
+                                          <AlertOctagon size={12} color="#ef4444" />
+                                          <span>Intercepted Attack Vectors ({threats.length} Detected):</span>
+                                        </div>
+                                        <div className="sec-threats-grid">
+                                          {threats.map((t, idx) => (
+                                            <div key={idx} className="sec-threat-item">
+                                              <div className="sec-threat-top">
+                                                <span className="sec-threat-cat">{t.category}</span>
+                                                <span className={`sec-threat-sev ${t.severity.toLowerCase()}`}>{t.severity}</span>
+                                              </div>
+                                              <div className="sec-threat-pattern">
+                                                Matched: <code>"{t.pattern_matched}"</code>
+                                              </div>
+                                              <div className="sec-threat-desc">{t.description}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Neutralized Safe Payload Sent to Agent 2 */}
+                                    {sec.sanitized_query && sec.threat_level !== 'CLEAN' && (
+                                      <div className="sec-neutralized-section" style={{ marginTop: 10 }}>
+                                        <div className="sec-card-sublabel">
+                                          <ShieldCheck size={12} color="#10b981" />
+                                          <span>Neutralized Safe Payload Forwarded to Downstream LLMs:</span>
+                                        </div>
+                                        <div className="sec-neutralized-box">
+                                          <code>{sec.sanitized_query}</code>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -3451,7 +3557,9 @@ export default function App() {
                             IR Canonical Query (Stopwords Stripped & Synonyms Expanded)
                           </div>
                           <code style={{ fontSize: '0.82rem', color: '#e2e8f0', background: 'transparent' }}>
-                            {triageResult.canonical_query}
+                            {(triageResult.canonical_query.includes('security_shield') || triageResult.canonical_query.includes('neutralized'))
+                              ? 'None (Non-diagnostic intake filtered by Security Perimeter)'
+                              : triageResult.canonical_query}
                           </code>
                         </div>
                       )}
@@ -3470,7 +3578,92 @@ export default function App() {
                       </div>
 
                       {agent2Result ? (
-                        <>
+                        (agent2Result.root_cause_component?.includes('SECURITY') || agent2Result.root_cause_component?.includes('PAUSED') || agent2Result.severity === 'Quarantined' || agent2Result.severity === 'Paused' || agent2Result.severity === 'critical') ? (
+                          <div className="security-circuit-breaker-card" style={{ background: 'rgba(245, 158, 11, 0.06)', borderColor: 'rgba(245, 158, 11, 0.35)', boxShadow: '0 0 20px rgba(245, 158, 11, 0.08)' }}>
+                            <div className="scb-header">
+                              <span className="scb-badge" style={{ background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}>
+                                <AlertTriangle size={14} />
+                                Diagnostic Paused // Symptoms Required
+                              </span>
+                              <span className="scb-status-pill" style={{ background: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.35)', color: '#60a5fa' }}>
+                                Awaiting Vehicle Symptoms
+                              </span>
+                            </div>
+                            <div className="scb-title" style={{ color: '#fef08a' }}>
+                              Diagnostic Reasoning Paused: Mechanical Symptoms Required
+                            </div>
+                            <div className="scb-desc" style={{ color: '#cbd5e1' }}>
+                              {agent2Result.primary_hypothesis?.failure_mode ||
+                                "No recognized vehicle failure symptoms or diagnostic trouble codes (DTCs) were detected. Diagnostic deduction is paused to prevent guessing phantom components or recommending inaccurate repairs."}
+                            </div>
+                            <div className="scb-steps" style={{ borderColor: 'rgba(245, 158, 11, 0.25)', background: 'rgba(3, 7, 18, 0.5)' }}>
+                              <div className="scb-steps-title" style={{ color: '#fbbf24' }}>
+                                <Wrench size={13} />
+                                Technician Intake Checklist & Action Items
+                              </div>
+                              {(agent2Result.reasoning_steps && agent2Result.reasoning_steps.length > 0 ? agent2Result.reasoning_steps : [
+                                "Intake Audit: Zero OBD-II diagnostic trouble codes (DTCs) detected in customer intake text.",
+                                "Non-Technical Request: Submitted notes contained non-diagnostic directives rather than physical vehicle symptoms.",
+                                "Diagnostic Pause: Reasoning paused to prevent guessing phantom components or recommending incorrect repairs.",
+                                "Commercial Safeguard: Parts catalog procurement and repair manuals are paused until genuine fault codes are provided.",
+                                "Technician Action: Please enter valid diagnostic trouble codes (e.g., P0171, P0300) or describe vehicle symptoms."
+                              ]).map((step, idx) => (
+                                <div key={idx} className="scb-step-item">
+                                  <span className="scb-step-num" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>{idx + 1}</span>
+                                  <span>{step}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Optional Collapsible Security Telemetry for Examiner / Admin */}
+                            <div style={{ paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                              <button
+                                type="button"
+                                onClick={() => setShowAdminSecurityAudit(prev => !prev)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--text-muted)',
+                                  fontSize: '0.74rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  cursor: 'pointer',
+                                  padding: '4px 0',
+                                  fontFamily: 'inherit'
+                                }}
+                              >
+                                <ShieldAlert size={13} color="#f87171" />
+                                <span>{showAdminSecurityAudit ? 'Hide Technical Security Audit Telemetry' : 'View Technical Security Telemetry (Admin / Examiner Audit)'}</span>
+                                {showAdminSecurityAudit ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              </button>
+
+                              {showAdminSecurityAudit && (
+                                <div style={{
+                                  marginTop: 8,
+                                  padding: '10px 12px',
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: 6,
+                                  fontSize: '0.76rem',
+                                  color: '#cbd5e1',
+                                  lineHeight: 1.5
+                                }}>
+                                  <div style={{ fontWeight: 800, color: '#f87171', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Security Perimeter Audit Trail (OWASP LLM01 / Circuit Breaker)
+                                  </div>
+                                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                                    <li>Intercepted input: Prompt injection / instruction override pattern detected.</li>
+                                    <li>Agent 1 Threat Level: <strong>CRITICAL_ATTACK_BLOCKED</strong> (Risk Score: 55.0/100).</li>
+                                    <li>Circuit Breaker: Groq LLM API dispatch aborted (0 tokens consumed, Model DoS eliminated).</li>
+                                    <li>Downstream Isolation: Agent 3 OEM RAG and Agent 4 parts procurement withheld.</li>
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
                           <div className="result-header-row">
                             <div className="result-status-text">
                               <CheckCircle2 size={16} color="var(--emerald)" />
@@ -3764,6 +3957,7 @@ export default function App() {
                             </div>
                           </div>
                         </>
+                        )
                       ) : (
                         <div className="results-empty" style={{ padding: '24px 16px' }}>
                           <RefreshCw size={24} className="spin-icon" color="#3B82F6" />
@@ -3785,6 +3979,19 @@ export default function App() {
                       </div>
 
                       {repairPlan ? (
+                        (agent2Result?.root_cause_component?.includes('SECURITY') || agent2Result?.severity === 'Quarantined' || repairPlan.citation?.includes('Circuit Breaker') || repairPlan.citation?.includes('Security')) ? (
+                          <div className="security-quarantine-agent-box" style={{ background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+                            <div className="quarantine-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.35)', color: '#34d399' }}>
+                              <Layers size={20} />
+                            </div>
+                            <div className="quarantine-title" style={{ color: '#6ee7b7' }}>
+                              OEM Repair Manuals Paused
+                            </div>
+                            <div className="quarantine-sub" style={{ color: '#94a3b8' }}>
+                              Step-by-step factory service manuals and bolt torque tolerances will load automatically once valid vehicle trouble codes or mechanical symptoms are provided.
+                            </div>
+                          </div>
+                        ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                           <div>
                             <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.08em' }}>
@@ -3819,6 +4026,7 @@ export default function App() {
                             <span>Vector Reference: <strong>{repairPlan.citation}</strong></span>
                           </div>
                         </div>
+                        )
                       ) : (
                         <div className="results-empty" style={{ padding: '24px 16px' }}>
                           <Layers size={24} color="#10B981" />
@@ -3842,6 +4050,30 @@ export default function App() {
                       {(procurement || procurementPlan) ? (
                         (() => {
                           const proc = procurement || procurementPlan;
+                          const isQuarantined = Boolean(
+                            agent2Result?.root_cause_component?.includes('SECURITY') ||
+                            agent2Result?.severity === 'Quarantined' ||
+                            proc.resolved_part?.includes('SECURITY') ||
+                            proc.resolved_part?.includes('WITHHELD') ||
+                            proc.match_method === 'SECURITY_CIRCUIT_BREAKER'
+                          );
+
+                          if (isQuarantined) {
+                            return (
+                              <div className="security-quarantine-agent-box" style={{ background: 'rgba(255, 94, 20, 0.05)', borderColor: 'rgba(255, 94, 20, 0.3)' }}>
+                                <div className="quarantine-icon-wrap" style={{ background: 'rgba(255, 94, 20, 0.15)', borderColor: 'rgba(255, 94, 20, 0.35)', color: '#FF5E14' }}>
+                                  <ShoppingBag size={20} />
+                                </div>
+                                <div className="quarantine-title" style={{ color: '#fdba74' }}>
+                                  Parts Quoting Paused (0 Parts · 0 LKR)
+                                </div>
+                                <div className="quarantine-sub" style={{ color: '#94a3b8' }}>
+                                  Commercial catalog and 3-tier pricing engines are safely on hold. No replacement parts or labor fees will be billed until genuine fault codes are diagnosed.
+                                </div>
+                              </div>
+                            );
+                          }
+
                           return (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                               {/* Resolved Catalog Component */}

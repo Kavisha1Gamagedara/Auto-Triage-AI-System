@@ -378,6 +378,12 @@ export default function HolographicAgentPipelineGraph({
   const getAgentDetails = (nodeId) => {
     const isLive = Boolean(liveData && (liveData.triageResult || liveData.agent2Result));
     
+    const isQuarantined = Boolean(
+      liveData?.triageResult?.security_guardrail?.threat_level === 'CRITICAL_ATTACK_BLOCKED' ||
+      liveData?.agent2Result?.root_cause_component?.includes('SECURITY') ||
+      liveData?.agent2Result?.severity === 'Quarantined'
+    );
+
     if (nodeId === 1) {
       const tr = liveData?.triageResult;
       const count = (tr?.dtc_codes || []).length;
@@ -386,7 +392,9 @@ export default function HolographicAgentPipelineGraph({
         stack: 'spaCy NLP (v3.7) + U.S. DOT NHTSA vPIC REST API + ISO 3779 Checksum',
         role: 'Normalizes mechanic unstructured dialect, extracts standard SAE DTC trouble codes, and validates VIN identity against federal registry records in < 20ms.',
         payload: tr ? (
-          `${count} DTCs Isolated (${(tr.dtc_codes || []).join(', ') || 'Clean'}) // Ground Truth: ${tr.vehicle_details?.is_verified ? '100% NHTSA Verified' : 'Validated'} // ${tr.vehicle_details?.year} ${tr.vehicle_details?.make} ${tr.vehicle_details?.model}`
+          isQuarantined
+            ? `[PERIMETER DEFENSE ACTIVE] Threat Level: ${tr.security_guardrail?.threat_level || 'CRITICAL_ATTACK_BLOCKED'} // Adversarial prompt neutralized // ${count} DTCs Isolated`
+            : `${count} DTCs Isolated (${(tr.dtc_codes || []).join(', ') || 'Clean'}) // Ground Truth: ${tr.vehicle_details?.is_verified ? '100% NHTSA Verified' : 'Validated'} // ${tr.vehicle_details?.year} ${tr.vehicle_details?.make} ${tr.vehicle_details?.model}`
         ) : '3 DTCs Isolated (P0171, P0300, P0420) // VIN Ground Truth: 100% Match',
         outputKey: tr?.vehicle_details ? `Canonical Spec: ${tr.vehicle_details.make} ${tr.vehicle_details.model} (${tr.vehicle_details.engine || 'Standard Powertrain'})` : 'Canonical Diagnostic Graph & Multi-DTC Cascade Matrix',
         isLive
@@ -398,10 +406,14 @@ export default function HolographicAgentPipelineGraph({
         title: 'Agent 2: Cognitive Causal Reasoning Core',
         stack: 'Groq LLM / Llama-3 70B + Pydantic Strict AST + Dual-Pass Hallucination Guard',
         role: 'Applies physics of failure reasoning to deduce the underlying root cause component, calculates Bayesian failure likelihood, and enforces safety warnings.',
-        payload: a2 ? (
+        payload: isQuarantined ? (
+          'CIRCUIT BREAKER ACTIVATED // 0 Groq LLM Tokens Dispatched (Model Denial-of-Service / Wallet DoS Eliminated) // Reasoning Suspended'
+        ) : a2 ? (
           `Root Cause: ${a2.root_cause_component || 'Deducing...'} // Severity: ${a2.severity || 'Medium'} // Mode: ${a2.failure_mode ? a2.failure_mode.slice(0, 85) + '...' : 'Analyzed'}`
         ) : 'Root Cause: Mass Air Flow Sensor Contamination // 96.4% Diagnostic Confidence',
-        outputKey: a2?.safety_warning ? `Safety: ${a2.safety_warning.slice(0, 80)}...` : 'Failure Mode Physics & Ranked Differential Hypotheses',
+        outputKey: isQuarantined
+          ? 'Quarantine Status: PIPELINE_SUSPENDED_SECURITY_QUARANTINE'
+          : (a2?.safety_warning ? `Safety: ${a2.safety_warning.slice(0, 80)}...` : 'Failure Mode Physics & Ranked Differential Hypotheses'),
         isLive
       };
     }
@@ -411,10 +423,14 @@ export default function HolographicAgentPipelineGraph({
         title: 'Agent 3: OEM Workshop Dense Vector RAG',
         stack: 'ChromaDB Local Vector DB + Recursive Sentence Embeddings + Cosine Index',
         role: 'Performs dense semantic similarity searches across verified OEM factory service manuals to pull strict step-by-step disassembly and torque specifications.',
-        payload: rp ? (
+        payload: isQuarantined ? (
+          'OEM MANUAL RAG WITHHELD // Vector query suspended to safeguard OEM technical knowledge base under Security Circuit Breaker'
+        ) : rp ? (
           `Service Manual Retrieved // Action: ${rp.recommended_action ? rp.recommended_action.slice(0, 70) + '...' : 'OEM Factory Procedure'}`
         ) : 'ChromaDB Top-3 Chunks Retrieved // Torque Spec: 8.5 N·m (75 in-lbs)',
-        outputKey: rp?.required_tools ? `Required Tools: ${(rp.required_tools || []).slice(0, 3).join(', ')}` : 'Factory Removal Checklist & Strict Zero-Hallucination Guardrails',
+        outputKey: isQuarantined
+          ? 'RAG Status: Suppressed by Circuit Breaker'
+          : (rp?.required_tools ? `Required Tools: ${(rp.required_tools || []).slice(0, 3).join(', ')}` : 'Factory Removal Checklist & Strict Zero-Hallucination Guardrails'),
         isLive
       };
     }
@@ -424,10 +440,14 @@ export default function HolographicAgentPipelineGraph({
         title: 'Agent 4: BOM Catalog & Automated Procurement',
         stack: 'Motor/Mitchell Cross-Catalog Index + MongoDB Multi-Tier Pricing Engine',
         role: 'Resolves physical component names into verified distributor SKUs, discovers mandatory gasket/seal dependencies, and generates 3-tier quotes in LKR.',
-        payload: proc?.primary_part?.pricing?.oem_lkr ? (
+        payload: isQuarantined ? (
+          'PARTS PROCUREMENT & PRICING LOCKED // 0 Components Quoted · 0 LKR Bill Total (Billing Manipulation Exploit Prevented)'
+        ) : proc?.primary_part?.pricing?.oem_lkr ? (
           `Quoted: OEM Genuine (${Number(proc.primary_part.pricing.oem_lkr).toLocaleString()} LKR) | Aftermarket (${Number(proc.primary_part.pricing.aftermarket_lkr || 0).toLocaleString()} LKR)`
         ) : (proc?.primary_part?.part_name ? `Resolved Part: ${proc.primary_part.part_name}` : 'Quoted: OEM Genuine (48,500 LKR) | Aftermarket (26,000 LKR) | Economy (14,500 LKR)'),
-        outputKey: proc?.primary_part?.oem_part_number ? `OEM Part Number: ${proc.primary_part.oem_part_number}` : 'Mandatory Gasket Lock & Localized Part Availability Matrix',
+        outputKey: isQuarantined
+          ? 'Procurement Status: 0 LKR Quotes (Withheld)'
+          : (proc?.primary_part?.oem_part_number ? `OEM Part Number: ${proc.primary_part.oem_part_number}` : 'Mandatory Gasket Lock & Localized Part Availability Matrix'),
         isLive
       };
     }
