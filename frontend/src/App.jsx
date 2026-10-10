@@ -44,7 +44,8 @@ import {
   FileText,
   XCircle,
   Lock,
-  Search
+  Search,
+  GitBranch
 } from 'lucide-react';
 
 import './App.css';
@@ -184,26 +185,135 @@ const SIMULATED_DIAGNOSES = {
   P0251: {
     root_cause_component: 'Spill Valve (Electronic Diesel Injection Pump)',
     failure_mode: 'DTC P0251 designates Fuel Metering Control Malfunction. The electric spill valve solenoid coil has suffered thermal breakdown and plunger sticking on the 1C-T diesel pump, causing sporadic fuel cut-off and engine stalls under acceleration load.',
+    confidence: 88,
     severity: 'Critical',
-    safety_warning: 'High-pressure diesel spray hazard (up to 1,500 bar). System must be fully depressurized prior to loosening union nuts. Do not expose skin to pressurized fuel spray.'
+    safety_warning: 'High-pressure diesel spray hazard (up to 1,500 bar). System must be fully depressurized prior to loosening union nuts. Do not expose skin to pressurized fuel spray.',
+    confirming_test: 'Measure spill valve solenoid internal coil resistance with DMM at 20°C: nominal range is 1.5 - 2.5 ohms. Bench-test plunger displacement under 12V pulse actuation.',
+    reasoning_steps: [
+      'Identified DTC P0251 (Electronic Diesel Injection Pump Spill Valve Malfunction).',
+      'Correlated intermittent stalling under acceleration load with diesel high-pressure metering collapse.',
+      'Confirmed spill valve coil thermal breakdown as highest-probability root cause over mechanical plunger seizure.'
+    ],
+    differential_hypotheses: [
+      {
+        root_cause_component: 'Diesel Fuel Filter Element',
+        failure_mode: 'Paraffin wax crystal agglomeration and particulate clogging creating suction-side vacuum restriction on pump feed line.',
+        confidence: 62,
+        verified: true,
+        confirming_test: 'Measure fuel feed line vacuum restriction upstream of pump; inspect cartridge element for particulate contamination.',
+        supporting_evidence: ['Engine stalls under heavy load', 'P0251 metering variance code']
+      },
+      {
+        root_cause_component: 'Pump Timing Control Valve (TCV)',
+        failure_mode: 'Sticky internal advance piston delaying electronic injection timing curve under high RPM demand.',
+        confidence: 38,
+        verified: true,
+        confirming_test: 'Measure TCV duty-cycle waveform on oscilloscope; verify linear advance correlation with engine speed.',
+        supporting_evidence: ['Hesitation on acceleration']
+      }
+    ]
   },
   P0171: {
     root_cause_component: 'Mass Air Flow (MAF) Sensor',
     failure_mode: 'Contaminated platinum hot-wire sensing element under-reporting incoming intake air volume to ECM, forcing fuel trims beyond compensatory limit (+25% STFT/LTFT) and causing lean combustion misfire.',
+    confidence: 86,
     severity: 'Medium',
-    safety_warning: 'Allow engine bay and intake manifold to cool down completely before inspecting intake boot, vacuum hoses, and sensor harness.'
+    safety_warning: 'Allow engine bay and intake manifold to cool down completely before inspecting intake boot, vacuum hoses, and sensor harness.',
+    confirming_test: 'Monitor live MAF sensor gram-per-second airflow at wide-open throttle (WOT); expected airflow should reach roughly 80% of peak engine horsepower.',
+    reasoning_steps: [
+      'Captured diagnostic trouble code P0171 (System Too Lean Bank 1).',
+      'Correlated rough idle and sluggish acceleration with stoichiometric air-fuel deficiency.',
+      'Ranked unmetered air intrusion and MAF under-reporting as primary suspects; MAF isolated via fuel trim response curve.'
+    ],
+    differential_hypotheses: [
+      {
+        root_cause_component: 'Intake Manifold Runner Gasket',
+        failure_mode: 'Silicone seal thermal shrinkage permitting unmetered ambient air infiltration into cylinder head runners under high idle vacuum.',
+        confidence: 68,
+        verified: true,
+        confirming_test: 'Perform low-pressure (5 psi) smoke test through intake brake booster port; inspect manifold flange for smoke egress.',
+        supporting_evidence: ['Lean condition pronounced at low-RPM idle', 'P0171 active']
+      },
+      {
+        root_cause_component: 'Upstream Air/Fuel Ratio Sensor (B1S1)',
+        failure_mode: 'Zirconia sensing ceramic poisoning causing false lean voltage bias (< 0.2V) despite balanced air-fuel mixture.',
+        confidence: 42,
+        verified: true,
+        confirming_test: 'Inject controlled propane enrichment into intake air stream; verify sensor voltage rapidly responds toward rich (> 0.8V).',
+        supporting_evidence: ['Chronic lean trim code P0171']
+      },
+      {
+        root_cause_component: 'In-Tank Electric Fuel Pump',
+        failure_mode: 'Armature brush wear reducing pump delivery volume below required 45 psi rail pressure.',
+        confidence: 22,
+        verified: false,
+        verification_note: 'Disproved by freeze-frame idle telemetry: pump produces adequate volume under low-demand idle state.',
+        confirming_test: 'Connect mechanical fuel pressure gauge to fuel rail test port; verify 45-55 psi steady pressure.',
+        supporting_evidence: ['Fuel starvation symptom']
+      }
+    ]
   },
   P0300: {
     root_cause_component: 'Ignition Coil On Plug (COP)',
     failure_mode: 'Dielectric insulation breakdown within secondary coil windings resulting in high-voltage spark dissipation to cylinder head casing under combustion chamber compression.',
+    confidence: 84,
     severity: 'Medium',
-    safety_warning: 'Secondary ignition circuitry operates in excess of 35,000 Volts. Turn ignition off and disconnect battery ground terminal before disassembling ignition coils.'
+    safety_warning: 'Secondary ignition circuitry operates in excess of 35,000 Volts. Turn ignition off and disconnect battery ground terminal before disassembling ignition coils.',
+    confirming_test: 'Swap suspect ignition coil to adjacent cylinder; verify whether cylinder misfire counter moves to new cylinder location.',
+    reasoning_steps: [
+      'Captured trouble code P0300 (Random or Multiple Cylinder Misfire Detected).',
+      'Correlated intermittent violent engine shudder and flashing CEL with combustion flameout.',
+      'Evaluated ignition energy versus fueling imbalance; secondary coil dielectric fatigue isolated as primary root trigger.'
+    ],
+    differential_hypotheses: [
+      {
+        root_cause_component: 'Iridium Spark Plug Set',
+        failure_mode: 'Center electrode erosion gap exceeding 1.3 mm, requiring higher ionization voltage than coil can sustain under boost or compression.',
+        confidence: 72,
+        verified: true,
+        confirming_test: 'Extract plugs and inspect ceramic insulator for carbon tracking; check gap using wire feeler gauge (spec: 1.1 mm).',
+        supporting_evidence: ['P0300 random misfire', 'Shuddering under load']
+      },
+      {
+        root_cause_component: 'Multi-Port Fuel Injector Nozzle',
+        failure_mode: 'Varnish buildup on multi-hole spray tip causing poor fuel droplet atomization and lean flame quenching.',
+        confidence: 48,
+        verified: true,
+        confirming_test: 'Perform automated cylinder balance drop test using scan tool; measure dynamic pressure drop per injector pulse.',
+        supporting_evidence: ['Misfire on acceleration']
+      }
+    ]
   },
   P0420: {
     root_cause_component: 'Three-Way Catalytic Converter Substrate',
     failure_mode: 'Thermal sintering and hydrocarbon carbonization of the platinum/rhodium catalytic washcoat, severely degrading oxygen storage capacity (OSC).',
+    confidence: 82,
     severity: 'Low',
-    safety_warning: 'Catalytic converter skin temperatures frequently exceed 600°C (1,100°F). Ensure vehicle has cooled down for at least two hours before attempting physical inspection or bolt extraction.'
+    safety_warning: 'Catalytic converter skin temperatures frequently exceed 600°C (1,100°F). Ensure vehicle has cooled down for at least two hours before attempting physical inspection or bolt extraction.',
+    confirming_test: 'Record downstream O2 sensor B1S2 voltage waveform at steady 2,000 RPM; a degraded catalyst mirrors the oscillating upstream sensor waveform (> 0.7 Hz).',
+    reasoning_steps: [
+      'Captured diagnostic trouble code P0420 (Catalyst System Efficiency Below Threshold Bank 1).',
+      'Correlated sulfur / rotten eggs exhaust odor with reduced catalytic washcoat oxygen storage.',
+      'Verified upstream air-fuel control before concluding washcoat precious metal thermal degradation.'
+    ],
+    differential_hypotheses: [
+      {
+        root_cause_component: 'Downstream Heated Oxygen Sensor (B1S2)',
+        failure_mode: 'Internal heater circuit degradation or sensor tip silica coating causing sluggish catalyst efficiency feedback.',
+        confidence: 56,
+        verified: true,
+        confirming_test: 'Measure internal heater resistance (nominal: 11 - 16 ohms at 20°C); verify sensor transition latency.',
+        supporting_evidence: ['P0420 catalyst efficiency code']
+      },
+      {
+        root_cause_component: 'Exhaust Flex Pipe Weld Joint',
+        failure_mode: 'Micro-crack fracture in exhaust pipe upstream of catalytic converter entraining ambient oxygen into sensor stream.',
+        confidence: 36,
+        verified: true,
+        confirming_test: 'Pressurize cold exhaust system with 5 psi shop air; spray soapy bubble solution over flex bellows and weld seams.',
+        supporting_evidence: ['Rotten eggs smell', 'Exhaust hissing']
+      }
+    ]
   }
 };
 
@@ -696,7 +806,19 @@ export default function App() {
         root_cause_component: sim.root_cause_component,
         failure_mode: `[SIMULATED MASTER MECHANIC REASONING] For ${agent2Year} ${agent2Make} ${agent2Model}: ${sim.failure_mode}`,
         severity: sim.severity,
-        safety_warning: sim.safety_warning
+        safety_warning: sim.safety_warning,
+        confidence: sim.confidence,
+        confirming_test: sim.confirming_test,
+        primary_hypothesis: {
+          root_cause_component: sim.root_cause_component,
+          failure_mode: sim.failure_mode,
+          confidence: sim.confidence,
+          confirming_test: sim.confirming_test,
+          verified: true,
+          supporting_evidence: ['Primary Diagnostic Match']
+        },
+        differential_hypotheses: sim.differential_hypotheses || [],
+        reasoning_steps: sim.reasoning_steps || []
       });
       setAgent2Loading(false);
     }, 600);
@@ -895,14 +1017,26 @@ export default function App() {
           root_cause_component: sim.root_cause_component,
           failure_mode: sim.failure_mode,
           severity: sim.severity,
-          safety_warning: sim.safety_warning
+          safety_warning: sim.safety_warning,
+          confidence: sim.confidence,
+          confirming_test: sim.confirming_test,
+          primary_hypothesis: {
+            root_cause_component: sim.root_cause_component,
+            failure_mode: sim.failure_mode,
+            confidence: sim.confidence,
+            confirming_test: sim.confirming_test,
+            verified: true,
+            supporting_evidence: ['Primary Diagnostic Match']
+          },
+          differential_hypotheses: sim.differential_hypotheses || [],
+          reasoning_steps: sim.reasoning_steps || []
         });
         setAgent2Error(data2.detail);
         deducedRootCause = sim.root_cause_component;
       } else {
         setAgent2Result(data2);
         setAgent2Error(null);
-        deducedRootCause = data2.root_cause_component;
+        deducedRootCause = data2.root_cause_component || data2.primary_hypothesis?.root_cause_component;
       }
 
       // Visual pacing delay so user clearly observes Agent 2 emphasized in working state
@@ -3346,12 +3480,19 @@ export default function App() {
 
                           {/* Root Cause Component Hero Box */}
                           <div className="root-cause-hero-box" style={{ borderColor: 'rgba(59, 130, 246, 0.4)' }}>
-                            <div className="root-cause-tag" style={{ color: '#3B82F6' }}>
-                              <Wrench size={13} />
-                              Deduce Root-Cause Failed Component
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                              <div className="root-cause-tag" style={{ color: '#3B82F6', margin: 0 }}>
+                                <Wrench size={13} />
+                                Primary Isolated Root Cause
+                              </div>
+                              {(agent2Result.primary_hypothesis?.confidence || agent2Result.confidence) && (
+                                <span className="primary-confidence-pill">
+                                  {agent2Result.primary_hypothesis?.confidence || agent2Result.confidence}% CONFIDENCE
+                                </span>
+                              )}
                             </div>
                             <div className="root-cause-title">
-                              {agent2Result.root_cause_component}
+                              {agent2Result.root_cause_component || agent2Result.primary_hypothesis?.root_cause_component}
                             </div>
                             <div className="root-cause-sub">
                               Single physical component isolated by Groq LLM for replacement / bench testing
@@ -3365,9 +3506,22 @@ export default function App() {
                               Mechanical Failure Mode & Physics
                             </div>
                             <div className="detail-text">
-                              {agent2Result.failure_mode}
+                              {agent2Result.failure_mode || agent2Result.primary_hypothesis?.failure_mode}
                             </div>
                           </div>
+
+                          {/* Primary Confirming Workshop Test */}
+                          {(agent2Result.primary_hypothesis?.confirming_test || agent2Result.confirming_test) && (
+                            <div className="primary-confirming-test-card">
+                              <div className="detail-label" style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', marginBottom: 4 }}>
+                                <Wrench size={13} color="#10B981" />
+                                Recommended Primary Confirming Workshop Test
+                              </div>
+                              <div className="detail-text" style={{ fontSize: '0.86rem', color: '#ecfdf5', lineHeight: 1.55 }}>
+                                {agent2Result.primary_hypothesis?.confirming_test || agent2Result.confirming_test}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Empirical Ground-Truth Physical Telemetry Card */}
                           {(agent2Result.freeze_frame_analysis || triageResult?.freeze_frame_analysis) && (() => {
@@ -3442,6 +3596,130 @@ export default function App() {
                               </div>
                             );
                           })()}
+
+                          {/* Alternative Hypotheses (Differential Diagnoses / DDx) Card */}
+                          {agent2Result.differential_hypotheses && agent2Result.differential_hypotheses.length > 0 && (
+                            <div className="differential-hypotheses-box">
+                              <div className="diff-header">
+                                <div className="diff-title">
+                                  <GitBranch size={16} color="#3B82F6" />
+                                  <span>Alternative Hypotheses & Differential Diagnoses (DDx)</span>
+                                </div>
+                                <span className="diff-count-badge">
+                                  {agent2Result.differential_hypotheses.length} COMPETING HYPOTHESES EVALUATED
+                                </span>
+                              </div>
+
+                              <div className="diff-intro-note">
+                                Multi-agent cognitive verifier ranked candidate failure modes against vehicle telemetry and physics-of-failure trees. Confirmatory testing rules out false positives.
+                              </div>
+
+                              <div className="diff-list">
+                                {agent2Result.differential_hypotheses.map((hyp, idx) => {
+                                  const isVerified = hyp.verified !== false;
+                                  const confidenceVal = typeof hyp.confidence === 'number' ? hyp.confidence : 50;
+
+                                  return (
+                                    <div key={idx} className={`differential-item ${isVerified ? 'verified' : 'rejected'}`}>
+                                      <div className="diff-item-header">
+                                        <div className="diff-item-name-group">
+                                          <span className="diff-rank-badge">ALT #{idx + 1}</span>
+                                          <span className="diff-component-name">{hyp.root_cause_component}</span>
+                                        </div>
+                                        <div className="diff-item-status-group">
+                                          {isVerified ? (
+                                            <span className="diff-status-pill verified">
+                                              <CheckCircle2 size={12} />
+                                              PLAUSIBLE CANDIDATE
+                                            </span>
+                                          ) : (
+                                            <span className="diff-status-pill rejected">
+                                              <XCircle size={12} />
+                                              RULED OUT / REJECTED
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Confidence Meter */}
+                                      <div className="diff-confidence-block">
+                                        <div className="diff-confidence-meta">
+                                          <span className="diff-conf-label">Bayesian Hypothesis Confidence:</span>
+                                          <span className="diff-conf-score">{confidenceVal}%</span>
+                                        </div>
+                                        <div className="diff-confidence-track">
+                                          <div
+                                            className={`diff-confidence-fill ${isVerified ? 'verified' : 'rejected'}`}
+                                            style={{ width: `${Math.min(100, Math.max(5, confidenceVal))}%` }}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Failure Mechanism */}
+                                      <div className="diff-failure-mode">
+                                        <strong>Failure Mechanism:</strong> {hyp.failure_mode}
+                                      </div>
+
+                                      {/* Verifier Audit Note */}
+                                      {hyp.verification_note && (
+                                        <div className="diff-verification-note">
+                                          <strong>Verifier Audit:</strong> {hyp.verification_note}
+                                        </div>
+                                      )}
+
+                                      {/* Supporting Evidence Chips */}
+                                      {hyp.supporting_evidence && hyp.supporting_evidence.length > 0 && (
+                                        <div className="diff-evidence-row">
+                                          <span className="diff-evidence-label">Corroborating Evidence:</span>
+                                          <div className="diff-evidence-chips">
+                                            {hyp.supporting_evidence.map((ev, eIdx) => (
+                                              <span key={eIdx} className="diff-evidence-chip">{ev}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Confirming Test */}
+                                      {hyp.confirming_test && (
+                                        <div className="diff-test-box">
+                                          <div className="diff-test-header">
+                                            <Wrench size={13} color={isVerified ? "#38bdf8" : "#94a3b8"} />
+                                            <span>Definitive Workshop Confirming Test:</span>
+                                          </div>
+                                          <div className="diff-test-body">
+                                            {hyp.confirming_test}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Cognitive Chain-of-Thought Reasoning Steps */}
+                          {agent2Result.reasoning_steps && agent2Result.reasoning_steps.length > 0 && (
+                            <div className="reasoning-steps-box">
+                              <div className="reasoning-steps-header">
+                                <div className="reasoning-steps-title">
+                                  <Sparkles size={15} color="#38bdf8" />
+                                  <span>Cognitive Chain-of-Thought Diagnostic Trail</span>
+                                </div>
+                                <span className="reasoning-steps-badge">
+                                  {agent2Result.reasoning_steps.length} DEDUCTION STEPS
+                                </span>
+                              </div>
+                              <div className="reasoning-steps-list">
+                                {agent2Result.reasoning_steps.map((step, sIdx) => (
+                                  <div key={sIdx} className="reasoning-step-item">
+                                    <div className="step-number-bubble">{sIdx + 1}</div>
+                                    <div className="step-text-content">{step}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Safety Warning */}
                           {agent2Result.safety_warning && (
