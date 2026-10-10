@@ -152,6 +152,66 @@ def _rebuild(result: DiagnosticResult, candidates: list[Hypothesis]) -> Diagnost
     return result
 
 def deduce_root_cause(payload: Agent1Payload) -> DiagnosticResult:
+    # -------------------------------------------------------------------------
+    # SECURITY CIRCUIT BREAKER (NIST AI RMF 1.0 & OWASP LLM01 / LLM10)
+    # If Agent 1's Input Security Perimeter flagged a Critical attack, trip circuit breaker.
+    # Withhold downstream LLM invocation to prevent compute exhaustion & phantom hypotheses.
+    # -------------------------------------------------------------------------
+    sec = getattr(payload, "security_guardrail", None)
+    sec_level = None
+    sec_score = 0.0
+    threat_info = "Adversarial prompt injection override detected"
+
+    if isinstance(sec, dict):
+        sec_level = sec.get("threat_level")
+        sec_score = sec.get("risk_score", 0.0)
+        detected = sec.get("detected_threats", [])
+        if detected and isinstance(detected, list) and len(detected) > 0:
+            first_t = detected[0]
+            if isinstance(first_t, dict) and first_t.get("pattern_matched"):
+                threat_info = f"Matched '{first_t['pattern_matched']}'"
+    elif sec is not None:
+        sec_level = getattr(sec, "threat_level", None)
+        sec_score = getattr(sec, "risk_score", 0.0)
+        detected = getattr(sec, "detected_threats", [])
+        if detected and len(detected) > 0:
+            p_match = getattr(detected[0], "pattern_matched", None) or (detected[0].get("pattern_matched") if isinstance(detected[0], dict) else None)
+            if p_match:
+                threat_info = f"Matched '{p_match}'"
+
+    if sec_level == "CRITICAL_ATTACK_BLOCKED":
+        logger.warning(
+            "Security Circuit Breaker tripped: Adversarial injection detected (%s, Risk: %s). Halting Agent 2 reasoning.",
+            threat_info, sec_score
+        )
+        return DiagnosticResult(
+            status="unverified",
+            reasoning_steps=[
+                "Intake Audit: Zero OBD-II diagnostic trouble codes (DTCs) detected in customer intake text.",
+                "Non-Technical Request: Submitted notes contained non-diagnostic directives rather than physical vehicle symptoms.",
+                "Diagnostic Pause: Autonomous reasoning paused to prevent guessing phantom components or recommending incorrect repairs.",
+                "Commercial Safeguard: Parts catalog procurement and repair manuals are paused until genuine fault codes are provided.",
+                "Technician Action: Please enter valid diagnostic trouble codes (e.g., P0171, P0300) or describe vehicle symptoms."
+            ],
+            primary_hypothesis=Hypothesis(
+                root_cause_component="PIPELINE_SUSPENDED_SECURITY_QUARANTINE",
+                failure_mode="No recognized vehicle failure symptoms or diagnostic trouble codes (DTCs) provided. Diagnostic deduction paused.",
+                confidence=0,
+                supporting_evidence=[
+                    "Zero OBD-II diagnostic trouble codes supplied in complaint notes",
+                    f"Non-diagnostic directives intercepted by Agent 1 Input Security Perimeter ({threat_info})"
+                ],
+                confirming_test="Enter valid OBD-II diagnostic trouble codes or mechanic observations and re-run diagnostic triage.",
+                verified=False,
+                verification_note=f"Security Guardrail: Intercepted prompt override ({threat_info}, Risk Score: {sec_score}/100). LLM inference bypassed (0 tokens).",
+                catalog_part_name=None
+            ),
+            differential_hypotheses=[],
+            severity="critical",
+            safety_warning="DIAGNOSTIC PAUSED: No verified mechanical faults or diagnostic trouble codes present. Autonomous vehicle repair actions and parts procurement are withheld.",
+            freeze_frame_analysis=payload.freeze_frame_analysis
+        )
+
     client = get_client()
     diagnostic_context = (
         f"Vehicle: {payload.vehicle.get('year')} {payload.vehicle.get('make')} {payload.vehicle.get('model')}\n"

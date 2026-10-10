@@ -295,9 +295,9 @@ class EnsembleDisambiguateRequest(BaseModel):
 
 class VehicleDetails(BaseModel):
     """Normalized vehicle specifications verified against NHTSA vPIC, JDM Catalog, or VIN decoder."""
-    make: str = Field(..., description="Vehicle manufacturer make (e.g., Honda)")
-    model: str = Field(..., description="Vehicle model name (e.g., Civic)")
-    year: int = Field(..., ge=1900, le=2100, description="Vehicle manufacturing year")
+    make: Optional[str] = Field(default=None, description="Vehicle manufacturer make (e.g., Honda)")
+    model: Optional[str] = Field(default=None, description="Vehicle model name (e.g., Civic)")
+    year: Optional[int] = Field(default=None, ge=1900, le=2100, description="Vehicle manufacturing year")
     is_verified: bool = Field(default=False, description="Whether vehicle was validated via NHTSA vPIC or JDM Registry")
     
     # Extended VIN Decoded Telemetry (Additive)

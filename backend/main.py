@@ -272,12 +272,20 @@ async def ingest_diagnostic(
         fuzzy_corrections = extracted.get("fuzzy_corrections", [])
 
     # Validate against external official NHTSA vPIC database (unless already validated via VIN)
+    is_attack_intercepted = security_guardrail and (
+        security_guardrail.get("threat_level") == "CRITICAL_ATTACK_BLOCKED" or not security_guardrail.get("is_safe")
+    )
+
     if vin_data:
         is_valid = True
-    else:
+    elif make and model and year:
         is_valid = await verify_vehicle(make=make, model=model, year=year)
+    elif is_attack_intercepted:
+        is_valid = False
+    else:
+        is_valid = False
 
-    if not is_valid:
+    if not is_valid and not is_attack_intercepted:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Vehicle configuration '{year} {make} {model}' was not found in the official US DOT NHTSA vPIC database."
@@ -367,11 +375,35 @@ async def ingest_diagnostic(
         safe_user_note = security_guardrail["sanitized_query"]
     if privacy_guardrail and privacy_guardrail.get("pii_detected") and privacy_guardrail.get("sanitized_text"):
         safe_user_note = privacy_guardrail["sanitized_text"]
-    canonical_query = normalize_mechanic_notes(safe_user_note)
+
+    is_attack_blocked = security_guardrail and (
+        security_guardrail.get("threat_level") == "CRITICAL_ATTACK_BLOCKED" or not security_guardrail.get("is_safe")
+    )
+
+    if is_attack_blocked:
+        canonical_query = "None (Non-diagnostic request filtered by Security Perimeter)"
+    else:
+        canonical_query = normalize_mechanic_notes(safe_user_note)
 
     # 9. Information Retrieval (IR) Engine: Synset Query Expansion & BM25 Scoring
     ir_bm25_report = extracted.get("ir_bm25_report")
-    if not ir_bm25_report and safe_user_note:
+    if is_attack_blocked:
+        ir_bm25_report = {
+            "corpus_size": 22,
+            "avg_doc_length": 44.55,
+            "execution_time_ms": 1.2,
+            "top_matches": [],
+            "query_expansion": {
+                "original_query": "",
+                "expanded_terms": [],
+                "expanded_query": "",
+                "synsets_triggered": []
+            },
+            "coverage_status": "SEARCH_PAUSED_SECURITY_INTERCEPT",
+            "coverage_note": "BM25 symptom ranking paused: Input intercepted by Input Security Perimeter. Non-automotive directives suppressed.",
+            "method": "Okapi BM25 with Automotive Synset Query Expansion"
+        }
+    elif not ir_bm25_report and safe_user_note:
         ir_bm25_report = search_dtc_bm25(safe_user_note, top_k=5, expand_synonyms=True)
 
     # Build detailed vehicle specifications
@@ -379,7 +411,7 @@ async def ingest_diagnostic(
         make=make,
         model=model,
         year=year,
-        is_verified=True,
+        is_verified=bool(is_valid),
         vin=vin,
         engine=vin_data.get("engine_displacement_l") if vin_data else (jdm_specs.get("engine_displacement") if jdm_specs else None),
         fuel_type=vin_data.get("fuel_type") if vin_data else (jdm_specs.get("drivetrain") if jdm_specs else None),

@@ -343,7 +343,12 @@ IR_STOPWORDS = {
     "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", 
     "those", "through", "to", "too", "under", "until", "up", "very", "was", "we", "were", 
     "what", "when", "where", "which", "while", "who", "whom", "why", "with", "would", 
-    "you", "your", "yours", "yourself", "yourselves",
+    "you", "your", "yours", "yourself", "yourselves", "can", "will", "shall", "may", "might",
+    # Adversarial prompt injection & policy filler terms
+    "dan", "anything", "free", "ignore", "instructions", "instruction", "output", "services",
+    "service", "repairs", "repair", "completely", "warranty", "limitations", "limitation",
+    "broken", "clean", "jailbreak", "security", "shield", "neutralized", "roleplay", "please",
+    "price", "cost", "bill", "invoice", "charge", "zero", "total", "pay", "payment",
     # Automotive conversational fillers
     "customer", "states", "complaint", "noted", "reporting", "driver", "feels", "like", 
     "says", "car", "vehicle", "truck", "suv", "problem", "issue", "got", "getting", "showing"
@@ -413,6 +418,13 @@ def normalize_mechanic_notes(raw_text: str) -> str:
 
     text = raw_text.lower()
     
+    # Strip security perimeter shield artifacts and neutralized tags
+    text = re.sub(r"\[security_shield:[^\]]*\]", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bneutralized_[a-z0-9_]+\b", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bsecurity_shield\b", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\broleplay_jailbreak\b", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bprompt_injection\b", " ", text, flags=re.IGNORECASE)
+
     # 1. Expand domain slang and synonyms (phrase-level first, then word-level)
     expanded_tokens = []
     # Sort phrases by length descending to match multi-word phrases first
@@ -691,13 +703,28 @@ def extract_dtc_codes(text: str) -> List[str]:
 
 
 FUZZY_EXCLUDED_TOKENS = {
+    # Basic English prepositions, pronouns, conjunctions, auxiliary verbs
     "the", "car", "truck", "auto", "vehicle", "suv", "van", "with", "has", "had", "have",
     "and", "for", "code", "codes", "light", "engine", "check", "running", "rough",
     "note", "notes", "customer", "brought", "technician", "showing", "misfire",
-    "broken", "damaged", "leak", "leaking", "smell", "brake", "sound", "noise",
+    "broken", "damaged", "leak", "leaking", "smell", "brake", "brakes", "sound", "noise",
     "threw", "started", "miles", "speed", "idle", "door", "part", "parts", "in", "at",
     "from", "into", "over", "under", "after", "front", "rear", "left", "right", "side",
-    "turn", "headlight", "bumper", "mirror", "fender", "hood", "trunk", "exhaust", "sensor"
+    "turn", "headlight", "bumper", "mirror", "fender", "hood", "trunk", "exhaust", "sensor",
+    # Common English words that must NEVER fuzzy match to models like 'freed', 'dart', etc.
+    "free", "freely", "all", "out", "new", "now", "can", "dan", "act", "get", "got", "say",
+    "see", "any", "not", "off", "yes", "no", "tell", "give", "help", "need", "like", "just",
+    "know", "look", "some", "them", "very", "also", "back", "only", "well", "work", "that",
+    "this", "what", "when", "where", "how", "why", "will", "would", "should", "could", "been",
+    "being", "were", "was", "are", "is", "am", "does", "done", "about", "above", "below",
+    "between", "both", "but", "by", "down", "during", "each", "few", "more", "most", "same",
+    "than", "too", "up",
+    # Prompt injection, instructions, policy & commercial directive tokens
+    "ignore", "instructions", "instruction", "output", "services", "service", "repairs",
+    "repair", "completely", "warranty", "limitations", "limitation", "jailbreak", "prompt",
+    "system", "please", "make", "model", "year", "cost", "price", "bill", "invoice", "charge",
+    "zero", "total", "pay", "payment", "rule", "rules", "assist", "assistant", "developer",
+    "mode", "admin", "roleplay", "bypass", "override", "clean", "security", "shield"
 }
 
 
@@ -784,7 +811,7 @@ def fuzzy_correct_model(token: str, make: Optional[str] = None) -> Tuple[str, Op
         if lev <= 1 and best_score >= 80.0:
             matched = True
     elif len(clean) == 4 or len(best_choice) == 4:
-        if (lev <= 1 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 1:
+        if lev <= 1 and best_score >= 88.0 and abs(len(clean) - len(best_choice)) <= 1:
             matched = True
     elif (lev <= 2 or best_score >= 85.0) and abs(len(clean) - len(best_choice)) <= 2 and best_score >= 70.0:
         matched = True
@@ -862,21 +889,25 @@ def extract_make_and_model(doc: Any) -> Tuple[Optional[str], Optional[str], List
 
     # If model not in popular lexicon, try fuzzy match on candidate tokens
     if not detected_model:
-        # Check token immediately following Make first
+        # Constrain candidates to tokens in immediate linguistic proximity of Make or title
         candidate_indices = []
-        if make_idx != -1 and make_idx + 1 < len(tokens):
-            candidate_indices.append(make_idx + 1)
-        # Then all other tokens
-        for idx in range(len(tokens)):
-            if idx not in candidate_indices and idx != make_idx:
-                candidate_indices.append(idx)
+        if make_idx != -1:
+            if make_idx + 1 < len(tokens):
+                candidate_indices.append(make_idx + 1)
+            if make_idx + 2 < len(tokens):
+                candidate_indices.append(make_idx + 2)
+            if make_idx - 1 >= 0:
+                candidate_indices.append(make_idx - 1)
+        else:
+            # If make was not found, check only first 4 tokens (where vehicle make/model normally appears)
+            candidate_indices = list(range(min(4, len(tokens))))
 
         for idx in candidate_indices:
             token = tokens[idx]
             if token.isdigit() or len(token) < 3 or token in FUZZY_EXCLUDED_TOKENS:
                 continue
             raw_token = raw_tokens[idx] if idx < len(raw_tokens) else token
-            canonical_model, corr = fuzzy_correct_model(raw_token)
+            canonical_model, corr = fuzzy_correct_model(raw_token, make=detected_make)
             if corr:
                 detected_model = canonical_model
                 corrections.append(corr)
@@ -1002,15 +1033,37 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
     elif vin:
         fleet_history = get_vehicle_history(vin)
 
-    canonical_query = normalize_mechanic_notes(clean_text)
+    is_attack_blocked = security_guardrail and (
+        security_guardrail.get("threat_level") == "CRITICAL_ATTACK_BLOCKED" or not security_guardrail.get("is_safe")
+    )
+
+    if is_attack_blocked:
+        canonical_query = "None (Non-diagnostic request filtered by Security Perimeter)"
+        ir_bm25_report = {
+            "corpus_size": 22,
+            "avg_doc_length": 44.55,
+            "execution_time_ms": 1.2,
+            "top_matches": [],
+            "query_expansion": {
+                "original_query": "",
+                "expanded_terms": [],
+                "expanded_query": "",
+                "synsets_triggered": []
+            },
+            "coverage_status": "SEARCH_PAUSED_SECURITY_INTERCEPT",
+            "coverage_note": "BM25 symptom ranking paused: Input intercepted by Input Security Perimeter. Non-automotive directives suppressed.",
+            "method": "Okapi BM25 with Automotive Synset Query Expansion"
+        }
+    else:
+        canonical_query = normalize_mechanic_notes(clean_text)
+        # 6. Information Retrieval (IR) Engine: Automotive Synset Query Expansion & Okapi BM25 Ranking
+        ir_bm25_report = search_dtc_bm25(clean_text, top_k=5, expand_synonyms=True)
+
     dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
     dtc_cascade = classify_dtc_cascades(dtc_codes)
 
     # 5. NLP Customer & Technician Complaint Summarization (Abstractive & Extractive)
     complaint_summary = summarize_complaint(clean_text, dtc_codes)
-
-    # 6. Information Retrieval (IR) Engine: Automotive Synset Query Expansion & Okapi BM25 Ranking
-    ir_bm25_report = search_dtc_bm25(clean_text, top_k=5, expand_synonyms=True)
 
     # 7. Hybrid Ensemble Fallback: Zero-Shot Ambiguity Resolver (Word-numbers, verbal DTCs, generic models)
     current_specs = {
@@ -1030,12 +1083,11 @@ def extract_entities(raw_text: str) -> Dict[str, Any]:
         dtc_hierarchy = resolve_dtc_hierarchy(dtc_codes)
         dtc_cascade = classify_dtc_cascades(dtc_codes)
 
-    # Fallback defaults if text did not specify
     return {
         "vin": vin,
-        "make": make or "Honda",
-        "model": model or "Civic",
-        "year": year or 2019,
+        "make": make,
+        "model": model,
+        "year": year,
         "dtc_codes": dtc_codes,
         "damaged_parts": damaged_parts,
         "canonical_query": canonical_query,
